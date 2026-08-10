@@ -25,12 +25,18 @@ service cloud.firestore {
       // Public profiles: any signed-in user can read.
       allow read: if isSignedIn();
 
-      // A user may create their own profile document, with role locked to 'user'.
+      // Self-serve signup: foodie (`user`) or business (`restaurantOwner`).
       allow create: if isSelf(uid)
-        && request.resource.data.role == 'user'
         && request.resource.data.email is string
         && request.resource.data.displayName is string
-        && request.resource.data.displayName.size() <= 50;
+        && request.resource.data.displayName.size() <= 50
+        && (
+          request.resource.data.role == 'user'
+          || (request.resource.data.role == 'restaurantOwner'
+            && request.resource.data.businessName is string
+            && request.resource.data.businessName.size() >= 2
+            && request.resource.data.businessName.size() <= 80)
+        );
 
       // A user may update their own profile but never role or counters —
       // all counters are maintained exclusively by Cloud Functions

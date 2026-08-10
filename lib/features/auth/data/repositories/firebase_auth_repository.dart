@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../../../core/errors/app_exception.dart';
@@ -31,27 +32,36 @@ class FirebaseAuthRepository implements AuthRepository {
 
   @override
   Stream<AppUser?> authStateChanges() {
-    return _auth.authStateChanges().asyncExpand((fbUser) {
-      if (fbUser == null) return Stream<AppUser?>.value(null);
-      // Live profile stream so role/profile edits propagate instantly.
-      return _users.doc(fbUser.uid).snapshots().map((doc) {
-        if (!doc.exists) {
-          // Profile doc not created yet (e.g. mid-signup); fall back to auth data.
-          return AppUser(
-            uid: fbUser.uid,
-            email: fbUser.email ?? '',
-            displayName: fbUser.displayName ?? '',
-            role: UserRole.user,
-            emailVerified: fbUser.emailVerified,
-          );
-        }
-        // Trust either source: the Auth flag, or the Firestore flag written by
-        // refreshEmailVerification() (which re-triggers this stream).
-        return UserModel.fromDoc(doc)
-            .copyWith(emailVerified: fbUser.emailVerified ? true : null);
+    // Emit immediately from Firebase Auth so sign-in/out redirects never wait
+    // on a Firestore round-trip (that delay looked like a freeze / required
+    // app restart). Then upgrade to the live profile document when available.
+    return _auth.authStateChanges().asyncExpand((fbUser) async* {
+      if (fbUser == null) {
+        yield null;
+        return;
+      }
+
+      yield _userFromAuth(fbUser);
+
+      yield* _users.doc(fbUser.uid).snapshots().map((doc) {
+        if (!doc.exists) return _userFromAuth(fbUser);
+        return UserModel.fromDoc(doc).copyWith(
+          emailVerified: fbUser.emailVerified ? true : null,
+        );
+      }).handleError((Object e, StackTrace st) {
+        debugPrintStack(stackTrace: st, label: 'Profile stream error: $e');
       });
     });
   }
+
+  AppUser _userFromAuth(fb.User fbUser) => AppUser(
+        uid: fbUser.uid,
+        email: fbUser.email ?? '',
+        displayName: fbUser.displayName ?? '',
+        role: UserRole.user,
+        photoUrl: fbUser.photoURL,
+        emailVerified: fbUser.emailVerified,
+      );
 
   @override
   Future<AppUser> signInWithEmail({
@@ -113,7 +123,7 @@ class FirebaseAuthRepository implements AuthRepository {
                   ? (businessName ?? name).trim()
                   : null,
               ownedRestaurantId: restaurantId,
-              emailVerified: true, // verification gate disabled by product decision
+              emailVerified: true,
             ),
           );
       return _loadOrCreateProfile(user);
@@ -125,6 +135,8 @@ class FirebaseAuthRepository implements AuthRepository {
   @override
   Future<AppUser> signInWithGoogle() async {
     try {
+      // Clear a stale Google session so the account picker can appear again.
+      await _googleSignIn.signOut().catchError((_) => null);
       final googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
         throw const AppException('Sign-in cancelled', code: 'cancelled');
@@ -188,10 +200,14 @@ class FirebaseAuthRepository implements AuthRepository {
 
   @override
   Future<void> signOut() async {
-    await Future.wait([
-      _googleSignIn.signOut().catchError((_) => null),
-      _auth.signOut(),
-    ]);
+    // Auth first so UI can leave the shell immediately; Google cleanup is
+    // best-effort and must never block the session clear.
+    await _auth.signOut();
+    try {
+      await _googleSignIn.signOut().timeout(const Duration(seconds: 3));
+    } catch (e) {
+      debugPrint('Google signOut ignored: $e');
+    }
   }
 
   @override
@@ -251,12 +267,8 @@ class FirebaseAuthRepository implements AuthRepository {
       await user.reauthenticateWithProvider(provider);
       return;
     }
-
-    // Fallback: attempt delete without reauth; Firebase may still require it.
   }
 
-  /// Best-effort client cleanup before Auth deletion. Server-side cascade
-  /// continues in Cloud Functions (`onAuthUserDeleted`).
   Future<void> _deleteOwnedClientData(String uid) async {
     final batch = _firestore.batch();
     final userRef = _users.doc(uid);
@@ -276,7 +288,6 @@ class FirebaseAuthRepository implements AuthRepository {
     await batch.commit();
   }
 
-  /// Ensures a Firestore profile exists (creates one on first social sign-in).
   Future<AppUser> _loadOrCreateProfile(fb.User fbUser) async {
     final ref = _users.doc(fbUser.uid);
     final doc = await ref.get();
@@ -309,7 +320,6 @@ class FirebaseAuthRepository implements AuthRepository {
       'user-disabled' => 'This account has been disabled.',
       'requires-recent-login' =>
           'For security, sign in again before deleting your account.',
-      // Surface the raw code for unexpected failures so issues are diagnosable.
       _ => 'Authentication failed (${e.code}). Please try again.',
     };
     return AppException(message, code: e.code);

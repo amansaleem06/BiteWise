@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/errors/app_exception.dart';
@@ -78,15 +81,42 @@ class AuthController extends AsyncNotifier<void> {
   }
 
   Future<void> signOut() async {
-    // Stop push delivery to this device before the session ends.
-    await ref.read(pushNotificationServiceProvider).unregister();
-    await _repo.signOut();
+    state = const AsyncLoading();
+    try {
+      // Never block logout on push cleanup.
+      unawaited(() async {
+        try {
+          await ref
+              .read(pushNotificationServiceProvider)
+              .unregister()
+              .timeout(const Duration(seconds: 2));
+        } catch (e) {
+          debugPrint('Push unregister ignored: $e');
+        }
+      }());
+      await _repo.signOut();
+      // Drop cached signed-in trees so the next session starts clean.
+      ref.invalidate(authStateProvider);
+      state = const AsyncData(null);
+    } catch (e, st) {
+      debugPrintStack(stackTrace: st, label: 'Sign out failed: $e');
+      state = AsyncError(e, st);
+      rethrow;
+    }
   }
 
   Future<bool> deleteAccount({String? password}) => _run(() async {
-        await ref.read(pushNotificationServiceProvider).unregister();
+        try {
+          await ref
+              .read(pushNotificationServiceProvider)
+              .unregister()
+              .timeout(const Duration(seconds: 2));
+        } catch (e) {
+          debugPrint('Push unregister ignored: $e');
+        }
         try {
           await _repo.deleteAccount(password: password);
+          ref.invalidate(authStateProvider);
         } on AppException catch (e) {
           if (e.code == 'cancelled') return;
           rethrow;

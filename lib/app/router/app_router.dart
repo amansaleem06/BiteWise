@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -28,36 +26,24 @@ import '../../features/restaurants/presentation/screens/restaurant_screen.dart';
 import '../../features/shell/presentation/main_shell.dart';
 import 'routes.dart';
 
-/// Bridges a [Stream] to [Listenable] so GoRouter re-evaluates redirects
-/// whenever auth state changes.
-class _StreamListenable extends ChangeNotifier {
-  _StreamListenable(Stream<dynamic> stream) {
-    _sub = stream.listen((_) => notifyListeners());
-  }
-  late final StreamSubscription<dynamic> _sub;
-
-  @override
-  void dispose() {
-    _sub.cancel();
-    super.dispose();
+/// Notifies [GoRouter] whenever [authStateProvider] changes.
+class _AuthRefresh extends ChangeNotifier {
+  _AuthRefresh(Ref ref) {
+    ref.listen<AsyncValue<dynamic>>(authStateProvider, (_, __) {
+      notifyListeners();
+    });
   }
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final refreshListenable = _StreamListenable(
-    ref.watch(authRepositoryProvider).authStateChanges(),
-  );
-  ref.onDispose(refreshListenable.dispose);
+  final refreshListenable = _AuthRefresh(ref);
 
   return GoRouter(
-    initialLocation: Routes.home,
+    // Never open the main shell until auth resolves to a signed-in user.
+    initialLocation: Routes.welcome,
     refreshListenable: refreshListenable,
     redirect: (context, state) {
       final authState = ref.read(authStateProvider);
-      // While auth state is loading, stay put (splash handles first frame).
-      if (authState.isLoading) return null;
-
-      final user = authState.valueOrNull;
       final loc = state.matchedLocation;
       final onAuthScreen = loc == Routes.welcome ||
           loc == Routes.signIn ||
@@ -66,12 +52,24 @@ final routerProvider = Provider<GoRouter>((ref) {
       final onLegalScreen =
           loc == Routes.privacyPolicy || loc == Routes.termsOfService;
 
+      // Unknown session: keep users on auth/legal only (no Feed/Explore).
+      if (authState.isLoading) {
+        if (onAuthScreen || onLegalScreen) return null;
+        return Routes.welcome;
+      }
+
+      if (authState.hasError) {
+        if (onAuthScreen || onLegalScreen) return null;
+        return Routes.welcome;
+      }
+
+      final user = authState.valueOrNull;
       if (user == null) {
         if (onAuthScreen || onLegalScreen) return null;
         return Routes.welcome;
       }
 
-      // Email verification is not required — signed-in users go straight in.
+      // Signed in — leave the auth funnel.
       if (onAuthScreen || loc == Routes.verifyEmail) return Routes.home;
       return null;
     },
@@ -90,7 +88,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: Routes.verifyEmail,
         builder: (_, __) => const VerifyEmailScreen(),
       ),
-      // Full-screen detail pages (pushed above the shell).
       GoRoute(
         path: Routes.restaurant,
         builder: (_, state) =>

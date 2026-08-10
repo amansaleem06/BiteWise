@@ -36,9 +36,24 @@ class SettingsScreen extends ConsumerWidget {
             onTap: () => context.push(Routes.editProfile),
           ),
           ListTile(
-            leading: const Icon(Icons.logout_rounded),
+            leading: authState.isLoading
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.logout_rounded),
             title: const Text(AppStrings.signOut),
-            onTap: () => ref.read(authControllerProvider.notifier).signOut(),
+            enabled: !authState.isLoading,
+            onTap: () async {
+              try {
+                await ref.read(authControllerProvider.notifier).signOut();
+              } catch (e) {
+                if (context.mounted) {
+                  AppSnackbar.error(context, userMessageFrom(e));
+                }
+              }
+            },
           ),
           ListTile(
             leading: const Icon(Icons.delete_forever_outlined, color: AppColors.error),

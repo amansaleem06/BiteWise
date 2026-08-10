@@ -25,10 +25,17 @@ class _MainShellState extends ConsumerState<MainShell> {
   @override
   void initState() {
     super.initState();
-    // Register this device for push notifications.
-    Future<void>.microtask(
-      () => ref.read(pushNotificationServiceProvider).register(),
-    );
+    // Register this device for push — never block the shell on FCM.
+    Future<void>.microtask(() async {
+      try {
+        await ref
+            .read(pushNotificationServiceProvider)
+            .register()
+            .timeout(const Duration(seconds: 8));
+      } catch (_) {
+        // Permission denial / missing APNs must not freeze the app.
+      }
+    });
   }
 
   void _onTap(int index) {
