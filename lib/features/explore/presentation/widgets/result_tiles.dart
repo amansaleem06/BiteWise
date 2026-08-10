@@ -44,6 +44,13 @@ class RestaurantTile extends StatelessWidget {
       title: Text(restaurant.name, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: Row(
         children: [
+          Text(
+            restaurant.claimed ? 'Restaurant · Claimed · ' : 'Restaurant · ',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: AppColors.primaryDark,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           if (rating != null) ...[
             const Icon(Icons.star_rounded, size: 14, color: AppColors.ratingStar),
             Text(
@@ -109,7 +116,14 @@ class UserTile extends StatelessWidget {
       ),
       title: Text(user.displayName),
       subtitle: Text(
-        '${Formatters.compactCount(user.followerCount)} followers',
+        [
+          user.role == UserRole.restaurantOwner ? 'Restaurant owner' : 'Member',
+          if (user.username != null && user.username!.isNotEmpty)
+            '@${user.username}',
+          '${Formatters.compactCount(user.followerCount)} followers',
+        ].join(' · '),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: theme.textTheme.bodySmall,
       ),
       onTap: () => context.push(Routes.userPath(user.uid)),

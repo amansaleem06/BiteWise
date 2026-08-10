@@ -6,6 +6,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/widgets/identity_badge.dart';
 import '../../../feed/presentation/widgets/feed_shimmer.dart';
 import '../../../reservations/presentation/widgets/booking_sheet.dart';
 import '../../domain/entities/restaurant.dart';
@@ -163,8 +164,12 @@ class _IdentitySection extends StatelessWidget {
                   children: [
                     Text(restaurant.name,
                         style: theme.textTheme.headlineMedium,),
-                    if (restaurant.city != null)
+                    const SizedBox(height: AppSpacing.xxs),
+                    IdentityBadge.restaurant(claimed: restaurant.claimed),
+                    if (restaurant.city != null) ...[
+                      const SizedBox(height: AppSpacing.xxs),
                       Text(restaurant.city!, style: theme.textTheme.bodySmall),
+                    ],
                     const SizedBox(height: AppSpacing.xxs),
                     Wrap(
                       spacing: AppSpacing.xs,

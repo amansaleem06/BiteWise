@@ -7,6 +7,7 @@ import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/widgets/identity_badge.dart';
 import '../../../auth/domain/entities/app_user.dart';
 import '../../../feed/domain/entities/post.dart';
 import '../providers/profile_providers.dart';
@@ -46,6 +47,24 @@ class ProfileHeader extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(user.displayName, style: theme.textTheme.titleLarge),
+          const SizedBox(height: AppSpacing.xxs),
+          Wrap(
+            spacing: AppSpacing.xs,
+            runSpacing: AppSpacing.xxs,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              user.role == UserRole.restaurantOwner
+                  ? IdentityBadge.restaurantOwner()
+                  : IdentityBadge.member(),
+              if (user.username != null && user.username!.isNotEmpty)
+                Text(
+                  '@${user.username}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+            ],
+          ),
           if (user.bio != null && user.bio!.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.xxs),
             Text(user.bio!, style: theme.textTheme.bodyMedium),

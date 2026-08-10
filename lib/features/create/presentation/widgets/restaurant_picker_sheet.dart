@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../core/errors/error_text.dart';
+import '../../../../core/widgets/app_snackbar.dart';
 import '../../../restaurants/domain/entities/restaurant_ref.dart';
 import '../providers/create_post_providers.dart';
 
@@ -45,8 +47,10 @@ class _RestaurantPickerSheetState extends ConsumerState<RestaurantPickerSheet> {
           .read(createPostControllerProvider.notifier)
           .createRestaurant(name);
       if (mounted) Navigator.of(context).pop(restaurant);
-    } catch (_) {
-      if (mounted) setState(() => _creating = false);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _creating = false);
+      AppSnackbar.error(context, userMessageFrom(e));
     }
   }
 

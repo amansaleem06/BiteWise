@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../core/errors/app_exception.dart';
 import '../../../../core/services/location_service.dart';
 import '../../../../core/services/media_upload_service.dart';
+import '../../../../core/utils/locale_currency.dart';
 import '../../../restaurants/domain/entities/restaurant_ref.dart';
 import '../../domain/repositories/create_post_repository.dart';
 
@@ -114,7 +115,7 @@ class FirebaseCreatePostRepository implements CreatePostRepository {
       ],
       'rating': rating,
       'price': price,
-      'currencyCode': 'USD',
+      'currencyCode': LocaleCurrency.code,
       'tags': tags,
       'likeCount': 0,
       'commentCount': 0,

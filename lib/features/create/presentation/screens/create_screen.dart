@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../core/utils/locale_currency.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../providers/create_post_providers.dart';
@@ -157,12 +158,14 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const _SectionLabel('Price paid'),
+                          _SectionLabel(
+                            'Price paid (${LocaleCurrency.code})',
+                          ),
                           TextField(
                             controller: _price,
-                            decoration: const InputDecoration(
-                              hintText: '0.00',
-                              prefixText: r'$ ',
+                            decoration: InputDecoration(
+                              hintText: '0',
+                              prefixText: LocaleCurrency.inputPrefix,
                             ),
                             keyboardType: const TextInputType.numberWithOptions(
                               decimal: true,
@@ -205,6 +208,20 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
                   isLoading: state.isSubmitting,
                   onPressed: state.canSubmit ? _publish : null,
                 ),
+                if (!state.canSubmit && !state.isSubmitting) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    state.images.isEmpty && state.restaurant == null
+                        ? 'Add at least one photo and tag a restaurant to publish.'
+                        : state.images.isEmpty
+                            ? 'Add at least one photo to publish.'
+                            : 'Tag a restaurant to publish.',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

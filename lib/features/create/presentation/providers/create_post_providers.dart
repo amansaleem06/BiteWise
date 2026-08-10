@@ -1,6 +1,9 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../core/errors/app_exception.dart';
 import '../../../feed/presentation/providers/feed_providers.dart';
 import '../../../restaurants/domain/entities/restaurant_ref.dart';
 import '../../data/repositories/firebase_create_post_repository.dart';
@@ -122,8 +125,32 @@ class CreatePostController extends AutoDisposeNotifier<CreatePostState> {
       ref.invalidate(feedControllerProvider(FeedTab.forYou));
       state = const CreatePostState();
       return null;
-    } catch (e) {
+    } catch (e, st) {
+      debugPrintStack(stackTrace: st, label: 'Create post failed: $e');
       state = state.copyWith(isSubmitting: false);
+      final code = e is AppException
+          ? e.code
+          : e is FirebaseException
+              ? e.code
+              : null;
+      if (code != null) {
+        final mapped = switch (code) {
+          'permission-denied' =>
+            'Permission denied. Sign in again, or publish Firestore/Storage rules for bitewise-1d266.',
+          'unauthorized' =>
+            'Upload blocked. Enable Firebase Storage and publish storage.rules.',
+          'object-not-found' =>
+            'Storage bucket missing. Enable Firebase Storage in the console.',
+          _ => null,
+        };
+        if (mapped != null) return mapped;
+      }
+      if (e is AppException) return e.message;
+      if (e is FirebaseException) {
+        return e.message?.isNotEmpty == true
+            ? e.message!
+            : 'Failed to publish (${e.code}). Please try again.';
+      }
       return 'Failed to publish. Please try again.';
     }
   }

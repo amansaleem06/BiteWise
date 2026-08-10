@@ -1,3 +1,5 @@
+import 'dart:ui' show PlatformDispatcher;
+
 import 'package:intl/intl.dart';
 
 /// Display formatting helpers.
@@ -6,9 +8,15 @@ abstract final class Formatters {
   static String compactCount(int value) =>
       NumberFormat.compact(locale: 'en').format(value);
 
-  /// "$12.50" — respects the post's currency.
-  static String price(double value, String currencyCode) =>
-      NumberFormat.simpleCurrency(name: currencyCode).format(value);
+  /// Formats [value] in [currencyCode] (e.g. HUF → "Ft 2 500").
+  static String price(double value, String currencyCode) {
+    final locale = PlatformDispatcher.instance.locale.toString();
+    final local = NumberFormat.simpleCurrency(locale: locale);
+    if (local.currencyName == currencyCode) {
+      return local.format(value);
+    }
+    return NumberFormat.simpleCurrency(name: currencyCode).format(value);
+  }
 
   /// Short relative time: "now", "5m", "3h", "2d", then "Mar 4".
   static String relativeTime(DateTime? time) {

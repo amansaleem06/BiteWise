@@ -176,10 +176,26 @@ class _Header extends StatelessWidget {
               children: [
                 GestureDetector(
                   onTap: onAuthorTap,
-                  child:
-                      Text(post.authorName, style: theme.textTheme.titleSmall),
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          post.authorName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleSmall,
+                        ),
+                      ),
+                      Text(
+                        ' · Member',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                // Restaurant is the anchor of every post — always visible.
+                // Restaurant is the place page — distinct from the member above.
                 GestureDetector(
                   onTap: onRestaurantTap,
                   child: Row(
@@ -195,7 +211,7 @@ class _Header extends StatelessWidget {
                         child: Text(
                           post.dishName != null
                               ? '${post.dishName} · ${post.restaurantName}'
-                              : post.restaurantName,
+                              : 'Restaurant · ${post.restaurantName}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodySmall

@@ -18,13 +18,13 @@ class StarRatingInput extends StatelessWidget {
 
   void _handle(Offset localPosition) {
     final raw = (localPosition.dx / size).clamp(0.0, 5.0);
-    // Round up to the nearest half star, minimum 0.5.
+    // Round up to the nearest half star. Firestore rules require >= 1.0.
     var next = (raw * 2).ceil() / 2;
-    if (next < 0.5) next = 0.5;
+    if (next < 1.0) next = 1.0;
     if (next == value) {
       onChanged(null); // tap same value → clear
     } else {
-      onChanged(next.clamp(0.5, 5.0));
+      onChanged(next.clamp(1.0, 5.0));
     }
   }
 
@@ -36,8 +36,8 @@ class StarRatingInput extends StatelessWidget {
       onHorizontalDragUpdate: (d) {
         final raw = (d.localPosition.dx / size).clamp(0.0, 5.0);
         var next = (raw * 2).ceil() / 2;
-        if (next < 0.5) next = 0.5;
-        onChanged(next);
+        if (next < 1.0) next = 1.0;
+        onChanged(next.clamp(1.0, 5.0));
       },
       child: Row(
         mainAxisSize: MainAxisSize.min,
