@@ -1,0 +1,226 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../../app/router/routes.dart';
+import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_spacing.dart';
+import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_snackbar.dart';
+import '../providers/create_post_providers.dart';
+import '../widgets/media_picker_grid.dart';
+import '../widgets/restaurant_picker_sheet.dart';
+import '../widgets/star_rating_input.dart';
+
+/// Compose a post: photos → restaurant → details → publish.
+class CreateScreen extends ConsumerStatefulWidget {
+  const CreateScreen({super.key});
+
+  @override
+  ConsumerState<CreateScreen> createState() => _CreateScreenState();
+}
+
+class _CreateScreenState extends ConsumerState<CreateScreen> {
+  final _dish = TextEditingController();
+  final _caption = TextEditingController();
+  final _price = TextEditingController();
+  final _tags = TextEditingController();
+
+  @override
+  void dispose() {
+    _dish.dispose();
+    _caption.dispose();
+    _price.dispose();
+    _tags.dispose();
+    super.dispose();
+  }
+
+  List<String> _parseTags() => _tags.text
+      .split(RegExp(r'[,#\s]+'))
+      .map((t) => t.trim().toLowerCase())
+      .where((t) => t.isNotEmpty)
+      .take(10)
+      .toList();
+
+  Future<void> _publish() async {
+    FocusScope.of(context).unfocus();
+    final error =
+        await ref.read(createPostControllerProvider.notifier).submit(
+              dishName: _dish.text,
+              caption: _caption.text,
+              price: double.tryParse(_price.text.replaceAll(',', '.')),
+              tags: _parseTags(),
+            );
+    if (!mounted) return;
+    if (error != null) {
+      AppSnackbar.error(context, error);
+    } else {
+      _dish.clear();
+      _caption.clear();
+      _price.clear();
+      _tags.clear();
+      AppSnackbar.success(context, 'Posted! 🍽️');
+      context.go(Routes.home);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final state = ref.watch(createPostControllerProvider);
+    final controller = ref.read(createPostControllerProvider.notifier);
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('New post')),
+      body: ListView(
+        padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
+        children: [
+          const SizedBox(height: AppSpacing.sm),
+          MediaPickerGrid(
+            images: state.images,
+            onAddFromGallery: controller.pickImages,
+            onAddFromCamera: controller.takePhoto,
+            onRemove: controller.removeImage,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Restaurant — required, the anchor of every post.
+                const _SectionLabel('Restaurant *'),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const CircleAvatar(
+                    backgroundColor: AppColors.primaryLight,
+                    child: Icon(
+                      Icons.storefront_outlined,
+                      color: AppColors.primaryDark,
+                    ),
+                  ),
+                  title: Text(
+                    state.restaurant?.name ?? 'Tag the restaurant',
+                    style: state.restaurant == null
+                        ? theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          )
+                        : theme.textTheme.titleMedium,
+                  ),
+                  trailing: state.restaurant == null
+                      ? const Icon(Icons.chevron_right_rounded)
+                      : IconButton(
+                          icon: const Icon(Icons.close_rounded),
+                          onPressed: () => controller.setRestaurant(null),
+                        ),
+                  onTap: () async {
+                    final restaurant =
+                        await RestaurantPickerSheet.show(context);
+                    if (restaurant != null) {
+                      controller.setRestaurant(restaurant);
+                    }
+                  },
+                ),
+                const Divider(),
+                const SizedBox(height: AppSpacing.sm),
+                const _SectionLabel('Dish'),
+                TextField(
+                  controller: _dish,
+                  decoration: const InputDecoration(
+                    hintText: 'e.g. Truffle mushroom pizza',
+                  ),
+                  textCapitalization: TextCapitalization.sentences,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                const _SectionLabel('Caption'),
+                TextField(
+                  controller: _caption,
+                  decoration: const InputDecoration(
+                    hintText: 'Tell the story of this bite…',
+                  ),
+                  maxLines: 4,
+                  maxLength: 2200,
+                  textCapitalization: TextCapitalization.sentences,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                const _SectionLabel('Your rating'),
+                const SizedBox(height: AppSpacing.xxs),
+                StarRatingInput(
+                  value: state.rating,
+                  onChanged: controller.setRating,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const _SectionLabel('Price paid'),
+                          TextField(
+                            controller: _price,
+                            decoration: const InputDecoration(
+                              hintText: '0.00',
+                              prefixText: r'$ ',
+                            ),
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                const _SectionLabel('Tags'),
+                TextField(
+                  controller: _tags,
+                  decoration: const InputDecoration(
+                    hintText: 'pizza italian datenight',
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                if (state.isSubmitting) ...[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    child: LinearProgressIndicator(
+                      value: state.progress > 0 ? state.progress : null,
+                      minHeight: 6,
+                      backgroundColor: AppColors.primaryLight,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Center(
+                    child: Text(
+                      'Uploading ${(state.progress * 100).round()}%…',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                ],
+                AppButton(
+                  label: 'Publish',
+                  isLoading: state.isSubmitting,
+                  onPressed: state.canSubmit ? _publish : null,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(text, style: Theme.of(context).textTheme.titleSmall);
+  }
+}

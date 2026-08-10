@@ -1,0 +1,63 @@
+# Dart/Flutter
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.metadata
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.swp
+.DS_Store
+
+# Android
+android/.gradle/
+android/local.properties
+android/**/Captured*
+android/replay_*.log
+**/gradle-wrapper.jar
+
+# iOS / macOS (generated on Mac / CI)
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/ephemeral/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+**/xcuserdata/
+**/*.xcworkspace/xcuserdata/
+**/DerivedData/
+
+# Firebase local / secrets — client configs ARE committed (needed for CI).
+# Do not commit service-account JSON or .env files.
+.firebase/
+*.env
+*.env.*
+service-account*.json
+*-firebase-adminsdk-*.json
+
+# Node (Cloud Functions)
+functions/node_modules/
+functions/lib/
+
+# Emulator / local debug captures
+dev_setup/*.png
+dev_setup/*.xml
+dev_setup/run_log.txt
+dev_setup/sha1.txt
+dev_setup/probe_log.txt
+dev_setup/setup_log.txt
+dev_setup/*_log.txt
+
+# Misc
+*.log
+coverage/
+*.jks
+*.keystore
+key.properties

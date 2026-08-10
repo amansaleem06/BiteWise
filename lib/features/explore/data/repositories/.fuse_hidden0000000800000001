@@ -1,0 +1,89 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+import '../../../auth/data/models/user_model.dart';
+import '../../../auth/domain/entities/app_user.dart';
+import '../../../feed/data/models/post_model.dart';
+import '../../../feed/domain/entities/post.dart';
+import '../../../restaurants/data/models/restaurant_model.dart';
+import '../../../restaurants/domain/entities/restaurant.dart';
+import '../../domain/repositories/explore_repository.dart';
+
+class FirestoreExploreRepository implements ExploreRepository {
+  FirestoreExploreRepository({FirebaseFirestore? firestore})
+      : _firestore = firestore ?? FirebaseFirestore.instance;
+
+  final FirebaseFirestore _firestore;
+
+  @override
+  Future<List<Post>> fetchTrendingPosts({int limit = 30}) async {
+    final snap = await _firestore
+        .collection('posts')
+        .orderBy('likeCount', descending: true)
+        .limit(limit)
+        .get();
+    // Viewer like/bookmark state is skipped here deliberately: trending is
+    // a browse surface; the post detail screen resolves exact state.
+    return snap.docs.map(PostModel.fromDoc).toList();
+  }
+
+  @override
+  Future<List<Restaurant>> fetchTopRatedRestaurants({int limit = 20}) async {
+    // Firestore can't order by a computed average, so we fetch the most
+    // rated and rank client-side. A denormalized ratingAvg field
+    // (maintained by Cloud Functions) will replace this later.
+    final snap = await _firestore
+        .collection('restaurants')
+        .orderBy('ratingCount', descending: true)
+        .limit(50)
+        .get();
+    final restaurants = snap.docs
+        .map((d) => RestaurantModel.fromDoc(d))
+        .where((r) => r.ratingCount > 0)
+        .toList()
+      ..sort((a, b) =>
+          (b.averageRating ?? 0).compareTo(a.averageRating ?? 0));
+    return restaurants.take(limit).toList();
+  }
+
+  @override
+  Future<List<AppUser>> searchUsers(String query, {int limit = 15}) async {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return const [];
+    final snap = await _firestore
+        .collection('users')
+        .where('displayNameLower', isGreaterThanOrEqualTo: q)
+        .where('displayNameLower', isLessThan: '$q')
+        .limit(limit)
+        .get();
+    return snap.docs.map(UserModel.fromDoc).toList();
+  }
+
+  @override
+  Future<List<Restaurant>> searchRestaurants(
+    String query, {
+    int limit = 15,
+  }) async {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return const [];
+    final snap = await _firestore
+        .collection('restaurants')
+        .where('nameLower', isGreaterThanOrEqualTo: q)
+        .where('nameLower', isLessThan: '$q')
+        .limit(limit)
+        .get();
+    return snap.docs.map((d) => RestaurantModel.fromDoc(d)).toList();
+  }
+
+  @override
+  Future<List<Post>> searchByTag(String tag, {int limit = 30}) async {
+    final t = tag.trim().toLowerCase().replaceFirst('#', '');
+    if (t.isEmpty) return const [];
+    final snap = await _firestore
+        .collection('posts')
+        .where('tags', arrayContains: t)
+        .orderBy('createdAt', descending: true)
+        .limit(limit)
+        .get();
+    return snap.docs.map(PostModel.fromDoc).toList();
+  }
+}

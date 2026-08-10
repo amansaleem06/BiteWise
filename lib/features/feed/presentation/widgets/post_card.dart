@@ -1,0 +1,326 @@
+import 'package:flutter/material.dart';
+
+import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_spacing.dart';
+import '../../../../core/utils/formatters.dart';
+import '../../domain/entities/post.dart';
+import 'media_carousel.dart';
+
+/// The flagship feed component: header (author + restaurant), media,
+/// actions, rating/price context, caption, and comment teaser.
+class PostCard extends StatelessWidget {
+  const PostCard({
+    super.key,
+    required this.post,
+    required this.onLike,
+    required this.onBookmark,
+    this.onComment,
+    this.onShare,
+    this.onRestaurantTap,
+    this.onAuthorTap,
+  });
+
+  final Post post;
+  final VoidCallback onLike;
+  final VoidCallback onBookmark;
+  final VoidCallback? onComment;
+  final VoidCallback? onShare;
+  final VoidCallback? onRestaurantTap;
+  final VoidCallback? onAuthorTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.xs),
+      color: theme.colorScheme.surface,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _Header(
+            post: post,
+            onRestaurantTap: onRestaurantTap,
+            onAuthorTap: onAuthorTap,
+          ),
+          MediaCarousel(
+            media: post.media,
+            onDoubleTap: post.isLikedByMe ? null : onLike,
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.xs,
+              AppSpacing.xxs,
+              AppSpacing.xs,
+              0,
+            ),
+            child: Row(
+              children: [
+                _ActionButton(
+                  icon: post.isLikedByMe
+                      ? Icons.favorite_rounded
+                      : Icons.favorite_border_rounded,
+                  color: post.isLikedByMe ? AppColors.error : null,
+                  label: post.likeCount > 0
+                      ? Formatters.compactCount(post.likeCount)
+                      : null,
+                  onTap: onLike,
+                ),
+                _ActionButton(
+                  icon: Icons.mode_comment_outlined,
+                  label: post.commentCount > 0
+                      ? Formatters.compactCount(post.commentCount)
+                      : null,
+                  onTap: onComment,
+                ),
+                _ActionButton(
+                  icon: Icons.send_outlined,
+                  onTap: onShare,
+                ),
+                const Spacer(),
+                _ActionButton(
+                  icon: post.isBookmarkedByMe
+                      ? Icons.bookmark_rounded
+                      : Icons.bookmark_border_rounded,
+                  color: post.isBookmarkedByMe ? AppColors.primaryDark : null,
+                  onTap: onBookmark,
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.xxs,
+              AppSpacing.md,
+              AppSpacing.md,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (post.rating != null || post.price != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
+                    child: _RatingPriceRow(post: post),
+                  ),
+                if (post.caption.isNotEmpty)
+                  _Caption(
+                    authorName: post.authorName,
+                    caption: post.caption,
+                  ),
+                if (post.tags.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: AppSpacing.xxs),
+                    child: Text(
+                      post.tags.map((t) => '#$t').join(' '),
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(color: AppColors.primaryDark),
+                    ),
+                  ),
+                const SizedBox(height: AppSpacing.xxs),
+                Text(
+                  Formatters.relativeTime(post.createdAt),
+                  style: theme.textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Header extends StatelessWidget {
+  const _Header({required this.post, this.onRestaurantTap, this.onAuthorTap});
+
+  final Post post;
+  final VoidCallback? onRestaurantTap;
+  final VoidCallback? onAuthorTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.sm,
+        AppSpacing.xs,
+        AppSpacing.sm,
+      ),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: onAuthorTap,
+            child: CircleAvatar(
+              radius: 18,
+              backgroundColor: AppColors.primaryLight,
+              backgroundImage: post.authorPhotoUrl != null
+                  ? NetworkImage(post.authorPhotoUrl!)
+                  : null,
+              child: post.authorPhotoUrl == null
+                  ? Text(
+                      post.authorName.isNotEmpty
+                          ? post.authorName[0].toUpperCase()
+                          : '?',
+                      style: theme.textTheme.titleSmall
+                          ?.copyWith(color: AppColors.primaryDark),
+                    )
+                  : null,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                GestureDetector(
+                  onTap: onAuthorTap,
+                  child:
+                      Text(post.authorName, style: theme.textTheme.titleSmall),
+                ),
+                // Restaurant is the anchor of every post — always visible.
+                GestureDetector(
+                  onTap: onRestaurantTap,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.storefront_outlined,
+                        size: 13,
+                        color: AppColors.primaryDark,
+                      ),
+                      const SizedBox(width: 3),
+                      Flexible(
+                        child: Text(
+                          post.dishName != null
+                              ? '${post.dishName} · ${post.restaurantName}'
+                              : post.restaurantName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall
+                              ?.copyWith(color: AppColors.primaryDark),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.more_horiz_rounded),
+            onPressed: () {},
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RatingPriceRow extends StatelessWidget {
+  const _RatingPriceRow({required this.post});
+
+  final Post post;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        if (post.rating != null) ...[
+          const Icon(Icons.star_rounded, size: 18, color: AppColors.ratingStar),
+          const SizedBox(width: 2),
+          Text(
+            post.rating!.toStringAsFixed(1),
+            style: theme.textTheme.titleSmall,
+          ),
+        ],
+        if (post.rating != null && post.price != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+            child: Text('·', style: theme.textTheme.bodySmall),
+          ),
+        if (post.price != null)
+          Text(
+            Formatters.price(post.price!, post.currencyCode),
+            style: theme.textTheme.titleSmall
+                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          ),
+      ],
+    );
+  }
+}
+
+class _Caption extends StatelessWidget {
+  const _Caption({required this.authorName, required this.caption});
+
+  final String authorName;
+  final String caption;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(
+            text: '$authorName ',
+            style: theme.textTheme.titleSmall,
+          ),
+          TextSpan(text: caption, style: theme.textTheme.bodyMedium),
+        ],
+      ),
+      maxLines: 3,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
+    required this.icon,
+    this.label,
+    this.color,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final String? label;
+  final Color? color;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.pill),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.xs,
+          vertical: AppSpacing.xs,
+        ),
+        child: Row(
+          children: [
+            AnimatedSwitcher(
+              duration: AppDurations.fast,
+              transitionBuilder: (child, anim) =>
+                  ScaleTransition(scale: anim, child: child),
+              child: Icon(
+                icon,
+                key: ValueKey(icon),
+                size: 26,
+                color: color ?? theme.colorScheme.onSurface,
+              ),
+            ),
+            if (label != null) ...[
+              const SizedBox(width: 4),
+              Text(label!, style: theme.textTheme.titleSmall),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}

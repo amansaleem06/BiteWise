@@ -1,0 +1,261 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- Helpers ----------
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function userRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && userRole() == 'admin';
+    }
+
+    // ---------- Users ----------
+    match /users/{uid} {
+      // Public profiles: any signed-in user can read.
+      allow read: if isSignedIn();
+
+      // A user may create their own profile document, with role locked to 'user'.
+      allow create: if isSelf(uid)
+        && request.resource.data.role == 'user'
+        && request.resource.data.email is string
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() <= 50;
+
+      // A user may update their own profile but never role or counters —
+      // all counters are maintained exclusively by Cloud Functions
+      // (Admin SDK bypasses these rules).
+      allow update: if isAdmin()
+        || (isSelf(uid)
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.followerCount == resource.data.followerCount
+          && request.resource.data.followingCount == resource.data.followingCount
+          && request.resource.data.postCount == resource.data.postCount);
+
+      // Self-delete required for App Store account deletion (Guideline 5.1.1).
+      // Cascade cleanup of posts/follows continues in Cloud Functions.
+      allow delete: if isAdmin() || isSelf(uid);
+    }
+
+    // ---------- User subcollections ----------
+    match /users/{uid}/bookmarks/{postId} {
+      // Bookmarks are private to their owner.
+      allow read, write: if isSelf(uid);
+    }
+
+    match /users/{uid}/following/{targetUid} {
+      allow read: if isSignedIn();
+      allow create, delete: if isSelf(uid) && uid != targetUid;
+    }
+
+    match /users/{uid}/followers/{followerUid} {
+      allow read: if isSignedIn();
+      // Mirrored server-side from the `following` edge — clients never
+      // write here.
+      allow write: if false;
+    }
+
+    // FCM device tokens — private to their owner.
+    match /users/{uid}/tokens/{token} {
+      allow read, write: if isSelf(uid);
+    }
+
+    // Notifications — created only by Cloud Functions; the owner may read,
+    // mark as read, and delete.
+    match /users/{uid}/notifications/{notificationId} {
+      allow read, delete: if isSelf(uid);
+      allow create: if false;
+      allow update: if isSelf(uid)
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['read'])
+        && request.resource.data.read == true;
+    }
+
+    // ---------- Posts ----------
+    match /posts/{postId} {
+      allow read: if isSignedIn();
+
+      allow create: if isSignedIn()
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.restaurantId is string
+        && request.resource.data.caption is string
+        && request.resource.data.caption.size() <= 2200
+        && request.resource.data.media is list
+        && request.resource.data.media.size() >= 1
+        && request.resource.data.media.size() <= 10
+        && request.resource.data.likeCount == 0
+        && request.resource.data.commentCount == 0
+        && request.resource.data.trendingScore == 0
+        && (!('rating' in request.resource.data)
+            || request.resource.data.rating == null
+            || (request.resource.data.rating >= 1.0
+                && request.resource.data.rating <= 5.0));
+
+      // Author may edit content fields only; counters and trendingScore
+      // are maintained exclusively by Cloud Functions.
+      allow update: if isSignedIn()
+        && request.auth.uid == resource.data.authorId
+        && request.resource.data.authorId == resource.data.authorId
+        && request.resource.data.likeCount == resource.data.likeCount
+        && request.resource.data.commentCount == resource.data.commentCount;
+
+      allow delete: if isSignedIn()
+        && (request.auth.uid == resource.data.authorId || isAdmin());
+
+      // ---------- Likes ----------
+      match /likes/{uid} {
+        allow read: if isSignedIn();
+        allow create, delete: if isSelf(uid);
+      }
+
+      // ---------- Comments ----------
+      match /comments/{commentId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn()
+          && request.resource.data.authorId == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() >= 1
+          && request.resource.data.text.size() <= 500;
+        allow delete: if isSignedIn()
+          && (request.auth.uid == resource.data.authorId || isAdmin());
+        allow update: if false; // comments are immutable
+      }
+    }
+
+    // ---------- Restaurants ----------
+    match /restaurants/{restaurantId} {
+      allow read: if isSignedIn();
+
+      // Anyone signed-in may create an *unclaimed* stub while posting.
+      allow create: if isSignedIn()
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 2
+        && request.resource.data.name.size() <= 80
+        && request.resource.data.nameLower == request.resource.data.name.lower()
+        && request.resource.data.claimed == false
+        && request.resource.data.ownerId == null
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.followerCount == 0
+        && request.resource.data.postCount == 0;
+
+      // Owner/admin edits arrive with the claiming milestone. Counters and
+      // rating aggregates are maintained exclusively by Cloud Functions.
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+
+      match /followers/{uid} {
+        allow read: if isSignedIn();
+        allow create, delete: if isSelf(uid);
+      }
+    }
+
+    // ---------- Chats ----------
+    match /chats/{chatId} {
+      function isParticipant() {
+        return isSignedIn() && request.auth.uid in resource.data.participants;
+      }
+
+      allow read: if isParticipant();
+
+      // Creating a chat: exactly two participants including yourself,
+      // and the doc id must be the sorted uid pair.
+      allow create: if isSignedIn()
+        && request.resource.data.participants is list
+        && request.resource.data.participants.size() == 2
+        && request.auth.uid in request.resource.data.participants
+        && chatId == request.resource.data.participants[0]
+            + '_' + request.resource.data.participants[1]
+        && request.resource.data.participants[0]
+            < request.resource.data.participants[1];
+
+      // Participants may update receipts/typing/lastMessage/info but never
+      // the participant list itself.
+      allow update: if isParticipant()
+        && request.resource.data.participants == resource.data.participants;
+
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        function parentChat() {
+          return get(/databases/$(database)/documents/chats/$(chatId)).data;
+        }
+
+        allow read: if isSignedIn()
+          && request.auth.uid in parentChat().participants;
+
+        allow create: if isSignedIn()
+          && request.resource.data.senderId == request.auth.uid
+          && request.auth.uid in parentChat().participants
+          && (
+            (request.resource.data.type == 'text'
+              && request.resource.data.text is string
+              && request.resource.data.text.size() >= 1
+              && request.resource.data.text.size() <= 2000)
+            ||
+            (request.resource.data.type == 'image'
+              && request.resource.data.imageUrl is string)
+          );
+
+        // Messages are immutable.
+        allow update, delete: if false;
+      }
+    }
+
+    // ---------- Reservations ----------
+    match /reservations/{reservationId} {
+      function restaurantOwner(restaurantId) {
+        return get(/databases/$(database)/documents/restaurants/$(restaurantId)).data.ownerId;
+      }
+
+      allow read: if isSignedIn()
+        && (request.auth.uid == resource.data.userId
+            || request.auth.uid == restaurantOwner(resource.data.restaurantId)
+            || isAdmin());
+
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.restaurantId is string
+        && request.resource.data.partySize is int
+        && request.resource.data.partySize >= 1
+        && request.resource.data.partySize <= 20
+        && request.resource.data.dateTime is timestamp
+        && request.resource.data.dateTime > request.time;
+
+      // Diner may cancel their own active booking; the restaurant owner
+      // may confirm/reject/complete. Nothing else changes.
+      allow update: if isSignedIn()
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'updatedAt'])
+        && (
+          (request.auth.uid == resource.data.userId
+            && request.resource.data.status == 'cancelled'
+            && (resource.data.status == 'pending'
+                || resource.data.status == 'confirmed'))
+          ||
+          (request.auth.uid == restaurantOwner(resource.data.restaurantId)
+            && request.resource.data.status in
+                ['confirmed', 'rejected', 'completed'])
+          || isAdmin()
+        );
+
+      allow delete: if isAdmin();
+    }
+
+    // Future collections (dishes)
+    // are added per-milestone with their own rules. Default deny:
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
