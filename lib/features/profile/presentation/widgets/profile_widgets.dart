@@ -46,14 +46,32 @@ class ProfileHeader extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          Text(user.displayName, style: theme.textTheme.titleLarge),
+          Text(
+            user.isBusiness
+                ? (user.businessName?.isNotEmpty == true
+                    ? user.businessName!
+                    : user.displayName)
+                : user.displayName,
+            style: theme.textTheme.titleLarge,
+          ),
+          if (user.isBusiness &&
+              user.businessName != null &&
+              user.businessName != user.displayName) ...[
+            const SizedBox(height: AppSpacing.xxs),
+            Text(
+              user.displayName,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
           const SizedBox(height: AppSpacing.xxs),
           Wrap(
             spacing: AppSpacing.xs,
             runSpacing: AppSpacing.xxs,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              user.role == UserRole.restaurantOwner
+              user.isBusiness
                   ? IdentityBadge.restaurantOwner()
                   : IdentityBadge.member(),
               if (user.username != null && user.username!.isNotEmpty)
@@ -68,6 +86,16 @@ class ProfileHeader extends StatelessWidget {
           if (user.bio != null && user.bio!.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.xxs),
             Text(user.bio!, style: theme.textTheme.bodyMedium),
+          ],
+          if (user.isBusiness && user.ownedRestaurantId != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            OutlinedButton.icon(
+              onPressed: () => context.push(
+                Routes.restaurantPath(user.ownedRestaurantId!),
+              ),
+              icon: const Icon(Icons.storefront_outlined, size: 18),
+              label: const Text('View restaurant page'),
+            ),
           ],
           if (trailing != null) ...[
             const SizedBox(height: AppSpacing.md),

@@ -30,11 +30,20 @@ class AuthController extends AsyncNotifier<void> {
   Future<bool> signIn(String email, String password) =>
       _run(() => _repo.signInWithEmail(email: email, password: password));
 
-  Future<bool> signUp(String name, String email, String password) => _run(
+  Future<bool> signUp(
+    String name,
+    String email,
+    String password, {
+    UserRole role = UserRole.user,
+    String? businessName,
+  }) =>
+      _run(
         () => _repo.signUpWithEmail(
           displayName: name,
           email: email,
           password: password,
+          role: role,
+          businessName: businessName,
         ),
       );
 

@@ -1,4 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
@@ -9,6 +11,7 @@ import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/services/location_service.dart';
+import '../../../../core/widgets/async_error_view.dart';
 import '../../../restaurants/domain/entities/restaurant.dart';
 import '../providers/explore_providers.dart';
 
@@ -34,8 +37,13 @@ final nearbyProvider = FutureProvider.autoDispose<NearbyState>((ref) async {
 });
 
 /// Google Map of nearby restaurants with a tappable preview card.
+///
+/// [isActive] must be true only when the Nearby tab is visible so the map
+/// platform view is not kept alive under other Explore tabs / main tabs.
 class NearbyMapTab extends ConsumerStatefulWidget {
-  const NearbyMapTab({super.key});
+  const NearbyMapTab({super.key, this.isActive = true});
+
+  final bool isActive;
 
   @override
   ConsumerState<NearbyMapTab> createState() => _NearbyMapTabState();
@@ -46,26 +54,56 @@ class _NearbyMapTabState extends ConsumerState<NearbyMapTab> {
 
   @override
   Widget build(BuildContext context) {
+    if (!widget.isActive) {
+      return const Center(
+        child: Text('Swipe to Nearby to load the map'),
+      );
+    }
+
     final theme = Theme.of(context);
     final nearbyAsync = ref.watch(nearbyProvider);
 
     return nearbyAsync.when(
       loading: () =>
           const Center(child: CircularProgressIndicator(strokeWidth: 2.5)),
-      error: (_, __) => _Message(
-        icon: Icons.cloud_off_rounded,
+      error: (error, stack) => AsyncErrorView(
+        error: error,
+        stackTrace: stack,
         title: 'Couldn\'t load the map',
-        subtitle: 'Check your connection and try again.',
         onRetry: () => ref.invalidate(nearbyProvider),
       ),
       data: (nearby) {
         if (nearby.position == null) {
-          return _Message(
-            icon: Icons.location_off_rounded,
-            title: 'Location unavailable',
-            subtitle:
-                'Allow location access to see restaurants near you.',
-            onRetry: () => ref.invalidate(nearbyProvider),
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.xl),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.location_off_rounded,
+                    size: 48,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Text('Location unavailable',
+                      style: theme.textTheme.titleLarge,),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'Allow location access to see restaurants near you.',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  TextButton(
+                    onPressed: () => ref.invalidate(nearbyProvider),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
           );
         }
 
@@ -81,17 +119,24 @@ class _NearbyMapTabState extends ConsumerState<NearbyMapTab> {
               myLocationEnabled: true,
               myLocationButtonEnabled: true,
               zoomControlsEnabled: false,
+              // Win the gesture arena against the parent TabBarView.
+              gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
+                Factory<EagerGestureRecognizer>(EagerGestureRecognizer.new),
+                Factory<PanGestureRecognizer>(PanGestureRecognizer.new),
+                Factory<ScaleGestureRecognizer>(ScaleGestureRecognizer.new),
+              },
               onTap: (_) => setState(() => _selected = null),
               markers: {
                 for (final r in nearby.restaurants)
-                  Marker(
-                    markerId: MarkerId(r.id),
-                    position: LatLng(r.latitude!, r.longitude!),
-                    icon: BitmapDescriptor.defaultMarkerWithHue(
-                      BitmapDescriptor.hueOrange,
+                  if (r.latitude != null && r.longitude != null)
+                    Marker(
+                      markerId: MarkerId(r.id),
+                      position: LatLng(r.latitude!, r.longitude!),
+                      icon: BitmapDescriptor.defaultMarkerWithHue(
+                        BitmapDescriptor.hueOrange,
+                      ),
+                      onTap: () => setState(() => _selected = r),
                     ),
-                    onTap: () => setState(() => _selected = r),
-                  ),
               },
             ),
             if (nearby.restaurants.isEmpty)
@@ -197,47 +242,6 @@ class _RestaurantPreviewCard extends StatelessWidget {
               const Icon(Icons.chevron_right_rounded),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _Message extends StatelessWidget {
-  const _Message({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onRetry,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 48, color: theme.colorScheme.onSurfaceVariant),
-            const SizedBox(height: AppSpacing.md),
-            Text(title, style: theme.textTheme.titleLarge),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              subtitle,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            TextButton(onPressed: onRetry, child: const Text('Retry')),
-          ],
         ),
       ),
     );

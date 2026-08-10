@@ -136,21 +136,30 @@ service cloud.firestore {
     match /restaurants/{restaurantId} {
       allow read: if isSignedIn();
 
-      // Anyone signed-in may create an *unclaimed* stub while posting.
+      // Unclaimed stubs (from posting) or claimed pages (business signup).
       allow create: if isSignedIn()
         && request.resource.data.name is string
         && request.resource.data.name.size() >= 2
         && request.resource.data.name.size() <= 80
         && request.resource.data.nameLower == request.resource.data.name.lower()
-        && request.resource.data.claimed == false
-        && request.resource.data.ownerId == null
         && request.resource.data.createdBy == request.auth.uid
         && request.resource.data.followerCount == 0
-        && request.resource.data.postCount == 0;
+        && request.resource.data.postCount == 0
+        && (
+          (request.resource.data.claimed == false
+            && request.resource.data.ownerId == null)
+          || (request.resource.data.claimed == true
+            && request.resource.data.ownerId == request.auth.uid)
+        );
 
-      // Owner/admin edits arrive with the claiming milestone. Counters and
-      // rating aggregates are maintained exclusively by Cloud Functions.
-      allow update: if isAdmin();
+      // Owners may edit profile fields; counters stay Cloud Function–owned.
+      allow update: if isAdmin()
+        || (isSignedIn()
+          && resource.data.ownerId == request.auth.uid
+          && request.resource.data.ownerId == resource.data.ownerId
+          && request.resource.data.claimed == resource.data.claimed
+          && request.resource.data.followerCount == resource.data.followerCount
+          && request.resource.data.postCount == resource.data.postCount);
       allow delete: if isAdmin();
 
       match /followers/{uid} {

@@ -6,6 +6,7 @@ import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/errors/error_text.dart';
 import '../providers/feed_providers.dart';
 import 'feed_shimmer.dart';
 import 'post_card.dart';
@@ -14,9 +15,10 @@ import 'post_card.dart';
 /// error + empty states, pull-to-refresh, and early prefetch of the next
 /// page (400px before the end).
 class FeedList extends ConsumerWidget {
-  const FeedList({super.key, required this.tab});
+  const FeedList({super.key, required this.tab, this.cuisineFilter});
 
   final FeedTab tab;
+  final String? cuisineFilter;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -25,15 +27,29 @@ class FeedList extends ConsumerWidget {
 
     return feedAsync.when(
       loading: () => const FeedShimmer(),
-      error: (_, __) => _MessageView(
+      error: (error, _) => _MessageView(
         icon: Icons.cloud_off_rounded,
         title: 'Couldn\'t load your feed',
-        subtitle: AppStrings.genericError,
+        subtitle: userMessageFrom(error),
         actionLabel: AppStrings.retry,
         onAction: controller.refresh,
       ),
       data: (feed) {
-        if (feed.posts.isEmpty) {
+        final posts = cuisineFilter == null
+            ? feed.posts
+            : feed.posts
+                .where(
+                  (p) => p.tags.any(
+                    (t) =>
+                        t.toLowerCase() == cuisineFilter!.toLowerCase() ||
+                        t.toLowerCase().contains(
+                              cuisineFilter!.toLowerCase(),
+                            ),
+                  ),
+                )
+                .toList();
+
+        if (posts.isEmpty) {
           return RefreshIndicator(
             onRefresh: controller.refresh,
             color: AppColors.primary,
@@ -46,12 +62,16 @@ class FeedList extends ConsumerWidget {
                     icon: tab == FeedTab.following
                         ? Icons.group_outlined
                         : Icons.restaurant_outlined,
-                    title: tab == FeedTab.following
-                        ? 'Nothing here yet'
-                        : 'No posts yet',
-                    subtitle: tab == FeedTab.following
-                        ? 'Follow food lovers and restaurants to build your feed.'
-                        : 'Be the first to share a delicious bite.',
+                    title: cuisineFilter != null
+                        ? 'No $cuisineFilter posts'
+                        : tab == FeedTab.following
+                            ? 'Nothing here yet'
+                            : 'No posts yet',
+                    subtitle: cuisineFilter != null
+                        ? 'Try another cuisine, or tag a post when you publish.'
+                        : tab == FeedTab.following
+                            ? 'Follow food lovers and restaurants to build your feed.'
+                            : 'Be the first to share a delicious bite.',
                   ),
                 ),
               ),
@@ -72,9 +92,9 @@ class FeedList extends ConsumerWidget {
             },
             child: ListView.builder(
               physics: const AlwaysScrollableScrollPhysics(),
-              itemCount: feed.posts.length + (feed.isLoadingMore ? 1 : 0),
+              itemCount: posts.length + (feed.isLoadingMore ? 1 : 0),
               itemBuilder: (context, index) {
-                if (index >= feed.posts.length) {
+                if (index >= posts.length) {
                   return const Padding(
                     padding: EdgeInsets.all(AppSpacing.lg),
                     child: Center(
@@ -86,7 +106,7 @@ class FeedList extends ConsumerWidget {
                     ),
                   );
                 }
-                final post = feed.posts[index];
+                final post = posts[index];
                 return PostCard(
                   post: post,
                   onLike: () => controller.toggleLike(post.id),

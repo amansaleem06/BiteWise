@@ -10,6 +10,7 @@ import '../../../../core/utils/validators.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/app_text_field.dart';
+import '../../domain/entities/app_user.dart';
 import '../providers/auth_providers.dart';
 import '../widgets/auth_scaffold.dart';
 
@@ -23,13 +24,16 @@ class SignUpScreen extends ConsumerStatefulWidget {
 class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   final _formKey = GlobalKey<FormState>();
   final _name = TextEditingController();
+  final _business = TextEditingController();
   final _email = TextEditingController();
   final _password = TextEditingController();
   final _confirm = TextEditingController();
+  UserRole _role = UserRole.user;
 
   @override
   void dispose() {
     _name.dispose();
+    _business.dispose();
     _email.dispose();
     _password.dispose();
     _confirm.dispose();
@@ -39,9 +43,14 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     FocusScope.of(context).unfocus();
-    await ref
-        .read(authControllerProvider.notifier)
-        .signUp(_name.text, _email.text, _password.text);
+    await ref.read(authControllerProvider.notifier).signUp(
+          _name.text,
+          _email.text,
+          _password.text,
+          role: _role,
+          businessName:
+              _role == UserRole.restaurantOwner ? _business.text : null,
+        );
     // Navigation is handled by the router's auth redirect.
   }
 
@@ -49,6 +58,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final authState = ref.watch(authControllerProvider);
+    final isBusiness = _role == UserRole.restaurantOwner;
 
     ref.listen(authControllerProvider, (_, next) {
       if (next.hasError && !next.isLoading) {
@@ -59,7 +69,31 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     return AuthScaffold(
       children: [
         Text(AppStrings.signUp, style: theme.textTheme.headlineLarge),
-        const SizedBox(height: AppSpacing.xl),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          'Choose how you\'ll use BiteWise',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        SegmentedButton<UserRole>(
+          segments: const [
+            ButtonSegment(
+              value: UserRole.user,
+              label: Text('Foodie'),
+              icon: Icon(Icons.person_outline_rounded),
+            ),
+            ButtonSegment(
+              value: UserRole.restaurantOwner,
+              label: Text('Business'),
+              icon: Icon(Icons.storefront_outlined),
+            ),
+          ],
+          selected: {_role},
+          onSelectionChanged: (value) => setState(() => _role = value.first),
+        ),
+        const SizedBox(height: AppSpacing.lg),
         Form(
           key: _formKey,
           child: AutofillGroup(
@@ -67,12 +101,26 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 AppTextField(
-                  label: AppStrings.displayName,
+                  label: isBusiness ? 'Owner / contact name' : AppStrings.displayName,
                   controller: _name,
                   validator: Validators.displayName,
                   textInputAction: TextInputAction.next,
                   autofillHints: const [AutofillHints.name],
                 ),
+                if (isBusiness) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  AppTextField(
+                    label: 'Restaurant / business name',
+                    controller: _business,
+                    validator: (v) {
+                      final t = v?.trim() ?? '';
+                      if (t.length < 2) return 'Enter your business name';
+                      if (t.length > 80) return 'Name is too long';
+                      return null;
+                    },
+                    textInputAction: TextInputAction.next,
+                  ),
+                ],
                 const SizedBox(height: AppSpacing.md),
                 AppTextField(
                   label: AppStrings.email,
@@ -107,7 +155,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         ),
         const SizedBox(height: AppSpacing.lg),
         AppButton(
-          label: AppStrings.signUp,
+          label: isBusiness ? 'Create business account' : AppStrings.signUp,
           isLoading: authState.isLoading,
           onPressed: _submit,
         ),
@@ -115,8 +163,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(AppStrings.hasAccountPrompt,
-                style: theme.textTheme.bodyMedium,),
+            Text(
+              AppStrings.hasAccountPrompt,
+              style: theme.textTheme.bodyMedium,
+            ),
             TextButton(
               onPressed: () => context.pushReplacement(Routes.signIn),
               child: const Text(AppStrings.signIn),

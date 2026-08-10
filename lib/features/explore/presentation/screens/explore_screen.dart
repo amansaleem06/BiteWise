@@ -7,75 +7,144 @@ import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/constants/cuisines.dart';
+import '../../../../core/widgets/async_error_view.dart';
 import '../../../feed/domain/entities/post.dart';
 import '../providers/explore_providers.dart';
 import '../widgets/nearby_map_tab.dart';
 import '../widgets/result_tiles.dart';
 
 /// Explore: search entry + Trending / Top Rated / Map.
-class ExploreScreen extends ConsumerWidget {
+class ExploreScreen extends ConsumerStatefulWidget {
   const ExploreScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
+  ConsumerState<ExploreScreen> createState() => _ExploreScreenState();
+}
 
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text(AppStrings.navExplore),
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(104),
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.md,
-                    0,
-                    AppSpacing.md,
-                    AppSpacing.sm,
-                  ),
-                  child: GestureDetector(
-                    onTap: () => context.push(Routes.search),
-                    child: AbsorbPointer(
-                      child: TextField(
-                        enabled: false,
-                        decoration: InputDecoration(
-                          hintText: 'Search restaurants, people, #tags…',
-                          prefixIcon: const Icon(Icons.search_rounded),
-                          isDense: true,
-                          fillColor: theme.colorScheme.surface,
-                        ),
+class _ExploreScreenState extends ConsumerState<ExploreScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabs;
+  String? _cuisineFilter;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabs = TabController(length: 3, vsync: this);
+    _tabs.addListener(() {
+      if (!_tabs.indexIsChanging) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabs.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final nearbyActive = _tabs.index == 2;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(AppStrings.navExplore),
+        bottom: PreferredSize(
+          preferredSize: Size.fromHeight(nearbyActive ? 104 : 152),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  0,
+                  AppSpacing.md,
+                  AppSpacing.sm,
+                ),
+                child: GestureDetector(
+                  onTap: () => context.push(Routes.search),
+                  child: AbsorbPointer(
+                    child: TextField(
+                      enabled: false,
+                      decoration: InputDecoration(
+                        hintText: 'Search restaurants, people, #tags…',
+                        prefixIcon: const Icon(Icons.search_rounded),
+                        isDense: true,
+                        fillColor: theme.colorScheme.surface,
                       ),
                     ),
                   ),
                 ),
-                TabBar(
-                  labelStyle: theme.textTheme.titleSmall,
-                  indicatorSize: TabBarIndicatorSize.label,
-                  dividerHeight: 0.5,
-                  dividerColor: theme.colorScheme.outline,
-                  tabs: const [
-                    Tab(text: 'Trending'),
-                    Tab(text: 'Top Rated'),
-                    Tab(text: 'Nearby'),
-                  ],
+              ),
+              if (!nearbyActive)
+                SizedBox(
+                  height: 44,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                    ),
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(right: AppSpacing.xs),
+                        child: FilterChip(
+                          label: const Text('All'),
+                          selected: _cuisineFilter == null,
+                          onSelected: (_) =>
+                              setState(() => _cuisineFilter = null),
+                        ),
+                      ),
+                      for (final cuisine in Cuisines.all)
+                        Padding(
+                          padding: const EdgeInsets.only(right: AppSpacing.xs),
+                          child: FilterChip(
+                            label: Text(cuisine),
+                            selected: _cuisineFilter == cuisine,
+                            onSelected: (_) => setState(
+                              () => _cuisineFilter =
+                                  _cuisineFilter == cuisine ? null : cuisine,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              ],
-            ),
+              TabBar(
+                controller: _tabs,
+                labelStyle: theme.textTheme.titleSmall,
+                indicatorSize: TabBarIndicatorSize.label,
+                dividerHeight: 0.5,
+                dividerColor: theme.colorScheme.outline,
+                tabs: const [
+                  Tab(text: 'Trending'),
+                  Tab(text: 'Top Rated'),
+                  Tab(text: 'Nearby'),
+                ],
+              ),
+            ],
           ),
         ),
-        body: const TabBarView(
-          children: [_TrendingTab(), _TopRatedTab(), NearbyMapTab()],
-        ),
+      ),
+      body: TabBarView(
+        controller: _tabs,
+        // Disable horizontal swipe on Nearby so map pan/zoom wins.
+        physics: nearbyActive
+            ? const NeverScrollableScrollPhysics()
+            : const PageScrollPhysics(),
+        children: [
+          _TrendingTab(cuisineFilter: _cuisineFilter),
+          const _TopRatedTab(),
+          NearbyMapTab(isActive: nearbyActive),
+        ],
       ),
     );
   }
 }
 
 class _TrendingTab extends ConsumerWidget {
-  const _TrendingTab();
+  const _TrendingTab({this.cuisineFilter});
+
+  final String? cuisineFilter;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -84,17 +153,31 @@ class _TrendingTab extends ConsumerWidget {
     return trendingAsync.when(
       loading: () =>
           const Center(child: CircularProgressIndicator(strokeWidth: 2.5)),
-      error: (_, __) => Center(
-        child: TextButton(
-          onPressed: () => ref.invalidate(trendingPostsProvider),
-          child: const Text(AppStrings.retry),
-        ),
+      error: (error, stack) => AsyncErrorView(
+        error: error,
+        stackTrace: stack,
+        title: 'Couldn\'t load trending',
+        onRetry: () => ref.invalidate(trendingPostsProvider),
       ),
       data: (posts) {
-        if (posts.isEmpty) {
+        final filtered = cuisineFilter == null
+            ? posts
+            : posts
+                .where(
+                  (p) => p.tags.any(
+                    (t) =>
+                        t.toLowerCase() == cuisineFilter!.toLowerCase() ||
+                        t.toLowerCase().contains(cuisineFilter!.toLowerCase()),
+                  ),
+                )
+                .toList();
+        if (filtered.isEmpty) {
           return Center(
             child: Text(
-              'Nothing trending yet — start posting!',
+              cuisineFilter == null
+                  ? 'Nothing trending yet — start posting!'
+                  : 'No $cuisineFilter posts yet. Tag a post with this cuisine.',
+              textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -112,8 +195,8 @@ class _TrendingTab extends ConsumerWidget {
               mainAxisSpacing: 2,
               crossAxisSpacing: 2,
             ),
-            itemCount: posts.length,
-            itemBuilder: (context, i) => _TrendingTile(post: posts[i]),
+            itemCount: filtered.length,
+            itemBuilder: (context, i) => _TrendingTile(post: filtered[i]),
           ),
         );
       },
@@ -187,11 +270,11 @@ class _TopRatedTab extends ConsumerWidget {
     return topRatedAsync.when(
       loading: () =>
           const Center(child: CircularProgressIndicator(strokeWidth: 2.5)),
-      error: (_, __) => Center(
-        child: TextButton(
-          onPressed: () => ref.invalidate(topRatedRestaurantsProvider),
-          child: const Text(AppStrings.retry),
-        ),
+      error: (error, stack) => AsyncErrorView(
+        error: error,
+        stackTrace: stack,
+        title: 'Couldn\'t load top rated',
+        onRetry: () => ref.invalidate(topRatedRestaurantsProvider),
       ),
       data: (restaurants) {
         if (restaurants.isEmpty) {
@@ -222,4 +305,3 @@ class _TopRatedTab extends ConsumerWidget {
     );
   }
 }
-

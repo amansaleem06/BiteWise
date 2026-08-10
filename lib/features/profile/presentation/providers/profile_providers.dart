@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../core/errors/error_text.dart';
 import '../../../feed/presentation/providers/feed_providers.dart';
 import '../../data/repositories/firestore_user_repository.dart';
 import '../../domain/entities/user_profile.dart';
@@ -18,15 +20,16 @@ class UserProfileController
   @override
   Future<UserProfile> build(String uid) => _repo.getById(uid);
 
-  Future<void> toggleFollow() async {
+  /// Returns null on success, or a user-facing error message.
+  Future<String?> toggleFollow() async {
     final current = state.valueOrNull;
-    if (current == null) return;
+    if (current == null) return 'Profile not loaded yet.';
 
     final delta = current.isFollowedByMe ? -1 : 1;
     final next = current.copyWith(
       isFollowedByMe: !current.isFollowedByMe,
       user: current.user.copyWithCounts(
-        followerCount: current.user.followerCount + delta,
+        followerCount: (current.user.followerCount + delta).clamp(0, 1 << 30),
       ),
     );
     state = AsyncData(next);
@@ -34,8 +37,11 @@ class UserProfileController
       await _repo.setFollowing(arg, following: next.isFollowedByMe);
       // Following feed contents changed.
       ref.invalidate(feedControllerProvider(FeedTab.following));
-    } catch (_) {
+      return null;
+    } catch (e, st) {
+      debugPrintStack(stackTrace: st, label: 'Follow failed: $e');
       state = AsyncData(current);
+      return userMessageFrom(e);
     }
   }
 }

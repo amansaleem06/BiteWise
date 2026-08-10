@@ -8,6 +8,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/widgets/async_error_view.dart';
 import '../../../explore/presentation/providers/explore_providers.dart';
 import '../../domain/entities/chat.dart';
 import '../providers/chat_providers.dart';
@@ -36,11 +37,11 @@ class MessagesScreen extends ConsumerWidget {
       body: chatsAsync.when(
         loading: () =>
             const Center(child: CircularProgressIndicator(strokeWidth: 2.5)),
-        error: (_, __) => Center(
-          child: TextButton(
-            onPressed: () => ref.invalidate(chatsProvider),
-            child: const Text(AppStrings.retry),
-          ),
+        error: (error, stack) => AsyncErrorView(
+          error: error,
+          stackTrace: stack,
+          title: 'Couldn\'t load messages',
+          onRetry: () => ref.invalidate(chatsProvider),
         ),
         data: (chats) {
           if (chats.isEmpty) {

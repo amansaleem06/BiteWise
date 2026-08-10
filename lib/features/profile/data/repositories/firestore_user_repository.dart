@@ -37,9 +37,11 @@ class FirestoreUserRepository implements UserRepository {
 
   @override
   Future<UserProfile> getById(String uid) async {
+    // Read the edge the client owns (`following`). The reverse `followers`
+    // doc is mirrored by Cloud Functions and can lag or be missing.
     final results = await Future.wait([
       _users.doc(uid).get(),
-      _users.doc(uid).collection('followers').doc(_uid).get(),
+      _users.doc(_uid).collection('following').doc(uid).get(),
     ]);
     if (!results[0].exists) throw const AppException('User not found');
     return UserProfile(
@@ -102,11 +104,15 @@ class FirestoreUserRepository implements UserRepository {
     if (me == targetUid) throw const AppException("You can't follow yourself");
 
     // Single canonical edge write. A Cloud Function mirrors the reverse
-    // `followers` edge and maintains both counters.
+    // `followers` edge and maintains both counters. Rules allow create/delete
+    // only (not update), so skip the write when the edge already exists.
     final myFollowingRef =
         _users.doc(me).collection('following').doc(targetUid);
     if (following) {
-      await myFollowingRef.set({'createdAt': FieldValue.serverTimestamp()});
+      final existing = await myFollowingRef.get();
+      if (!existing.exists) {
+        await myFollowingRef.set({'createdAt': FieldValue.serverTimestamp()});
+      }
     } else {
       await myFollowingRef.delete();
     }

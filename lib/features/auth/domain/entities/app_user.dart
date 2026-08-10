@@ -22,6 +22,8 @@ class AppUser extends Equatable {
     this.username,
     this.photoUrl,
     this.bio,
+    this.businessName,
+    this.ownedRestaurantId,
     this.emailVerified = false,
     this.followerCount = 0,
     this.followingCount = 0,
@@ -36,17 +38,25 @@ class AppUser extends Equatable {
   final String? username;
   final String? photoUrl;
   final String? bio;
+
+  /// Set for [UserRole.restaurantOwner] accounts.
+  final String? businessName;
+  final String? ownedRestaurantId;
   final bool emailVerified;
   final int followerCount;
   final int followingCount;
   final int postCount;
   final DateTime? createdAt;
 
+  bool get isBusiness => role == UserRole.restaurantOwner;
+
   AppUser copyWith({
     String? displayName,
     String? username,
     String? photoUrl,
     String? bio,
+    String? businessName,
+    String? ownedRestaurantId,
     bool? emailVerified,
   }) =>
       AppUser(
@@ -57,6 +67,8 @@ class AppUser extends Equatable {
         username: username ?? this.username,
         photoUrl: photoUrl ?? this.photoUrl,
         bio: bio ?? this.bio,
+        businessName: businessName ?? this.businessName,
+        ownedRestaurantId: ownedRestaurantId ?? this.ownedRestaurantId,
         emailVerified: emailVerified ?? this.emailVerified,
         followerCount: followerCount,
         followingCount: followingCount,
@@ -78,6 +90,8 @@ class AppUser extends Equatable {
         username: username,
         photoUrl: photoUrl,
         bio: bio,
+        businessName: businessName,
+        ownedRestaurantId: ownedRestaurantId,
         emailVerified: emailVerified,
         followerCount: followerCount ?? this.followerCount,
         followingCount: followingCount ?? this.followingCount,
@@ -88,6 +102,7 @@ class AppUser extends Equatable {
   @override
   List<Object?> get props => [
         uid, email, displayName, role, username, photoUrl, bio,
+        businessName, ownedRestaurantId,
         emailVerified, followerCount, followingCount, postCount,
       ];
 }

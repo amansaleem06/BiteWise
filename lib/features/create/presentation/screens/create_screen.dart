@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../core/constants/cuisines.dart';
 import '../../../../core/utils/locale_currency.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_snackbar.dart';
@@ -26,6 +27,7 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
   final _caption = TextEditingController();
   final _price = TextEditingController();
   final _tags = TextEditingController();
+  final _cuisines = <String>{};
 
   @override
   void dispose() {
@@ -36,12 +38,14 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
     super.dispose();
   }
 
-  List<String> _parseTags() => _tags.text
-      .split(RegExp(r'[,#\s]+'))
-      .map((t) => t.trim().toLowerCase())
-      .where((t) => t.isNotEmpty)
-      .take(10)
-      .toList();
+  List<String> _parseTags() {
+    final freeform = _tags.text
+        .split(RegExp(r'[,#\s]+'))
+        .map((t) => t.trim().toLowerCase())
+        .where((t) => t.isNotEmpty);
+    final cuisineTags = _cuisines.map((c) => c.toLowerCase());
+    return {...cuisineTags, ...freeform}.take(12).toList();
+  }
 
   Future<void> _publish() async {
     FocusScope.of(context).unfocus();
@@ -60,7 +64,8 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
       _caption.clear();
       _price.clear();
       _tags.clear();
-      AppSnackbar.success(context, 'Posted! 🍽️');
+      setState(() => _cuisines.clear());
+      AppSnackbar.success(context, 'Posted!');
       context.go(Routes.home);
     }
   }
@@ -177,11 +182,34 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
                   ],
                 ),
                 const SizedBox(height: AppSpacing.md),
-                const _SectionLabel('Tags'),
+                const _SectionLabel('Cuisine'),
+                const SizedBox(height: AppSpacing.xxs),
+                Wrap(
+                  spacing: AppSpacing.xs,
+                  runSpacing: AppSpacing.xs,
+                  children: [
+                    for (final cuisine in Cuisines.all)
+                      FilterChip(
+                        label: Text(cuisine),
+                        selected: _cuisines.contains(cuisine),
+                        onSelected: (selected) {
+                          setState(() {
+                            if (selected) {
+                              _cuisines.add(cuisine);
+                            } else {
+                              _cuisines.remove(cuisine);
+                            }
+                          });
+                        },
+                      ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                const _SectionLabel('More tags'),
                 TextField(
                   controller: _tags,
                   decoration: const InputDecoration(
-                    hintText: 'pizza italian datenight',
+                    hintText: 'pizza datenight spicy',
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xl),

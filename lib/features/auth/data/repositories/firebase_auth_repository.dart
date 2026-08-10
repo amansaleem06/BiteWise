@@ -74,6 +74,8 @@ class FirebaseAuthRepository implements AuthRepository {
     required String displayName,
     required String email,
     required String password,
+    UserRole role = UserRole.user,
+    String? businessName,
   }) async {
     try {
       final cred = await _auth.createUserWithEmailAndPassword(
@@ -81,11 +83,36 @@ class FirebaseAuthRepository implements AuthRepository {
         password: password,
       );
       final user = cred.user!;
-      await user.updateDisplayName(displayName.trim());
+      final name = displayName.trim();
+      await user.updateDisplayName(name);
+
+      String? restaurantId;
+      if (role == UserRole.restaurantOwner) {
+        final biz = (businessName ?? name).trim();
+        final doc = await _firestore.collection('restaurants').add({
+          'name': biz,
+          'nameLower': biz.toLowerCase(),
+          'claimed': true,
+          'ownerId': user.uid,
+          'createdBy': user.uid,
+          'followerCount': 0,
+          'postCount': 0,
+          'ratingSum': 0,
+          'ratingCount': 0,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+        restaurantId = doc.id;
+      }
+
       await _users.doc(user.uid).set(
             UserModel.newUser(
               email: email.trim(),
-              displayName: displayName.trim(),
+              displayName: name,
+              role: role,
+              businessName: role == UserRole.restaurantOwner
+                  ? (businessName ?? name).trim()
+                  : null,
+              ownedRestaurantId: restaurantId,
               emailVerified: true, // verification gate disabled by product decision
             ),
           );

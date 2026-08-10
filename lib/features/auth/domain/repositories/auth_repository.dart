@@ -17,6 +17,8 @@ abstract interface class AuthRepository {
     required String displayName,
     required String email,
     required String password,
+    UserRole role = UserRole.user,
+    String? businessName,
   });
 
   Future<AppUser> signInWithGoogle();

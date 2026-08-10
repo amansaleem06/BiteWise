@@ -44,18 +44,28 @@ final searchResultsProvider =
   (ref, query) async {
     final q = query.trim();
     if (q.length < 2) return const SearchResults();
-    // Debounce: autoDispose cancels stale lookups while typing.
+
+    var disposed = false;
+    ref.onDispose(() => disposed = true);
     await Future<void>.delayed(const Duration(milliseconds: 350));
+    if (disposed) return const SearchResults();
+
     final repo = ref.read(exploreRepositoryProvider);
-    final results = await Future.wait([
-      repo.searchRestaurants(q),
-      repo.searchUsers(q),
-      repo.searchByTag(q),
+    final tag = q.startsWith('#') ? q.substring(1) : q;
+
+    // Isolate failures so a missing tag composite index can't hide
+    // restaurant/people matches.
+    final settled = await Future.wait([
+      repo.searchRestaurants(q).catchError((_) => <Restaurant>[]),
+      repo.searchUsers(q).catchError((_) => <AppUser>[]),
+      repo.searchByTag(tag).catchError((_) => <Post>[]),
     ]);
+    if (disposed) return const SearchResults();
+
     return SearchResults(
-      restaurants: results[0] as List<Restaurant>,
-      users: results[1] as List<AppUser>,
-      tagPosts: results[2] as List<Post>,
+      restaurants: settled[0] as List<Restaurant>,
+      users: settled[1] as List<AppUser>,
+      tagPosts: settled[2] as List<Post>,
     );
   },
 );
