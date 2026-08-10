@@ -4,7 +4,7 @@
 /// Replace `YOUR_GITHUB_USERNAME` after you create the GitHub repo and enable Pages.
 abstract final class AppLegal {
   static const _pagesBase =
-      'https://YOUR_GITHUB_USERNAME.github.io/bitewise';
+      'https://amansaleem06.github.io/bitewise';
 
   static const privacyPolicyUrl = '$_pagesBase/privacy.html';
   static const termsOfServiceUrl = '$_pagesBase/terms.html';

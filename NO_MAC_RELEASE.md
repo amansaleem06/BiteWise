@@ -70,17 +70,14 @@ git status
 git commit -m "Prepare BiteWise for Codemagic iOS release"
 
 # Create an empty repo on GitHub named "bitewise" (no README), then:
-gh repo create bitewise --private --source=. --remote=origin --push
+git remote add origin https://github.com/amansaleem06/bitewise.git
+git branch -M main
+git push -u origin main
 ```
 
-If you do not use `gh`:
-
-1. Create repo `bitewise` on github.com (empty, no README)
-2. Then:
+If the remote already exists, just:
 
 ```powershell
-git remote add origin https://github.com/YOUR_GITHUB_USERNAME/bitewise.git
-git branch -M main
 git push -u origin main
 ```
 
@@ -91,13 +88,12 @@ git push -u origin main
 3. Branch: `main` / folder: **/docs**
 4. Save
 
-Your public URLs become:
+Your public URLs are:
 
-- `https://YOUR_GITHUB_USERNAME.github.io/bitewise/privacy.html`
-- `https://YOUR_GITHUB_USERNAME.github.io/bitewise/terms.html`
+- `https://amansaleem06.github.io/bitewise/privacy.html`
+- `https://amansaleem06.github.io/bitewise/terms.html`
 
-Then update `lib/core/constants/app_legal.dart`: replace
-`YOUR_GITHUB_USERNAME` with your real username, commit, and push.
+These are already set in `lib/core/constants/app_legal.dart`.
 
 In App Store Connect → App Privacy / App Information, paste the **privacy** URL.
 
@@ -193,8 +189,15 @@ The Codemagic script replaces `YOUR_MAPS_API_KEY_HERE` at build time.
 
 ## What you do next (right now)
 
-1. Enroll / confirm **Apple Developer** membership.
-2. Create the GitHub repo and push (section 3).
-3. Message back with your **GitHub username** (and whether Apple enrollment is
-   Active) so the legal URLs can be finalized and the first Codemagic build
-   can be walked through live.
+1. Enroll / confirm **Apple Developer** membership (~$99/year).
+2. On GitHub, create an **empty** repo named `bitewise` (no README), then:
+
+```powershell
+cd C:\Users\Lenovo\BiteWise\BiteWise
+git remote add origin https://github.com/amansaleem06/bitewise.git
+git push -u origin main
+```
+
+3. Enable **GitHub Pages** on branch `main` / folder `/docs`.
+4. Reply here when Apple membership is **Active** so we can continue with
+   App Store Connect + Codemagic TestFlight.
