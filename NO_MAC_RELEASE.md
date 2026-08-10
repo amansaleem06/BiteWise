@@ -124,12 +124,18 @@ Also update the placeholder in `codemagic.yaml` or override via UI variables
 
 ### Run the iOS build
 
-1. Select workflow **ios-release**
+1. Open the app in Codemagic and choose workflow **iOS App Store build**
+   (`ios-release` from `codemagic.yaml`) — **not** a Flutter Workflow Editor
+   workflow (those often pin build number to `1` and fail App Store upload).
 2. **Start new build**
-3. When green: open App Store Connect → **TestFlight** — the build appears
+3. In the log, confirm a line like `Using CFBundleVersion=3` (or higher)
+4. When green: open App Store Connect → **TestFlight** — the build appears
    after Apple processing (often 5–30 minutes)
 
 Install TestFlight on your iPhone and add yourself as an internal tester.
+
+If upload says the bundle version was already used, you started the wrong
+workflow or an old commit — re-run **iOS App Store build** from latest `main`.
 
 ---
 

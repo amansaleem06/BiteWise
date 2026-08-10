@@ -40,9 +40,36 @@ workflows:
       - name: Flutter analyze
         script: |
           flutter analyze --no-fatal-infos
+      - name: Resolve next iOS build number
+        script: |
+          #!/usr/bin/env bash
+          set -euo pipefail
+          # Prefer App Store Connect over pubspec so uploads never collide
+          # with a previously accepted CFBundleVersion (e.g. build 1).
+          tf="$(app-store-connect get-latest-testflight-build-number \
+            "$APP_STORE_APPLE_ID" --platform IOS 2>/dev/null || true)"
+          as="$(app-store-connect get-latest-app-store-build-number \
+            "$APP_STORE_APPLE_ID" --platform IOS 2>/dev/null || true)"
+          tf="${tf:-0}"
+          as="${as:-0}"
+          latest="$tf"
+          if [ "$as" -gt "$latest" ]; then latest="$as"; fi
+          # Floor at Codemagic project counter so UI-editor builds also advance.
+          if [ "${PROJECT_BUILD_NUMBER:-0}" -gt "$latest" ]; then
+            latest="$PROJECT_BUILD_NUMBER"
+          fi
+          NEXT_BUILD_NUMBER=$((latest + 1))
+          if [ "$NEXT_BUILD_NUMBER" -lt 3 ]; then NEXT_BUILD_NUMBER=3; fi
+          echo "NEXT_BUILD_NUMBER=$NEXT_BUILD_NUMBER" >> "$CM_ENV"
+          echo "Using CFBundleVersion=$NEXT_BUILD_NUMBER (TF=$tf AS=$as PROJECT=$PROJECT_BUILD_NUMBER)"
       - name: Build signed IPA
         script: |
+          #!/usr/bin/env bash
+          set -euo pipefail
+          echo "Building IPA with --build-name=1.0.0 --build-number=${NEXT_BUILD_NUMBER}"
           flutter build ipa --release \
+            --build-name=1.0.0 \
+            --build-number="${NEXT_BUILD_NUMBER}" \
             --export-options-plist=/Users/builder/export_options.plist
     artifacts:
       - build/ios/ipa/*.ipa
