@@ -55,12 +55,12 @@ class DefaultFirebaseOptions {
   );
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyB2uELsUdWqL1mQLKRBX7hnvFoYxjmrp2A',
-    appId: '1:1089295338872:ios:975454ef61e5bb4a774c8d',
+    appId: '1:1089295338872:ios:1a16587ba528ee16774c8d',
     messagingSenderId: '1089295338872',
     projectId: 'bitewise-1d266',
     storageBucket: 'bitewise-1d266.firebasestorage.app',
-    iosClientId: '1089295338872-mc0bk6vgb90bpuq3af3u30njuue3lau1.apps.googleusercontent.com',
-    iosBundleId: 'com.bitewise.bitewise',
+    iosClientId: '1089295338872-vu7e5nb1vf2hiie01urerbv2mtrevrps.apps.googleusercontent.com',
+    iosBundleId: 'com.amansaleem06.bitewise',
   );
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyBDnCyAUaCRewZr9y8hY9s3pwmXccYsJps',

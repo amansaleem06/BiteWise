@@ -7,11 +7,10 @@
 #  2. Teams → Integrations → App Store Connect: add an API key.
 #     Name the integration exactly: bitewise_asc
 #  3. Application settings → Environment variables:
-#       MAPS_API_KEY          = your Google Maps API key (secret)
 #       APP_STORE_APPLE_ID    = numeric Apple ID from App Store Connect
 #         (App Information → Apple ID). Override the placeholder below.
 #  4. In App Store Connect, create the app with bundle id
-#     com.bitewise.bitewise (requires Apple Developer Program).
+#     com.amansaleem06.bitewise (requires Apple Developer Program).
 #
 # ios-release: signs with automatic profiles, builds .ipa, uploads TestFlight.
 
@@ -24,10 +23,10 @@ workflows:
     environment:
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: com.bitewise.bitewise
+        bundle_identifier: com.amansaleem06.bitewise
       vars:
         # Replace in Codemagic UI (Application variables) — do not commit secrets.
-        APP_STORE_APPLE_ID: "0000000000"
+        APP_STORE_APPLE_ID: "6800049991"
       flutter: stable
       xcode: latest
       cocoapods: default
@@ -35,17 +34,6 @@ workflows:
       - name: Get Flutter packages
         script: |
           flutter pub get
-      - name: Inject Google Maps API key
-        script: |
-          if [ -z "${MAPS_API_KEY:-}" ]; then
-            echo "WARNING: MAPS_API_KEY is not set. Nearby map will not work."
-            echo "Add it under Codemagic → Environment variables (group: maps)."
-          else
-            sed -i '' "s/YOUR_MAPS_API_KEY_HERE/${MAPS_API_KEY}/g" \
-              ios/Runner/AppDelegate.swift \
-              android/app/src/main/AndroidManifest.xml
-            echo "Injected MAPS_API_KEY into iOS + Android manifests."
-          fi
       - name: Set up code signing identities
         script: |
           xcode-project use-profiles
@@ -78,12 +66,6 @@ workflows:
       - name: Get Flutter packages
         script: |
           flutter pub get
-      - name: Inject Google Maps API key
-        script: |
-          if [ -n "${MAPS_API_KEY:-}" ]; then
-            sed -i "s/YOUR_MAPS_API_KEY_HERE/${MAPS_API_KEY}/g" \
-              android/app/src/main/AndroidManifest.xml
-          fi
       - name: Flutter analyze
         script: |
           flutter analyze --no-fatal-infos

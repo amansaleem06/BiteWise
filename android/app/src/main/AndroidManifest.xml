@@ -8,11 +8,11 @@
         android:label="BiteWise"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
-        <!-- Google Maps API key: paste your key from Google Cloud console.
-             See SETUP.md, "Milestone 12 (Nearby Map)". -->
+        <!-- Restrict this key in Google Cloud to this Android package and
+             the release/debug signing certificate SHA-1 values. -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="YOUR_MAPS_API_KEY_HERE"/>
+            android:value="AIzaSyC-qlh313FPRv9gbsvqQGLC1kVPUe4s5K0"/>
         <activity
             android:name=".MainActivity"
             android:exported="true"

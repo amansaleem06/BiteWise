@@ -12,14 +12,14 @@ Your PC → GitHub → Codemagic (Mac) → App Store Connect → TestFlight → 
 ## 0. Checklist (print this)
 
 - [ ] Apple Developer Program enrolled (~$99/year)
-- [ ] App created in App Store Connect (`com.bitewise.bitewise`)
+- [ ] App created in App Store Connect (`com.amansaleem06.bitewise`)
 - [ ] App Store Connect API key created
 - [ ] GitHub repo created + this code pushed
 - [ ] GitHub Pages enabled for `/docs`
 - [ ] Legal URLs updated in `lib/core/constants/app_legal.dart`
 - [ ] Codemagic connected to GitHub
 - [ ] Codemagic App Store Connect integration named `bitewise_asc`
-- [ ] `APP_STORE_APPLE_ID` + `MAPS_API_KEY` set in Codemagic
+- [ ] `APP_STORE_APPLE_ID` set in Codemagic
 - [ ] Firebase: Sign in with Apple ON + APNs key uploaded
 - [ ] `firebase deploy --only functions,firestore:rules`
 - [ ] First `ios-release` build green → build visible in TestFlight
@@ -42,7 +42,7 @@ Without this, Codemagic cannot sign or upload.
 2. **My Apps** → **+** → **New App**
 3. Platforms: **iOS**
 4. Name: **BiteWise**
-5. Bundle ID: register `com.bitewise.bitewise` if needed, then select it
+5. Bundle ID: select `com.amansaleem06.bitewise`
 6. SKU: e.g. `bitewise001`
 7. After creation, open **App Information** and copy the numeric **Apple ID**
    (looks like `6750123456`). You will paste this into Codemagic as
@@ -118,7 +118,6 @@ In the Codemagic application → **Environment variables**:
 | Variable | Value | Secret? |
 |----------|--------|---------|
 | `APP_STORE_APPLE_ID` | Numeric Apple ID from step 2 | No |
-| `MAPS_API_KEY` | Google Maps API key (Maps SDK for iOS + Android) | Yes |
 
 Also update the placeholder in `codemagic.yaml` or override via UI variables
 (Codemagic UI vars take precedence for many setups — set both to be safe).
@@ -155,10 +154,9 @@ firebase deploy --only functions,firestore:rules
 1. [Google Cloud Console](https://console.cloud.google.com/) → same project as Firebase
 2. Enable **Maps SDK for iOS** and **Maps SDK for Android**
 3. Create an API key; restrict it to those APIs and package
-   `com.bitewise.bitewise`
-4. Put the key in Codemagic as `MAPS_API_KEY` (never commit it)
-
-The Codemagic script replaces `YOUR_MAPS_API_KEY_HERE` at build time.
+   `com.amansaleem06.bitewise` for iOS and `com.bitewise.bitewise` for Android
+4. Confirm the Android and iOS keys remain restricted in Google Cloud. The
+   client keys are configured in AndroidManifest.xml and AppDelegate.swift.
 
 ---
 
@@ -182,7 +180,7 @@ The Codemagic script replaces `YOUR_MAPS_API_KEY_HERE` at build time.
 | `APP_STORE_APPLE_ID` upload fail | Paste the **numeric** Apple ID, not the bundle id |
 | Google Sign-In fails on device | Confirm `GoogleService-Info.plist` is in the repo and URL scheme is in Info.plist |
 | Push never arrives | APNs key missing in Firebase |
-| Map is blank | `MAPS_API_KEY` not set in Codemagic |
+| Map is blank | Confirm billing, SDK enablement, and key restrictions in Google Cloud |
 | Analyze fails the build | Fix analyzer errors locally with `flutter analyze` before pushing |
 
 ---

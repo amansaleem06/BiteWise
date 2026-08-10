@@ -196,12 +196,11 @@ Counters, denormalization, and trending are now server-side.
    - Enable **Maps SDK for Android** and **Maps SDK for iOS**.
    - Google Maps Platform requires a **billing account** (generous free
      monthly usage tiers apply; typical dev usage costs nothing).
-   - Credentials → Create credentials → API key. Restrict it to the two
-     Maps SDKs (and to your app package `com.bitewise.bitewise`).
-3. **Paste the key in two places**:
-   - `android/app/src/main/AndroidManifest.xml` → replace
-     `YOUR_MAPS_API_KEY_HERE`
-   - `ios/Runner/AppDelegate.swift` → replace `YOUR_MAPS_API_KEY_HERE`
+   - Create separate restricted keys: Android package
+     `com.bitewise.bitewise`, and iOS bundle `com.amansaleem06.bitewise`.
+3. **Configure separate restricted keys**:
+   - Android key in `android/app/src/main/AndroidManifest.xml`
+   - iOS key in `ios/Runner/AppDelegate.swift`
 4. Rebuild (`RUN_BITEWISE.bat`). Restaurants created from now on capture
    the creator's location and appear on the Nearby map.
 
@@ -221,12 +220,12 @@ Codemagic → TestFlight path.
   `PrivacyInfo.xcprivacy`
 - `ITSAppUsesNonExemptEncryption` = false
 - Firestore rule allows self-delete of `users/{uid}`
-- Codemagic `ios-release` injects `MAPS_API_KEY` at build time
+- Separate restricted Android and iOS Maps client keys are configured
 
 ### You still must do outside the repo
 Follow [NO_MAC_RELEASE.md](NO_MAC_RELEASE.md). Short version:
 1. Apple Developer + App Store Connect app + API key
 2. Push to GitHub + enable Pages on `/docs`
-3. Codemagic + `bitewise_asc` + `APP_STORE_APPLE_ID` + `MAPS_API_KEY`
+3. Codemagic + `bitewise_asc` + `APP_STORE_APPLE_ID`
 4. Firebase Apple Sign-In + APNs; `firebase deploy --only functions,firestore:rules`
 5. Replace app icons; TestFlight → App Review

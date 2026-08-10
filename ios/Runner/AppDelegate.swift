@@ -8,9 +8,9 @@ import GoogleMaps
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    // Google Maps API key (iOS) — paste your key from Google Cloud console.
-    // See SETUP.md, "Milestone 12 (Nearby Map)".
-    GMSServices.provideAPIKey("YOUR_MAPS_API_KEY_HERE")
+    // This client key must remain restricted in Google Cloud to the
+    // com.amansaleem06.bitewise bundle and Maps SDK for iOS.
+    GMSServices.provideAPIKey("AIzaSyCzQ_QdA7nJ9MnOHfZYj1ZnLx2VA0XTVX8")
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
