@@ -1,27 +1,34 @@
-import 'dart:io' show Platform;
-
-import 'package:flutter/foundation.dart';
-
 import '../../firebase_options.dart';
 
 /// Google Maps / Places API keys used by the app.
 ///
-/// Maps SDK keys live in platform manifests; Places HTTP calls need the same
-/// Google Cloud project with **Places API** enabled. If a restricted key
-/// rejects HTTP, we fall back to the Firebase Web API key.
+/// Maps SDK keys (in AndroidManifest / AppDelegate) are usually restricted to
+/// iOS/Android apps and **cannot** call Places over HTTP from Flutter.
+///
+/// For restaurant search we try keys that typically allow REST:
+/// 1. Optional compile-time `PLACES_API_KEY` (--dart-define)
+/// 2. Firebase Web API key
+/// 3. Platform Firebase API key
 abstract final class MapsConfig {
-  static const _iosMapsKey = 'AIzaSyCzQ_QdA7nJ9MnOHfZYj1ZnLx2VA0XTVX8';
-  static const _androidMapsKey = 'AIzaSyC-qlh313FPRv9gbsvqQGLC1kVPUe4s5K0';
+  /// Pass a dedicated Places REST key:
+  /// `flutter run --dart-define=PLACES_API_KEY=AIza...`
+  static const String _dartDefinePlacesKey = String.fromEnvironment(
+    'PLACES_API_KEY',
+  );
 
-  static String get placesApiKey {
-    if (kIsWeb) return DefaultFirebaseOptions.web.apiKey;
-    try {
-      if (Platform.isIOS) return _iosMapsKey;
-      if (Platform.isAndroid) return _androidMapsKey;
-    } catch (_) {}
-    return DefaultFirebaseOptions.currentPlatform.apiKey;
+  /// Ordered keys to try for Places HTTP (New).
+  static List<String> get placesApiKeys {
+    final keys = <String>[
+      if (_dartDefinePlacesKey.isNotEmpty) _dartDefinePlacesKey,
+      // Web key is the best default for server-style HTTP Places calls.
+      DefaultFirebaseOptions.web.apiKey,
+      DefaultFirebaseOptions.currentPlatform.apiKey,
+    ];
+    // De-dupe while preserving order.
+    final seen = <String>{};
+    return [
+      for (final k in keys)
+        if (seen.add(k)) k,
+    ];
   }
-
-  static String get placesApiKeyFallback =>
-      DefaultFirebaseOptions.currentPlatform.apiKey;
 }
