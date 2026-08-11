@@ -12,7 +12,7 @@ enum UserRole {
       );
 }
 
-/// Core user entity — the domain representation of a BiteWise account.
+/// Core user entity — the domain representation of a TasteWise account.
 class AppUser extends Equatable {
   const AppUser({
     required this.uid,

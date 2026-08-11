@@ -42,12 +42,56 @@ class FirestoreUserRepository implements UserRepository {
     final results = await Future.wait([
       _users.doc(uid).get(),
       _users.doc(_uid).collection('following').doc(uid).get(),
+      _countPosts(uid),
+      _countCollection(_users.doc(uid).collection('followers')),
+      _countCollection(_users.doc(uid).collection('following')),
     ]);
-    if (!results[0].exists) throw const AppException('User not found');
-    return UserProfile(
-      user: UserModel.fromDoc(results[0]),
-      isFollowedByMe: results[1].exists,
+    if (!(results[0] as DocumentSnapshot).exists) {
+      throw const AppException('User not found');
+    }
+
+    final stored = UserModel.fromDoc(results[0] as DocumentSnapshot<Map<String, dynamic>>);
+    // Prefer live aggregates — denormalized counters stay 0 if Cloud Functions
+    // haven't run (or failed silently).
+    final user = stored.copyWithCounts(
+      postCount: results[2] as int,
+      followerCount: results[3] as int,
+      followingCount: results[4] as int,
     );
+    return UserProfile(
+      user: user,
+      isFollowedByMe: (results[1] as DocumentSnapshot).exists,
+    );
+  }
+
+  Future<int> _countPosts(String uid) async {
+    try {
+      final agg = await _firestore
+          .collection('posts')
+          .where('authorId', isEqualTo: uid)
+          .count()
+          .get();
+      return agg.count ?? 0;
+    } catch (_) {
+      final snap = await _firestore
+          .collection('posts')
+          .where('authorId', isEqualTo: uid)
+          .limit(200)
+          .get();
+      return snap.size;
+    }
+  }
+
+  Future<int> _countCollection(
+    CollectionReference<Map<String, dynamic>> ref,
+  ) async {
+    try {
+      final agg = await ref.count().get();
+      return agg.count ?? 0;
+    } catch (_) {
+      final snap = await ref.limit(500).get();
+      return snap.size;
+    }
   }
 
   @override

@@ -30,7 +30,7 @@ class PostMedia extends Equatable {
   List<Object?> get props => [url, type, thumbnailUrl, aspectRatio];
 }
 
-/// A food post. Every post belongs to a restaurant (BiteWise is
+/// A food post. Every post belongs to a restaurant (TasteWise is
 /// food-centric, not post-centric); dish is optional but encouraged.
 class Post extends Equatable {
   const Post({

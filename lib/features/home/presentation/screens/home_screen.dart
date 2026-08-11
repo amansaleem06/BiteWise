@@ -11,7 +11,7 @@ import '../../../feed/presentation/providers/feed_providers.dart';
 import '../../../feed/presentation/widgets/feed_list.dart';
 import '../../../notifications/presentation/providers/notification_providers.dart';
 
-/// Home: BiteWise wordmark + For You / Following feeds.
+/// Home: TasteWise wordmark + For You / Following feeds.
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 

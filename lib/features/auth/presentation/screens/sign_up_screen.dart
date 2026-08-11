@@ -71,7 +71,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         Text(AppStrings.signUp, style: theme.textTheme.headlineLarge),
         const SizedBox(height: AppSpacing.sm),
         Text(
-          'Choose how you\'ll use BiteWise',
+          'Choose how you\'ll use TasteWise',
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),

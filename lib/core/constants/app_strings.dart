@@ -3,7 +3,7 @@
 /// Structured for a painless migration to `flutter_localizations` / ARB files
 /// when internationalization lands.
 abstract final class AppStrings {
-  static const appName = 'BiteWise';
+  static const appName = 'TasteWise';
   static const tagline = 'Discover. Taste. Share.';
 
   // Auth
@@ -42,11 +42,15 @@ abstract final class AppStrings {
   static const deleteAccount = 'Delete account';
   static const deleteAccountTitle = 'Delete your account?';
   static const deleteAccountBody =
-      'This permanently deletes your BiteWise account, profile, and personal data. Posts you shared will be anonymized. This cannot be undone.';
+      'This permanently deletes your TasteWise account, profile, and personal data. Posts you shared will be anonymized. This cannot be undone.';
   static const deleteAccountConfirm = 'Delete my account';
   static const deleteAccountPasswordHint =
       'Enter your password to confirm.';
   static const accountDeleted = 'Your account has been deleted.';
+
+  // Language
+  static const language = 'Language';
+  static const languageSystem = 'System default';
 
   // Navigation
   static const navHome = 'Home';

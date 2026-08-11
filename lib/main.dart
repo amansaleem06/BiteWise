@@ -14,7 +14,7 @@ Future<void> main() async {
 
   runApp(
     firebaseReady
-        ? const ProviderScope(child: BiteWiseApp())
+        ? const ProviderScope(child: TasteWiseApp())
         : const _SetupApp(),
   );
 }

@@ -1,56 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-/// Typography scale built on the system font stack for a clean, premium feel.
-///
-/// If a custom brand font is added later (e.g. via google_fonts), only this
-/// file needs to change.
+/// TasteWise typography — Fraunces for display, Source Sans 3 for UI.
 abstract final class AppTypography {
-  static TextTheme textTheme(Color primary, Color secondary) => TextTheme(
-        displayLarge: TextStyle(
-          fontSize: 34,
-          fontWeight: FontWeight.w800,
-          letterSpacing: -0.5,
-          color: primary,
-        ),
-        headlineLarge: TextStyle(
-          fontSize: 28,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -0.4,
-          color: primary,
-        ),
-        headlineMedium: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -0.3,
-          color: primary,
-        ),
-        titleLarge: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          color: primary,
-        ),
-        titleMedium: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-          color: primary,
-        ),
-        titleSmall: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: primary,
-        ),
-        bodyLarge: TextStyle(fontSize: 16, height: 1.5, color: primary),
-        bodyMedium: TextStyle(fontSize: 14, height: 1.5, color: primary),
-        bodySmall: TextStyle(fontSize: 12, height: 1.4, color: secondary),
-        labelLarge: TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w600,
-          color: primary,
-        ),
-        labelMedium: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
-          color: secondary,
-        ),
-      );
+  static TextTheme textTheme(Color primary, Color secondary) {
+    final display = GoogleFonts.fraunces(
+      color: primary,
+      fontWeight: FontWeight.w700,
+      height: 1.15,
+      letterSpacing: -0.4,
+    );
+    final body = GoogleFonts.sourceSans3(
+      color: primary,
+      height: 1.45,
+    );
+
+    return TextTheme(
+      displayLarge: display.copyWith(fontSize: 36, fontWeight: FontWeight.w800),
+      headlineLarge: display.copyWith(fontSize: 30),
+      headlineMedium: display.copyWith(fontSize: 24),
+      titleLarge: body.copyWith(fontSize: 20, fontWeight: FontWeight.w700),
+      titleMedium: body.copyWith(fontSize: 16, fontWeight: FontWeight.w700),
+      titleSmall: body.copyWith(fontSize: 14, fontWeight: FontWeight.w700),
+      bodyLarge: body.copyWith(fontSize: 16),
+      bodyMedium: body.copyWith(fontSize: 14),
+      bodySmall: body.copyWith(fontSize: 12, color: secondary),
+      labelLarge: body.copyWith(fontSize: 15, fontWeight: FontWeight.w700),
+      labelMedium: body.copyWith(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: secondary,
+      ),
+    );
+  }
 }

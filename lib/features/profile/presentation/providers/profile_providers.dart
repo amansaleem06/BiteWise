@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/errors/error_text.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../feed/presentation/providers/feed_providers.dart';
 import '../../data/repositories/firestore_user_repository.dart';
 import '../../domain/entities/user_profile.dart';
@@ -37,6 +38,9 @@ class UserProfileController
       await _repo.setFollowing(arg, following: next.isFollowedByMe);
       // Following feed contents changed.
       ref.invalidate(feedControllerProvider(FeedTab.following));
+      ref.invalidate(userProfileProvider(arg));
+      final me = ref.read(currentUserProvider)?.uid;
+      if (me != null) ref.invalidate(userProfileProvider(me));
       return null;
     } catch (e, st) {
       debugPrintStack(stackTrace: st, label: 'Follow failed: $e');

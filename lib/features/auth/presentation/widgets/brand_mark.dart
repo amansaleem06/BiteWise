@@ -4,7 +4,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/constants/app_strings.dart';
 
-/// BiteWise logo mark used on auth screens and empty states.
+/// TasteWise logo mark used on auth screens and empty states.
 class BrandMark extends StatelessWidget {
   const BrandMark({super.key, this.size = 64, this.showWordmark = true});
 
@@ -13,6 +13,7 @@ class BrandMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       children: [
         Container(
@@ -24,22 +25,37 @@ class BrandMark extends StatelessWidget {
             boxShadow: [
               BoxShadow(
                 color: AppColors.primary.withValues(alpha: 0.35),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
+                blurRadius: 28,
+                offset: const Offset(0, 12),
               ),
             ],
           ),
-          child: Icon(
-            Icons.restaurant_rounded,
-            color: Colors.white,
-            size: size * 0.5,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Icon(
+                Icons.location_on_rounded,
+                color: Colors.white.withValues(alpha: 0.95),
+                size: size * 0.62,
+              ),
+              Padding(
+                padding: EdgeInsets.only(bottom: size * 0.08),
+                child: Icon(
+                  Icons.restaurant_rounded,
+                  color: AppColors.primaryDark,
+                  size: size * 0.22,
+                ),
+              ),
+            ],
           ),
         ),
         if (showWordmark) ...[
           const SizedBox(height: AppSpacing.md),
           Text(
             AppStrings.appName,
-            style: Theme.of(context).textTheme.headlineMedium,
+            style: theme.textTheme.headlineMedium?.copyWith(
+              letterSpacing: -0.6,
+            ),
           ),
         ],
       ],

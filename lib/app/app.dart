@@ -6,8 +6,8 @@ import 'router/app_router.dart';
 import 'theme/app_theme.dart';
 
 /// Root widget: wires theme + router.
-class BiteWiseApp extends ConsumerWidget {
-  const BiteWiseApp({super.key});
+class TasteWiseApp extends ConsumerWidget {
+  const TasteWiseApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

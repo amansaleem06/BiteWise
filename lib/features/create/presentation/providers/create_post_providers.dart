@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/errors/app_exception.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../feed/presentation/providers/feed_providers.dart';
+import '../../../profile/presentation/providers/profile_providers.dart';
 import '../../../restaurants/domain/entities/restaurant_ref.dart';
 import '../../data/repositories/firebase_create_post_repository.dart';
 import '../../domain/repositories/create_post_repository.dart';
@@ -121,8 +123,13 @@ class CreatePostController extends AutoDisposeNotifier<CreatePostState> {
             tags: tags,
             onProgress: (p) => state = state.copyWith(progress: p),
           );
-      // Fresh content should appear immediately.
+      // Fresh content + profile post count should appear immediately.
       ref.invalidate(feedControllerProvider(FeedTab.forYou));
+      final uid = ref.read(currentUserProvider)?.uid;
+      if (uid != null) {
+        ref.invalidate(userProfileProvider(uid));
+        ref.invalidate(userPostsProvider(uid));
+      }
       state = const CreatePostState();
       return null;
     } catch (e, st) {
