@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/errors/app_exception.dart';
+import '../../../../core/services/places_search_service.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../feed/presentation/providers/feed_providers.dart';
 import '../../../profile/presentation/providers/profile_providers.dart';
@@ -15,12 +16,25 @@ final createPostRepositoryProvider = Provider<CreatePostRepository>(
   (ref) => FirebaseCreatePostRepository(),
 );
 
-/// Debounced restaurant search for the picker sheet.
+final placesSearchServiceProvider = Provider<PlacesSearchService>(
+  (ref) => PlacesSearchService(),
+);
+
+/// Debounced Google Places search for restaurant tagging.
+final placesRestaurantSearchProvider =
+    FutureProvider.autoDispose.family<List<PlaceSuggestion>, String>(
+  (ref, query) async {
+    if (query.trim().length < 2) return const [];
+    await Future<void>.delayed(const Duration(milliseconds: 350));
+    return ref.read(placesSearchServiceProvider).searchRestaurants(query);
+  },
+);
+
+/// Debounced restaurant search for the picker sheet (Firestore fallback).
 final restaurantSearchProvider =
     FutureProvider.autoDispose.family<List<RestaurantRef>, String>(
   (ref, query) async {
     if (query.trim().length < 2) return const [];
-    // Debounce: autoDispose cancels this if the user keeps typing.
     await Future<void>.delayed(const Duration(milliseconds: 300));
     return ref.read(createPostRepositoryProvider).searchRestaurants(query);
   },
@@ -103,6 +117,9 @@ class CreatePostController extends AutoDisposeNotifier<CreatePostState> {
   Future<RestaurantRef> createRestaurant(String name) =>
       ref.read(createPostRepositoryProvider).createRestaurantStub(name);
 
+  Future<RestaurantRef> upsertRestaurantFromPlace(PlaceSuggestion place) =>
+      ref.read(createPostRepositoryProvider).upsertRestaurantFromPlace(place);
+
   /// Publishes the post. Returns null on success, or an error message.
   Future<String?> submit({
     String? dishName,
@@ -123,7 +140,6 @@ class CreatePostController extends AutoDisposeNotifier<CreatePostState> {
             tags: tags,
             onProgress: (p) => state = state.copyWith(progress: p),
           );
-      // Fresh content + profile post count should appear immediately.
       ref.invalidate(feedControllerProvider(FeedTab.forYou));
       final uid = ref.read(currentUserProvider)?.uid;
       if (uid != null) {

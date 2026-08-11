@@ -13,7 +13,7 @@ import '../../../feed/presentation/providers/feed_providers.dart';
 import '../../../feed/presentation/widgets/feed_list.dart';
 import '../../../notifications/presentation/providers/notification_providers.dart';
 
-/// Home: TasteWise wordmark + compact feed toggle + cuisine chips.
+/// Home: TasteWise wordmark + single feed mode control + cuisine chips.
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -107,13 +107,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               floating: true,
               snap: true,
               pinned: false,
-              title: Text(
-                AppStrings.appName,
-                style: GoogleFonts.fraunces(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 26,
-                  letterSpacing: -0.8,
-                  color: theme.colorScheme.onSurface,
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              surfaceTintColor: Colors.transparent,
+              flexibleSpace: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppColors.primary.withValues(alpha: 0.16),
+                      theme.scaffoldBackgroundColor.withValues(alpha: 0.88),
+                      AppColors.secondary.withValues(alpha: 0.06),
+                    ],
+                  ),
+                ),
+              ),
+              title: ShaderMask(
+                blendMode: BlendMode.srcIn,
+                shaderCallback: (bounds) => const LinearGradient(
+                  colors: [
+                    AppColors.primaryDark,
+                    AppColors.charcoal,
+                    Color(0xFFC33530),
+                  ],
+                ).createShader(bounds),
+                child: Text(
+                  AppStrings.appName,
+                  style: GoogleFonts.fraunces(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 28,
+                    height: 1,
+                    letterSpacing: -1.1,
+                    color: Colors.white,
+                  ),
                 ),
               ),
               actions: [
@@ -122,7 +149,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     isLabelVisible: hasUnread,
                     backgroundColor: AppColors.primary,
                     smallSize: 8,
-                    child: const Icon(Icons.notifications_none_rounded),
+                    child: Icon(
+                      Icons.notifications_none_rounded,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.85),
+                    ),
                   ),
                   onPressed: () => context.push(Routes.notifications),
                   tooltip: 'Notifications',
@@ -145,7 +175,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                         child: Column(
                           children: [
-                            _FeedModeToggle(
+                            _FeedModeSwitch(
                               value: _tab,
                               onChanged: (tab) {
                                 setState(() {
@@ -208,46 +238,87 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-class _FeedModeToggle extends StatelessWidget {
-  const _FeedModeToggle({required this.value, required this.onChanged});
+/// One combined control: sliding highlight shows the active mode only.
+class _FeedModeSwitch extends StatelessWidget {
+  const _FeedModeSwitch({required this.value, required this.onChanged});
 
   final FeedTab value;
   final ValueChanged<FeedTab> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 40,
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        color: AppColors.secondary.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(AppRadius.pill),
-        border: Border.all(color: AppColors.outlineLight),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _ToggleSegment(
-              label: 'For You',
-              selected: value == FeedTab.forYou,
-              onTap: () => onChanged(FeedTab.forYou),
+    final isForYou = value == FeedTab.forYou;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final thumbW = (width - 6) / 2;
+
+        return Container(
+          height: 44,
+          decoration: BoxDecoration(
+            color: AppColors.secondary.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.12),
             ),
           ),
-          Expanded(
-            child: _ToggleSegment(
-              label: 'Following',
-              selected: value == FeedTab.following,
-              onTap: () => onChanged(FeedTab.following),
-            ),
+          child: Stack(
+            children: [
+              AnimatedPositioned(
+                duration: AppDurations.normal,
+                curve: Curves.easeOutCubic,
+                left: isForYou ? 3 : 3 + thumbW,
+                top: 3,
+                bottom: 3,
+                width: thumbW,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.primary.withValues(alpha: 0.95),
+                        AppColors.primaryDark.withValues(alpha: 0.9),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.25),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: _ModeHitTarget(
+                      label: 'For You',
+                      selected: isForYou,
+                      onTap: () => onChanged(FeedTab.forYou),
+                    ),
+                  ),
+                  Expanded(
+                    child: _ModeHitTarget(
+                      label: 'Following',
+                      selected: !isForYou,
+                      onTap: () => onChanged(FeedTab.following),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
 
-class _ToggleSegment extends StatelessWidget {
-  const _ToggleSegment({
+class _ModeHitTarget extends StatelessWidget {
+  const _ModeHitTarget({
     required this.label,
     required this.selected,
     required this.onTap,
@@ -259,20 +330,19 @@ class _ToggleSegment extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: selected ? AppColors.primary : Colors.transparent,
-      borderRadius: BorderRadius.circular(AppRadius.pill),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadius.pill),
-        child: Center(
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: selected ? Colors.white : AppColors.textSecondaryLight,
-                  fontWeight: FontWeight.w700,
-                ),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Center(
+        child: AnimatedDefaultTextStyle(
+          duration: AppDurations.fast,
+          style: GoogleFonts.sourceSans3(
+            fontWeight: FontWeight.w700,
+            fontSize: 14,
+            letterSpacing: 0.2,
+            color: selected ? Colors.white : AppColors.textSecondaryLight,
           ),
+          child: Text(label),
         ),
       ),
     );
@@ -297,13 +367,13 @@ class _CuisinePill extends StatelessWidget {
     final bg = selected
         ? AppColors.primary
         : emphasized
-            ? AppColors.primaryLight
-            : Colors.white;
+            ? AppColors.primary.withValues(alpha: 0.08)
+            : AppColors.secondary.withValues(alpha: 0.05);
     final fg = selected
         ? Colors.white
         : emphasized
             ? AppColors.primaryDark
-            : AppColors.textPrimaryLight;
+            : AppColors.textSecondaryLight;
 
     return Material(
       color: bg,
@@ -311,13 +381,10 @@ class _CuisinePill extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.pill),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.pill),
-            border: Border.all(
-              color: selected ? AppColors.primary : AppColors.outlineLight,
-            ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: AppSpacing.xs,
           ),
           child: Text(
             label,

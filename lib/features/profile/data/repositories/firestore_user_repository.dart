@@ -42,22 +42,28 @@ class FirestoreUserRepository implements UserRepository {
 
   @override
   Future<UserProfile> getById(String uid) async {
-    // Read the edge the client owns (`following`). The reverse `followers`
-    // doc is mirrored by Cloud Functions and can lag or be missing.
+    // Followers may exist only as `users/*/following/{uid}` (legacy dual-write
+    // gaps). Prefer collection-group discovery over the reverse subcollection.
     final results = await Future.wait([
       _users.doc(uid).get(),
       _users.doc(_uid).collection('following').doc(uid).get(),
       _countPosts(uid),
-      _countCollection(_users.doc(uid).collection('followers')),
+      _countFollowers(uid),
       _countCollection(_users.doc(uid).collection('following')),
     ]);
     if (!(results[0] as DocumentSnapshot).exists) {
       throw const AppException('User not found');
     }
 
-    final stored = UserModel.fromDoc(results[0] as DocumentSnapshot<Map<String, dynamic>>);
-    // Prefer live aggregates — denormalized counters stay 0 if Cloud Functions
-    // haven't run (or failed silently).
+    // Opportunistically repair reverse edges for *my* following list so other
+    // clients that only read `followers/` still see counts.
+    if (uid == _uid) {
+      // ignore: unawaited_futures
+      _repairReverseFollowersFor(_uid);
+    }
+
+    final stored =
+        UserModel.fromDoc(results[0] as DocumentSnapshot<Map<String, dynamic>>);
     final user = stored.copyWithCounts(
       postCount: results[2] as int,
       followerCount: results[3] as int,
@@ -67,6 +73,56 @@ class FirestoreUserRepository implements UserRepository {
       user: user,
       isFollowedByMe: (results[1] as DocumentSnapshot).exists,
     );
+  }
+
+  /// People who follow [uid]: every `users/{follower}/following/{uid}` edge.
+  Future<int> _countFollowers(String uid) async {
+    try {
+      final agg = await _firestore
+          .collectionGroup('following')
+          .where(FieldPath.documentId, isEqualTo: uid)
+          .count()
+          .get();
+      final fromEdges = agg.count ?? 0;
+      if (fromEdges > 0) return fromEdges;
+    } catch (_) {
+      // Fall through — some projects need an index / older SDK quirks.
+    }
+    try {
+      final snap = await _firestore
+          .collectionGroup('following')
+          .where(FieldPath.documentId, isEqualTo: uid)
+          .limit(500)
+          .get();
+      if (snap.size > 0) return snap.size;
+    } catch (_) {}
+    return _countCollection(_users.doc(uid).collection('followers'));
+  }
+
+  /// Writes missing `followers/{me}` docs for people I already follow.
+  Future<void> _repairReverseFollowersFor(String me) async {
+    try {
+      final edges =
+          await _users.doc(me).collection('following').limit(200).get();
+      if (edges.docs.isEmpty) return;
+      final batch = _firestore.batch();
+      var ops = 0;
+      for (final edge in edges.docs) {
+        final reverse = _users.doc(edge.id).collection('followers').doc(me);
+        batch.set(
+          reverse,
+          {
+            'createdAt': FieldValue.serverTimestamp(),
+            'repairedAt': FieldValue.serverTimestamp(),
+          },
+          SetOptions(merge: true),
+        );
+        ops++;
+      }
+      if (ops > 0) await batch.commit();
+    } catch (_) {
+      // Best-effort; list/count still work via collection group.
+    }
   }
 
   Future<int> _countPosts(String uid) async {
@@ -159,10 +215,23 @@ class FirestoreUserRepository implements UserRepository {
 
     if (following) {
       final existing = await myFollowingRef.get();
-      if (existing.exists) return;
+      if (existing.exists) {
+        // Ensure reverse edge exists even for older follows.
+        await theirFollowersRef.set(
+          {'createdAt': FieldValue.serverTimestamp()},
+          SetOptions(merge: true),
+        );
+        return;
+      }
       final batch = _firestore.batch()
-        ..set(myFollowingRef, {'createdAt': FieldValue.serverTimestamp()})
-        ..set(theirFollowersRef, {'createdAt': FieldValue.serverTimestamp()});
+        ..set(myFollowingRef, {
+          'createdAt': FieldValue.serverTimestamp(),
+          'targetUid': targetUid,
+        })
+        ..set(theirFollowersRef, {
+          'createdAt': FieldValue.serverTimestamp(),
+          'followerUid': me,
+        });
       await batch.commit();
       await _notifications.notify(recipientUid: targetUid, type: 'follow');
     } else {
@@ -174,23 +243,54 @@ class FirestoreUserRepository implements UserRepository {
   }
 
   @override
-  Future<List<AppUser>> fetchFollowing(String uid, {int limit = 50}) =>
-      _usersFromEdge(uid, collection: 'following', limit: limit);
+  Future<List<AppUser>> fetchFollowing(String uid, {int limit = 50}) async {
+    if (uid == _uid) {
+      await _repairReverseFollowersFor(uid);
+    }
+    return _usersFromEdge(uid, collection: 'following', limit: limit);
+  }
 
   @override
-  Future<List<AppUser>> fetchFollowers(String uid, {int limit = 50}) =>
-      _usersFromEdge(uid, collection: 'followers', limit: limit);
+  Future<List<AppUser>> fetchFollowers(String uid, {int limit = 50}) async {
+    // Prefer reverse subcollection; fall back to collection-group on following.
+    final reverse =
+        await _users.doc(uid).collection('followers').limit(limit).get();
+    if (reverse.docs.isNotEmpty) {
+      return _hydrateUsers(reverse.docs.map((d) => d.id));
+    }
+
+    try {
+      final edges = await _firestore
+          .collectionGroup('following')
+          .where(FieldPath.documentId, isEqualTo: uid)
+          .limit(limit)
+          .get();
+      final followerIds = <String>[];
+      for (final d in edges.docs) {
+        final parent = d.reference.parent.parent;
+        if (parent != null) followerIds.add(parent.id);
+      }
+      return _hydrateUsers(followerIds);
+    } catch (_) {
+      return const [];
+    }
+  }
 
   Future<List<AppUser>> _usersFromEdge(
     String uid, {
     required String collection,
     required int limit,
   }) async {
-    final edges = await _users.doc(uid).collection(collection).limit(limit).get();
+    final edges =
+        await _users.doc(uid).collection(collection).limit(limit).get();
     if (edges.docs.isEmpty) return const [];
+    return _hydrateUsers(edges.docs.map((d) => d.id));
+  }
+
+  Future<List<AppUser>> _hydrateUsers(Iterable<String> uids) async {
     final users = await Future.wait(
-      edges.docs.map((d) async {
-        final snap = await _users.doc(d.id).get();
+      uids.map((id) async {
+        final snap = await _users.doc(id).get();
         if (!snap.exists) return null;
         return UserModel.fromDoc(snap);
       }),

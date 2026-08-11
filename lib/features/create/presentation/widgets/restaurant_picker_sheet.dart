@@ -4,13 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/errors/error_text.dart';
+import '../../../../core/services/places_search_service.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../restaurants/domain/entities/restaurant_ref.dart';
 import '../providers/create_post_providers.dart';
 
-/// Bottom sheet: search restaurants, or create one that doesn't exist yet.
+/// Bottom sheet: Google Maps restaurant recommendations near the user.
 ///
-/// Returns the chosen [RestaurantRef] via Navigator.pop.
+/// Type a keyword → closest matching Places names → tap to add from Maps.
 class RestaurantPickerSheet extends ConsumerStatefulWidget {
   const RestaurantPickerSheet({super.key});
 
@@ -30,7 +31,7 @@ class RestaurantPickerSheet extends ConsumerStatefulWidget {
 class _RestaurantPickerSheetState extends ConsumerState<RestaurantPickerSheet> {
   final _controller = TextEditingController();
   String _query = '';
-  bool _creating = false;
+  String? _selectingPlaceId;
 
   @override
   void dispose() {
@@ -38,18 +39,17 @@ class _RestaurantPickerSheetState extends ConsumerState<RestaurantPickerSheet> {
     super.dispose();
   }
 
-  Future<void> _create() async {
-    final name = _controller.text.trim();
-    if (name.length < 2 || _creating) return;
-    setState(() => _creating = true);
+  Future<void> _selectPlace(PlaceSuggestion place) async {
+    if (_selectingPlaceId != null) return;
+    setState(() => _selectingPlaceId = place.placeId);
     try {
       final restaurant = await ref
           .read(createPostControllerProvider.notifier)
-          .createRestaurant(name);
+          .upsertRestaurantFromPlace(place);
       if (mounted) Navigator.of(context).pop(restaurant);
     } catch (e) {
       if (!mounted) return;
-      setState(() => _creating = false);
+      setState(() => _selectingPlaceId = null);
       AppSnackbar.error(context, userMessageFrom(e));
     }
   }
@@ -57,7 +57,7 @@ class _RestaurantPickerSheetState extends ConsumerState<RestaurantPickerSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final results = ref.watch(restaurantSearchProvider(_query));
+    final results = ref.watch(placesRestaurantSearchProvider(_query));
 
     return Padding(
       padding: EdgeInsets.only(
@@ -65,17 +65,39 @@ class _RestaurantPickerSheetState extends ConsumerState<RestaurantPickerSheet> {
       ),
       child: DraggableScrollableSheet(
         expand: false,
-        initialChildSize: 0.75,
+        initialChildSize: 0.78,
         builder: (context, scrollController) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                AppSpacing.sm,
+                AppSpacing.md,
+                AppSpacing.xs,
+              ),
+              child: Text(
+                'Find on Maps',
+                style: theme.textTheme.titleLarge,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+              child: Text(
+                'Type a name — we recommend the closest restaurants nearby.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.all(AppSpacing.md),
               child: TextField(
                 controller: _controller,
                 autofocus: true,
                 decoration: const InputDecoration(
-                  hintText: 'Search restaurants…',
-                  prefixIcon: Icon(Icons.search_rounded),
+                  hintText: 'e.g. pizza, Café Central…',
+                  prefixIcon: Icon(Icons.place_outlined),
                 ),
                 onChanged: (v) => setState(() => _query = v),
               ),
@@ -85,61 +107,67 @@ class _RestaurantPickerSheetState extends ConsumerState<RestaurantPickerSheet> {
                 loading: () => const Center(
                   child: CircularProgressIndicator(strokeWidth: 2.5),
                 ),
-                error: (_, __) => Center(
-                  child: Text(
-                    'Search failed. Try again.',
-                    style: theme.textTheme.bodyMedium,
+                error: (e, _) => Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    child: Text(
+                      'Couldn’t search Maps. Check location permission and that Places API is enabled.\n\n${userMessageFrom(e)}',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium,
+                    ),
                   ),
                 ),
-                data: (restaurants) => ListView(
-                  controller: scrollController,
-                  children: [
-                    for (final r in restaurants)
-                      ListTile(
-                        leading: const CircleAvatar(
+                data: (places) {
+                  if (_query.trim().length < 2) {
+                    return Padding(
+                      padding: const EdgeInsets.all(AppSpacing.xl),
+                      child: Text(
+                        'Type at least 2 characters to see nearby recommendations.',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    );
+                  }
+                  if (places.isEmpty) {
+                    return Padding(
+                      padding: const EdgeInsets.all(AppSpacing.xl),
+                      child: Text(
+                        'No restaurants found nearby for “${_query.trim()}”. Try another keyword.',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    );
+                  }
+                  return ListView.builder(
+                    controller: scrollController,
+                    itemCount: places.length,
+                    itemBuilder: (context, i) {
+                      final p = places[i];
+                      final busy = _selectingPlaceId == p.placeId;
+                      return ListTile(
+                        leading: CircleAvatar(
                           backgroundColor: AppColors.primaryLight,
-                          child: Icon(
-                            Icons.storefront_outlined,
-                            color: AppColors.primaryDark,
-                          ),
-                        ),
-                        title: Text(r.name),
-                        subtitle: r.city != null ? Text(r.city!) : null,
-                        onTap: () => Navigator.of(context).pop(r),
-                      ),
-                    if (_query.trim().length >= 2)
-                      ListTile(
-                        leading: const CircleAvatar(
-                          backgroundColor: AppColors.accentLight,
-                          child: Icon(
-                            Icons.add_rounded,
-                            color: AppColors.accent,
-                          ),
-                        ),
-                        title: Text('Add "${_query.trim()}"'),
-                        subtitle: const Text('Create a new restaurant'),
-                        trailing: _creating
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
+                          child: busy
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.storefront_outlined,
+                                  color: AppColors.primaryDark,
                                 ),
-                              )
-                            : null,
-                        onTap: _create,
-                      ),
-                    if (_query.trim().length < 2)
-                      Padding(
-                        padding: const EdgeInsets.all(AppSpacing.xl),
-                        child: Text(
-                          'Type at least 2 characters to search.',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.bodySmall,
                         ),
-                      ),
-                  ],
-                ),
+                        title: Text(p.name),
+                        subtitle: p.address != null ? Text(p.address!) : null,
+                        trailing: const Icon(Icons.add_location_alt_outlined),
+                        onTap: busy ? null : () => _selectPlace(p),
+                      );
+                    },
+                  );
+                },
               ),
             ),
           ],
