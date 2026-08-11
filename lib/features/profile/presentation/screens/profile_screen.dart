@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/router/routes.dart';
+import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/widgets/async_error_view.dart';
@@ -19,9 +21,17 @@ class ProfileScreen extends ConsumerWidget {
     final uid = ref.watch(currentUserProvider)?.uid;
 
     return Scaffold(
+      backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         title: Text(
           ref.watch(currentUserProvider)?.displayName ?? AppStrings.navProfile,
+          style: GoogleFonts.fraunces(
+            fontWeight: FontWeight.w800,
+            fontSize: 24,
+            letterSpacing: -0.6,
+            color: AppColors.primaryDark,
+          ),
         ),
         actions: [
           IconButton(

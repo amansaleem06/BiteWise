@@ -13,7 +13,7 @@ import '../../../feed/presentation/providers/feed_providers.dart';
 import '../../../feed/presentation/widgets/feed_list.dart';
 import '../../../notifications/presentation/providers/notification_providers.dart';
 
-/// Home: TasteWise wordmark + single feed mode control + cuisine chips.
+/// Home: TasteWise wordmark + single feed-mode control + cuisine chips.
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -36,6 +36,74 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
     }
     return false;
+  }
+
+  void _setTab(FeedTab tab) {
+    setState(() {
+      _tab = tab;
+      if (tab == FeedTab.following) _followingVisited = true;
+    });
+  }
+
+  Future<void> _pickFeedMode() async {
+    final chosen = await showModalBottomSheet<FeedTab>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: AppColors.surfaceLight,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              0,
+              AppSpacing.md,
+              AppSpacing.lg,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Feed',
+                  style: GoogleFonts.fraunces(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.charcoal,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  'Choose one view at a time.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textSecondaryLight,
+                      ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                _FeedModeOption(
+                  title: 'For You',
+                  subtitle: 'Discover tasty posts near your tastes',
+                  icon: Icons.auto_awesome_rounded,
+                  selected: _tab == FeedTab.forYou,
+                  onTap: () => Navigator.pop(context, FeedTab.forYou),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                _FeedModeOption(
+                  title: 'Following',
+                  subtitle: 'Only people you follow',
+                  icon: Icons.group_rounded,
+                  selected: _tab == FeedTab.following,
+                  onTap: () => Navigator.pop(context, FeedTab.following),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    if (chosen != null) _setTab(chosen);
   }
 
   void _openCuisinePicker() {
@@ -97,97 +165,90 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final hasUnread =
         ref.watch(hasUnreadNotificationsProvider).valueOrNull ?? false;
     final preview = Cuisines.all.take(3).toList();
+    final modeLabel = _tab == FeedTab.forYou ? 'For You' : 'Following';
 
     return Scaffold(
-      body: NotificationListener<ScrollNotification>(
-        onNotification: _onScroll,
-        child: NestedScrollView(
-          headerSliverBuilder: (context, _) => [
-            SliverAppBar(
-              floating: true,
-              snap: true,
-              pinned: false,
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              surfaceTintColor: Colors.transparent,
-              flexibleSpace: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      AppColors.primary.withValues(alpha: 0.16),
-                      theme.scaffoldBackgroundColor.withValues(alpha: 0.88),
-                      AppColors.secondary.withValues(alpha: 0.06),
-                    ],
-                  ),
-                ),
-              ),
-              title: ShaderMask(
-                blendMode: BlendMode.srcIn,
-                shaderCallback: (bounds) => const LinearGradient(
-                  colors: [
-                    AppColors.primaryDark,
-                    AppColors.charcoal,
-                    Color(0xFFC33530),
-                  ],
-                ).createShader(bounds),
-                child: Text(
-                  AppStrings.appName,
-                  style: GoogleFonts.fraunces(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 28,
-                    height: 1,
-                    letterSpacing: -1.1,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              actions: [
-                IconButton(
-                  icon: Badge(
-                    isLabelVisible: hasUnread,
-                    backgroundColor: AppColors.primary,
-                    smallSize: 8,
-                    child: Icon(
-                      Icons.notifications_none_rounded,
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.85),
+      body: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFF8EDEA),
+              AppColors.backgroundLight,
+              Color(0xFFF0EBE6),
+            ],
+          ),
+        ),
+        child: NotificationListener<ScrollNotification>(
+          onNotification: _onScroll,
+          child: NestedScrollView(
+            headerSliverBuilder: (context, _) => [
+              SliverAppBar(
+                floating: true,
+                snap: true,
+                pinned: false,
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                surfaceTintColor: Colors.transparent,
+                titleSpacing: AppSpacing.md,
+                title: Row(
+                  children: [
+                    Text(
+                      AppStrings.appName,
+                      style: GoogleFonts.fraunces(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 28,
+                        height: 1,
+                        letterSpacing: -1.2,
+                        color: AppColors.primaryDark,
+                      ),
                     ),
-                  ),
-                  onPressed: () => context.push(Routes.notifications),
-                  tooltip: 'Notifications',
-                ),
-                const SizedBox(width: AppSpacing.xs),
-              ],
-            ),
-            SliverToBoxAdapter(
-              child: AnimatedSize(
-                duration: AppDurations.normal,
-                curve: Curves.easeOutCubic,
-                alignment: Alignment.topCenter,
-                child: _chromeVisible
-                    ? Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                          AppSpacing.md,
-                          0,
-                          AppSpacing.md,
-                          AppSpacing.sm,
+                    const SizedBox(width: AppSpacing.sm),
+                    Flexible(
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: _FeedModeButton(
+                          label: modeLabel,
+                          onTap: _pickFeedMode,
                         ),
-                        child: Column(
-                          children: [
-                            _FeedModeSwitch(
-                              value: _tab,
-                              onChanged: (tab) {
-                                setState(() {
-                                  _tab = tab;
-                                  if (tab == FeedTab.following) {
-                                    _followingVisited = true;
-                                  }
-                                });
-                              },
-                            ),
-                            const SizedBox(height: AppSpacing.sm),
-                            Row(
+                      ),
+                    ),
+                  ],
+                ),
+                actions: [
+                  IconButton(
+                    icon: Badge(
+                      isLabelVisible: hasUnread,
+                      backgroundColor: AppColors.primary,
+                      smallSize: 8,
+                      child: Icon(
+                        Icons.notifications_none_rounded,
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.85),
+                      ),
+                    ),
+                    onPressed: () => context.push(Routes.notifications),
+                    tooltip: 'Notifications',
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                ],
+              ),
+              SliverToBoxAdapter(
+                child: AnimatedSize(
+                  duration: AppDurations.normal,
+                  curve: Curves.easeOutCubic,
+                  alignment: Alignment.topCenter,
+                  child: _chromeVisible
+                      ? Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.md,
+                            0,
+                            AppSpacing.md,
+                            AppSpacing.sm,
+                          ),
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
                               children: [
                                 _CuisinePill(
                                   label: 'All',
@@ -217,132 +278,158 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 ),
                               ],
                             ),
-                          ],
-                        ),
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
+              ),
+            ],
+            body: _tab == FeedTab.forYou
+                ? FeedList(tab: FeedTab.forYou, cuisineFilter: _cuisineFilter)
+                : (_followingVisited || _tab == FeedTab.following)
+                    ? FeedList(
+                        tab: FeedTab.following,
+                        cuisineFilter: _cuisineFilter,
                       )
                     : const SizedBox.shrink(),
-              ),
-            ),
-          ],
-          body: _tab == FeedTab.forYou
-              ? FeedList(tab: FeedTab.forYou, cuisineFilter: _cuisineFilter)
-              : (_followingVisited || _tab == FeedTab.following)
-                  ? FeedList(
-                      tab: FeedTab.following,
-                      cuisineFilter: _cuisineFilter,
-                    )
-                  : const SizedBox.shrink(),
+          ),
         ),
       ),
     );
   }
 }
 
-/// One combined control: sliding highlight shows the active mode only.
-class _FeedModeSwitch extends StatelessWidget {
-  const _FeedModeSwitch({required this.value, required this.onChanged});
+/// Single combined control — shows the active mode; tap to switch.
+class _FeedModeButton extends StatelessWidget {
+  const _FeedModeButton({required this.label, required this.onTap});
 
-  final FeedTab value;
-  final ValueChanged<FeedTab> onChanged;
+  final String label;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final isForYou = value == FeedTab.forYou;
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final thumbW = (width - 6) / 2;
-
-        return Container(
-          height: 44,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        child: Ink(
           decoration: BoxDecoration(
-            color: AppColors.secondary.withValues(alpha: 0.06),
-            borderRadius: BorderRadius.circular(AppRadius.pill),
-            border: Border.all(
-              color: AppColors.primary.withValues(alpha: 0.12),
+            gradient: LinearGradient(
+              colors: [
+                AppColors.primary.withValues(alpha: 0.92),
+                AppColors.primaryDark.withValues(alpha: 0.95),
+              ],
             ),
-          ),
-          child: Stack(
-            children: [
-              AnimatedPositioned(
-                duration: AppDurations.normal,
-                curve: Curves.easeOutCubic,
-                left: isForYou ? 3 : 3 + thumbW,
-                top: 3,
-                bottom: 3,
-                width: thumbW,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppColors.primary.withValues(alpha: 0.95),
-                        AppColors.primaryDark.withValues(alpha: 0.9),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(AppRadius.pill),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.25),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Row(
-                children: [
-                  Expanded(
-                    child: _ModeHitTarget(
-                      label: 'For You',
-                      selected: isForYou,
-                      onTap: () => onChanged(FeedTab.forYou),
-                    ),
-                  ),
-                  Expanded(
-                    child: _ModeHitTarget(
-                      label: 'Following',
-                      selected: !isForYou,
-                      onTap: () => onChanged(FeedTab.following),
-                    ),
-                  ),
-                ],
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.28),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
               ),
             ],
           ),
-        );
-      },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.sourceSans3(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13,
+                      letterSpacing: 0.1,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const Icon(
+                  Icons.expand_more_rounded,
+                  size: 18,
+                  color: Colors.white,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
 
-class _ModeHitTarget extends StatelessWidget {
-  const _ModeHitTarget({
-    required this.label,
+class _FeedModeOption extends StatelessWidget {
+  const _FeedModeOption({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
     required this.selected,
     required this.onTap,
   });
 
-  final String label;
+  final String title;
+  final String subtitle;
+  final IconData icon;
   final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Center(
-        child: AnimatedDefaultTextStyle(
-          duration: AppDurations.fast,
-          style: GoogleFonts.sourceSans3(
-            fontWeight: FontWeight.w700,
-            fontSize: 14,
-            letterSpacing: 0.2,
-            color: selected ? Colors.white : AppColors.textSecondaryLight,
+    return Material(
+      color: selected
+          ? AppColors.primary.withValues(alpha: 0.1)
+          : AppColors.feedAccentSoft,
+      borderRadius: BorderRadius.circular(AppRadius.lg),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: selected
+                      ? AppColors.primary
+                      : Colors.white.withValues(alpha: 0.8),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                child: Icon(
+                  icon,
+                  color: selected ? Colors.white : AppColors.primaryDark,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.sourceSans3(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                        color: AppColors.charcoal,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              if (selected)
+                const Icon(Icons.check_circle_rounded, color: AppColors.primary),
+            ],
           ),
-          child: Text(label),
         ),
       ),
     );
@@ -367,13 +454,13 @@ class _CuisinePill extends StatelessWidget {
     final bg = selected
         ? AppColors.primary
         : emphasized
-            ? AppColors.primary.withValues(alpha: 0.08)
-            : AppColors.secondary.withValues(alpha: 0.05);
+            ? Colors.white.withValues(alpha: 0.75)
+            : Colors.white.withValues(alpha: 0.55);
     final fg = selected
         ? Colors.white
         : emphasized
             ? AppColors.primaryDark
-            : AppColors.textSecondaryLight;
+            : AppColors.charcoal.withValues(alpha: 0.75);
 
     return Material(
       color: bg,
@@ -381,17 +468,26 @@ class _CuisinePill extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.pill),
-        child: Padding(
+        child: Container(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.sm,
             vertical: AppSpacing.xs,
           ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            border: Border.all(
+              color: selected
+                  ? Colors.transparent
+                  : AppColors.primary.withValues(alpha: 0.12),
+            ),
+          ),
           child: Text(
             label,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: fg,
-                  fontWeight: FontWeight.w700,
-                ),
+            style: GoogleFonts.sourceSans3(
+              color: fg,
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+            ),
           ),
         ),
       ),

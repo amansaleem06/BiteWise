@@ -2,33 +2,28 @@ import '../../firebase_options.dart';
 
 /// Google Maps / Places API keys used by the app.
 ///
-/// Maps SDK keys (in AndroidManifest / AppDelegate) are usually restricted to
-/// iOS/Android apps and **cannot** call Places over HTTP from Flutter.
-///
-/// For restaurant search we try keys that typically allow REST:
-/// 1. Optional compile-time `PLACES_API_KEY` (--dart-define)
-/// 2. Firebase Web API key
-/// 3. Platform Firebase API key
+/// Maps SDK keys stay in AndroidManifest / AppDelegate.
+/// Restaurant search uses a dedicated Places REST key (Application
+/// restrictions = None, API = Places only).
 abstract final class MapsConfig {
-  /// Pass a dedicated Places REST key:
-  /// `flutter run --dart-define=PLACES_API_KEY=AIza...`
+  /// Dedicated Places REST key (Places API / Places API New).
+  static const String placesRestKey =
+      'AIzaSyBW-IvsG49beXJM153SR211R1jBJAe2xEs';
+
+  /// Optional override: `flutter run --dart-define=PLACES_API_KEY=AIza...`
   static const String _dartDefinePlacesKey = String.fromEnvironment(
     'PLACES_API_KEY',
   );
 
-  /// Ordered keys to try for Places HTTP (New).
+  /// Ordered keys to try for Places HTTP.
   static List<String> get placesApiKeys {
     final keys = <String>[
       if (_dartDefinePlacesKey.isNotEmpty) _dartDefinePlacesKey,
-      // Web key is the best default for server-style HTTP Places calls.
+      placesRestKey,
       DefaultFirebaseOptions.web.apiKey,
       DefaultFirebaseOptions.currentPlatform.apiKey,
     ];
-    // De-dupe while preserving order.
     final seen = <String>{};
-    return [
-      for (final k in keys)
-        if (seen.add(k)) k,
-    ];
+    return [for (final k in keys) if (seen.add(k)) k];
   }
 }

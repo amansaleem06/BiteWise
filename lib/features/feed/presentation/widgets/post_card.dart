@@ -33,8 +33,25 @@ class PostCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.xs),
-      color: theme.colorScheme.surface,
+      margin: const EdgeInsets.fromLTRB(
+        AppSpacing.sm,
+        0,
+        AppSpacing.sm,
+        AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.08)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.charcoal.withValues(alpha: 0.05),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -60,7 +77,9 @@ class PostCard extends StatelessWidget {
                   icon: post.isLikedByMe
                       ? Icons.favorite_rounded
                       : Icons.favorite_border_rounded,
-                  color: post.isLikedByMe ? AppColors.error : null,
+                  color: post.isLikedByMe
+                      ? AppColors.primary
+                      : AppColors.charcoal.withValues(alpha: 0.85),
                   label: post.likeCount > 0
                       ? Formatters.compactCount(post.likeCount)
                       : null,
@@ -68,6 +87,7 @@ class PostCard extends StatelessWidget {
                 ),
                 _ActionButton(
                   icon: Icons.mode_comment_outlined,
+                  color: AppColors.charcoal.withValues(alpha: 0.85),
                   label: post.commentCount > 0
                       ? Formatters.compactCount(post.commentCount)
                       : null,
@@ -75,6 +95,7 @@ class PostCard extends StatelessWidget {
                 ),
                 _ActionButton(
                   icon: Icons.send_outlined,
+                  color: AppColors.charcoal.withValues(alpha: 0.85),
                   onTap: onShare,
                 ),
                 const Spacer(),
@@ -82,7 +103,9 @@ class PostCard extends StatelessWidget {
                   icon: post.isBookmarkedByMe
                       ? Icons.bookmark_rounded
                       : Icons.bookmark_border_rounded,
-                  color: post.isBookmarkedByMe ? AppColors.primaryDark : null,
+                  color: post.isBookmarkedByMe
+                      ? AppColors.accent
+                      : AppColors.charcoal.withValues(alpha: 0.85),
                   onTap: onBookmark,
                 ),
               ],
@@ -113,14 +136,18 @@ class PostCard extends StatelessWidget {
                     padding: const EdgeInsets.only(top: AppSpacing.xxs),
                     child: Text(
                       post.tags.map((t) => '#$t').join(' '),
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: AppColors.primaryDark),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 const SizedBox(height: AppSpacing.xxs),
                 Text(
                   Formatters.relativeTime(post.createdAt),
-                  style: theme.textTheme.bodySmall,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondaryLight,
+                  ),
                 ),
               ],
             ),
@@ -198,27 +225,40 @@ class _Header extends StatelessWidget {
                 // Restaurant is the place page — distinct from the member above.
                 GestureDetector(
                   onTap: onRestaurantTap,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.storefront_outlined,
-                        size: 13,
-                        color: AppColors.primaryDark,
-                      ),
-                      const SizedBox(width: 3),
-                      Flexible(
-                        child: Text(
-                          post.dishName != null
-                              ? '${post.dishName} · ${post.restaurantName}'
-                              : 'Restaurant · ${post.restaurantName}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall
-                              ?.copyWith(color: AppColors.primaryDark),
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.feedAccentSoft,
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.storefront_rounded,
+                          size: 13,
+                          color: AppColors.primary,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            post.dishName != null
+                                ? '${post.dishName} · ${post.restaurantName}'
+                                : post.restaurantName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: AppColors.primaryDark,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],

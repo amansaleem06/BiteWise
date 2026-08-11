@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -23,8 +24,18 @@ class MessagesScreen extends ConsumerWidget {
     final chatsAsync = ref.watch(chatsProvider);
 
     return Scaffold(
+      backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
-        title: const Text(AppStrings.navMessages),
+        backgroundColor: Colors.transparent,
+        title: Text(
+          AppStrings.navMessages,
+          style: GoogleFonts.fraunces(
+            fontWeight: FontWeight.w800,
+            fontSize: 26,
+            letterSpacing: -0.8,
+            color: AppColors.primaryDark,
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_square),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -77,7 +78,19 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
     final controller = ref.read(createPostControllerProvider.notifier);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('New post')),
+      backgroundColor: AppColors.backgroundLight,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        title: Text(
+          'New post',
+          style: GoogleFonts.fraunces(
+            fontWeight: FontWeight.w800,
+            fontSize: 26,
+            letterSpacing: -0.8,
+            color: AppColors.primaryDark,
+          ),
+        ),
+      ),
       body: ListView(
         padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
         children: [

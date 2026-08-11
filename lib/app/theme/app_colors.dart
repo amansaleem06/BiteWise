@@ -18,10 +18,12 @@ abstract final class AppColors {
   static const Color charcoal = Color(0xFF1A1D21);
   static const Color charcoalLight = Color(0xFF2A2F35);
 
-  // Surfaces — light
-  static const Color surfaceLight = Color(0xFFFFFCFB);
-  static const Color backgroundLight = cream;
-  static const Color outlineLight = Color(0xFFE0D9D4);
+  // Surfaces — light (warmer feed canvas)
+  static const Color surfaceLight = Color(0xFFFFFBFA);
+  static const Color backgroundLight = Color(0xFFF3EEE9);
+  static const Color outlineLight = Color(0xFFD9CFC8);
+  static const Color feedWash = Color(0x33C33530);
+  static const Color feedAccentSoft = Color(0xFFFFF0E8);
 
   // Surfaces — dark
   static const Color surfaceDark = charcoalLight;

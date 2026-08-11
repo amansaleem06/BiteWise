@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -48,8 +49,18 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     final nearbyActive = _tabs.index == 2;
 
     return Scaffold(
+      backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
-        title: const Text(AppStrings.navExplore),
+        backgroundColor: Colors.transparent,
+        title: Text(
+          AppStrings.navExplore,
+          style: GoogleFonts.fraunces(
+            fontWeight: FontWeight.w800,
+            fontSize: 26,
+            letterSpacing: -0.8,
+            color: AppColors.primaryDark,
+          ),
+        ),
         bottom: PreferredSize(
           preferredSize: Size.fromHeight(nearbyActive ? 104 : 152),
           child: Column(
