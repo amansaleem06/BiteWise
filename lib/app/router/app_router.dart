@@ -17,6 +17,7 @@ import '../../features/messages/presentation/screens/chat_screen.dart';
 import '../../features/messages/presentation/screens/messages_screen.dart';
 import '../../features/notifications/presentation/screens/notifications_screen.dart';
 import '../../features/profile/presentation/screens/edit_profile_screen.dart';
+import '../../features/profile/presentation/screens/follow_list_screen.dart';
 import '../../features/profile/presentation/screens/legal_document_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/profile/presentation/screens/settings_screen.dart';
@@ -102,6 +103,20 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: Routes.user,
         builder: (_, state) =>
             UserProfileScreen(uid: state.pathParameters['uid']!),
+      ),
+      GoRoute(
+        path: Routes.userFollowers,
+        builder: (_, state) => FollowListScreen(
+          uid: state.pathParameters['uid']!,
+          kind: FollowListKind.followers,
+        ),
+      ),
+      GoRoute(
+        path: Routes.userFollowing,
+        builder: (_, state) => FollowListScreen(
+          uid: state.pathParameters['uid']!,
+          kind: FollowListKind.following,
+        ),
       ),
       GoRoute(
         path: Routes.editProfile,

@@ -146,19 +146,21 @@ abstract final class AppTheme {
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: colorScheme.surface,
-        indicatorColor: AppColors.primaryLight,
-        height: 64,
+        indicatorColor: AppColors.primary.withValues(alpha: 0.14),
+        height: 68,
         elevation: 0,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         iconTheme: WidgetStateProperty.resolveWith(
           (states) => IconThemeData(
+            size: 26,
             color: states.contains(WidgetState.selected)
-                ? AppColors.primaryDark
+                ? AppColors.primary
                 : colorScheme.onSurfaceVariant,
           ),
         ),
         labelTextStyle: WidgetStateProperty.resolveWith(
           (states) => textTheme.labelMedium!.copyWith(
+            fontWeight: FontWeight.w700,
             color: states.contains(WidgetState.selected)
                 ? AppColors.primaryDark
                 : colorScheme.onSurfaceVariant,

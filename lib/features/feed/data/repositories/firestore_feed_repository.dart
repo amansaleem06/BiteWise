@@ -2,28 +2,24 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 
 import '../../../../core/errors/app_exception.dart';
+import '../../../../core/services/social_notification_writer.dart';
 import '../../domain/entities/post.dart';
 import '../../domain/repositories/feed_repository.dart';
 import '../models/post_model.dart';
 
 /// Firestore-backed feed.
-///
-/// Read strategy per page (kept deliberately cheap):
-///   1 query for posts + 2 small parallel lookups for the viewer's
-///   like/bookmark state on just the fetched page.
-///
-/// Counters (likeCount) are updated with atomic increments in the same
-/// batch as the like doc; they will move to Cloud Functions in the
-/// backend milestone without any client API change.
 class FirestoreFeedRepository implements FeedRepository {
   FirestoreFeedRepository({
     FirebaseFirestore? firestore,
     fb.FirebaseAuth? auth,
+    SocialNotificationWriter? notifications,
   })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _auth = auth ?? fb.FirebaseAuth.instance;
+        _auth = auth ?? fb.FirebaseAuth.instance,
+        _notifications = notifications ?? SocialNotificationWriter();
 
   final FirebaseFirestore _firestore;
   final fb.FirebaseAuth _auth;
+  final SocialNotificationWriter _notifications;
 
   static const _pageSize = 10;
 
@@ -138,10 +134,27 @@ class FirestoreFeedRepository implements FeedRepository {
 
   @override
   Future<void> setLiked(String postId, {required bool liked}) async {
-    // Single edge write — likeCount is maintained by Cloud Functions.
     final likeRef = _posts.doc(postId).collection('likes').doc(_uid);
     if (liked) {
       await likeRef.set({'createdAt': FieldValue.serverTimestamp()});
+      final post = await _posts.doc(postId).get();
+      final authorId = post.data()?['authorId'] as String?;
+      final media = post.data()?['media'];
+      String? mediaUrl;
+      if (media is List && media.isNotEmpty) {
+        final first = media.first;
+        if (first is Map && first['url'] is String) {
+          mediaUrl = first['url'] as String;
+        }
+      }
+      if (authorId != null) {
+        await _notifications.notify(
+          recipientUid: authorId,
+          type: 'like',
+          postId: postId,
+          postMediaUrl: mediaUrl,
+        );
+      }
     } else {
       await likeRef.delete();
     }

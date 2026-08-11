@@ -4,7 +4,9 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/errors/app_exception.dart';
 import '../../../../core/services/media_upload_service.dart';
+import '../../../../core/services/social_notification_writer.dart';
 import '../../../auth/data/models/user_model.dart';
+import '../../../auth/domain/entities/app_user.dart';
 import '../../../feed/data/models/post_model.dart';
 import '../../../feed/domain/entities/post.dart';
 import '../../../feed/domain/repositories/feed_repository.dart';
@@ -16,13 +18,16 @@ class FirestoreUserRepository implements UserRepository {
     FirebaseFirestore? firestore,
     fb.FirebaseAuth? auth,
     MediaUploadService? uploads,
+    SocialNotificationWriter? notifications,
   })  : _firestore = firestore ?? FirebaseFirestore.instance,
         _auth = auth ?? fb.FirebaseAuth.instance,
-        _uploads = uploads ?? MediaUploadService();
+        _uploads = uploads ?? MediaUploadService(),
+        _notifications = notifications ?? SocialNotificationWriter();
 
   final FirebaseFirestore _firestore;
   final fb.FirebaseAuth _auth;
   final MediaUploadService _uploads;
+  final SocialNotificationWriter _notifications;
 
   static const _pageSize = 12;
 
@@ -147,19 +152,50 @@ class FirestoreUserRepository implements UserRepository {
     final me = _uid;
     if (me == targetUid) throw const AppException("You can't follow yourself");
 
-    // Single canonical edge write. A Cloud Function mirrors the reverse
-    // `followers` edge and maintains both counters. Rules allow create/delete
-    // only (not update), so skip the write when the edge already exists.
     final myFollowingRef =
         _users.doc(me).collection('following').doc(targetUid);
+    final theirFollowersRef =
+        _users.doc(targetUid).collection('followers').doc(me);
+
     if (following) {
       final existing = await myFollowingRef.get();
-      if (!existing.exists) {
-        await myFollowingRef.set({'createdAt': FieldValue.serverTimestamp()});
-      }
+      if (existing.exists) return;
+      final batch = _firestore.batch()
+        ..set(myFollowingRef, {'createdAt': FieldValue.serverTimestamp()})
+        ..set(theirFollowersRef, {'createdAt': FieldValue.serverTimestamp()});
+      await batch.commit();
+      await _notifications.notify(recipientUid: targetUid, type: 'follow');
     } else {
-      await myFollowingRef.delete();
+      final batch = _firestore.batch()
+        ..delete(myFollowingRef)
+        ..delete(theirFollowersRef);
+      await batch.commit();
     }
+  }
+
+  @override
+  Future<List<AppUser>> fetchFollowing(String uid, {int limit = 50}) =>
+      _usersFromEdge(uid, collection: 'following', limit: limit);
+
+  @override
+  Future<List<AppUser>> fetchFollowers(String uid, {int limit = 50}) =>
+      _usersFromEdge(uid, collection: 'followers', limit: limit);
+
+  Future<List<AppUser>> _usersFromEdge(
+    String uid, {
+    required String collection,
+    required int limit,
+  }) async {
+    final edges = await _users.doc(uid).collection(collection).limit(limit).get();
+    if (edges.docs.isEmpty) return const [];
+    final users = await Future.wait(
+      edges.docs.map((d) async {
+        final snap = await _users.doc(d.id).get();
+        if (!snap.exists) return null;
+        return UserModel.fromDoc(snap);
+      }),
+    );
+    return users.whereType<AppUser>().toList();
   }
 
   @override

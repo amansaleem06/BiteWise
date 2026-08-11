@@ -84,29 +84,61 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.md,
                     ),
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(right: AppSpacing.xs),
-                        child: FilterChip(
+                      children: [
+                        FilterChip(
                           label: const Text('All'),
                           selected: _cuisineFilter == null,
                           onSelected: (_) =>
                               setState(() => _cuisineFilter = null),
                         ),
-                      ),
-                      for (final cuisine in Cuisines.all)
-                        Padding(
-                          padding: const EdgeInsets.only(right: AppSpacing.xs),
-                          child: FilterChip(
-                            label: Text(cuisine),
-                            selected: _cuisineFilter == cuisine,
-                            onSelected: (_) => setState(
-                              () => _cuisineFilter =
-                                  _cuisineFilter == cuisine ? null : cuisine,
+                        for (final cuisine in Cuisines.all.take(3))
+                          Padding(
+                            padding:
+                                const EdgeInsets.only(left: AppSpacing.xs),
+                            child: FilterChip(
+                              label: Text(cuisine),
+                              selected: _cuisineFilter == cuisine,
+                              onSelected: (_) => setState(
+                                () => _cuisineFilter =
+                                    _cuisineFilter == cuisine ? null : cuisine,
+                              ),
                             ),
                           ),
+                        Padding(
+                          padding: const EdgeInsets.only(left: AppSpacing.xs),
+                          child: ActionChip(
+                            label: const Text('See more'),
+                            onPressed: () {
+                              showModalBottomSheet<void>(
+                                context: context,
+                                showDragHandle: true,
+                                builder: (ctx) => SafeArea(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(AppSpacing.md),
+                                    child: Wrap(
+                                      spacing: AppSpacing.xs,
+                                      runSpacing: AppSpacing.xs,
+                                      children: [
+                                        for (final cuisine in Cuisines.all)
+                                          ChoiceChip(
+                                            label: Text(cuisine),
+                                            selected:
+                                                _cuisineFilter == cuisine,
+                                            onSelected: (_) {
+                                              setState(() =>
+                                                  _cuisineFilter = cuisine);
+                                              Navigator.pop(ctx);
+                                            },
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
                         ),
-                    ],
+                      ],
                   ),
                 ),
               TabBar(

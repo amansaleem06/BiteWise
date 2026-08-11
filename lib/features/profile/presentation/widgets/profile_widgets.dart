@@ -38,8 +38,20 @@ class ProfileHeader extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     _Stat(label: 'Posts', value: user.postCount),
-                    _Stat(label: 'Followers', value: user.followerCount),
-                    _Stat(label: 'Following', value: user.followingCount),
+                    _Stat(
+                      label: 'Followers',
+                      value: user.followerCount,
+                      onTap: () => context.push(
+                        Routes.followersPath(user.uid),
+                      ),
+                    ),
+                    _Stat(
+                      label: 'Following',
+                      value: user.followingCount,
+                      onTap: () => context.push(
+                        Routes.followingPath(user.uid),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -137,20 +149,35 @@ class _Avatar extends StatelessWidget {
 }
 
 class _Stat extends StatelessWidget {
-  const _Stat({required this.label, required this.value});
+  const _Stat({required this.label, required this.value, this.onTap});
 
   final String label;
   final int value;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Column(
+    final child = Column(
       children: [
-        Text(Formatters.compactCount(value),
-            style: theme.textTheme.titleLarge,),
+        Text(
+          Formatters.compactCount(value),
+          style: theme.textTheme.titleLarge,
+        ),
         Text(label, style: theme.textTheme.bodySmall),
       ],
+    );
+    if (onTap == null) return child;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.xs,
+          vertical: AppSpacing.xxs,
+        ),
+        child: child,
+      ),
     );
   }
 }

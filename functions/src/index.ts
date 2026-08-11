@@ -24,12 +24,10 @@ export { onUserProfileUpdated } from "./denormalization";
 
 export { computeTrendingScores } from "./trending";
 
-export {
-  onLikeNotify,
-  onCommentNotify,
-  onFollowNotify,
-  onNotificationPush,
-} from "./notifications";
+// Like/comment/follow notification docs are created by the Flutter client
+// so the in-app bell works without waiting on function deploy. Keep only
+// the FCM fan-out for push delivery.
+export { onNotificationPush } from "./notifications";
 
 export { onChatMessagePush } from "./messaging";
 

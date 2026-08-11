@@ -1,5 +1,6 @@
 import 'package:image_picker/image_picker.dart';
 
+import '../../../auth/domain/entities/app_user.dart';
 import '../../../feed/domain/repositories/feed_repository.dart';
 import '../entities/user_profile.dart';
 
@@ -10,8 +11,12 @@ abstract interface class UserRepository {
   /// Paginated posts authored by [uid], newest first.
   Future<FeedPage> fetchUserPosts(String uid, {Object? cursor, int limit});
 
-  /// Follow/unfollow: maintains both edge docs and both counters atomically.
+  /// Follow/unfollow: writes both following and followers edges.
   Future<void> setFollowing(String targetUid, {required bool following});
+
+  /// Users this profile follows / users who follow this profile.
+  Future<List<AppUser>> fetchFollowing(String uid, {int limit = 50});
+  Future<List<AppUser>> fetchFollowers(String uid, {int limit = 50});
 
   /// Updates displayName/bio; also syncs Firebase Auth displayName so new
   /// posts/comments denormalize the fresh name.

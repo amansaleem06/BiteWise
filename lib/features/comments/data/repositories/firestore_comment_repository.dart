@@ -2,20 +2,23 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 
 import '../../../../core/errors/app_exception.dart';
+import '../../../../core/services/social_notification_writer.dart';
 import '../../domain/entities/comment.dart';
 import '../../domain/repositories/comment_repository.dart';
 
 /// Comments live at `posts/{postId}/comments/{commentId}`.
-/// The post's commentCount is adjusted atomically in the same batch.
 class FirestoreCommentRepository implements CommentRepository {
   FirestoreCommentRepository({
     FirebaseFirestore? firestore,
     fb.FirebaseAuth? auth,
+    SocialNotificationWriter? notifications,
   })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _auth = auth ?? fb.FirebaseAuth.instance;
+        _auth = auth ?? fb.FirebaseAuth.instance,
+        _notifications = notifications ?? SocialNotificationWriter();
 
   final FirebaseFirestore _firestore;
   final fb.FirebaseAuth _auth;
+  final SocialNotificationWriter _notifications;
 
   static const _pageSize = 20;
 
@@ -67,7 +70,26 @@ class FirestoreCommentRepository implements CommentRepository {
       'createdAt': FieldValue.serverTimestamp(),
     });
 
-    // Server timestamp isn't resolved locally yet; return an optimistic copy.
+    final post = await _firestore.collection('posts').doc(postId).get();
+    final authorId = post.data()?['authorId'] as String?;
+    final media = post.data()?['media'];
+    String? mediaUrl;
+    if (media is List && media.isNotEmpty) {
+      final first = media.first;
+      if (first is Map && first['url'] is String) {
+        mediaUrl = first['url'] as String;
+      }
+    }
+    if (authorId != null) {
+      await _notifications.notify(
+        recipientUid: authorId,
+        type: 'comment',
+        postId: postId,
+        postMediaUrl: mediaUrl,
+        text: trimmed.length > 120 ? trimmed.substring(0, 120) : trimmed,
+      );
+    }
+
     return Comment(
       id: commentRef.id,
       authorId: user.uid,

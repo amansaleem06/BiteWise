@@ -66,9 +66,8 @@ service cloud.firestore {
 
     match /users/{uid}/followers/{followerUid} {
       allow read: if isSignedIn();
-      // Mirrored server-side from the `following` edge — clients never
-      // write here.
-      allow write: if false;
+      // Follower may create/delete their own reverse edge (same as following).
+      allow create, delete: if isSelf(followerUid) && uid != followerUid;
     }
 
     // FCM device tokens — private to their owner.
@@ -76,11 +75,15 @@ service cloud.firestore {
       allow read, write: if isSelf(uid);
     }
 
-    // Notifications — created only by Cloud Functions; the owner may read,
-    // mark as read, and delete.
+    // Notifications — actor may create for someone else; owner reads/marks.
     match /users/{uid}/notifications/{notificationId} {
       allow read, delete: if isSelf(uid);
-      allow create: if false;
+      allow create: if isSignedIn()
+        && request.resource.data.actorId == request.auth.uid
+        && request.resource.data.actorId != uid
+        && request.resource.data.type in ['like', 'comment', 'follow']
+        && request.resource.data.read == false
+        && request.resource.data.actorName is string;
       allow update: if isSelf(uid)
         && request.resource.data.diff(resource.data).affectedKeys()
             .hasOnly(['read'])

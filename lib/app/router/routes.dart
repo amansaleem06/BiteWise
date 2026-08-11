@@ -14,6 +14,10 @@ abstract final class Routes {
   static String postPath(String id) => '/post/$id';
   static const user = '/user/:uid';
   static String userPath(String uid) => '/user/$uid';
+  static const userFollowers = '/user/:uid/followers';
+  static String followersPath(String uid) => '/user/$uid/followers';
+  static const userFollowing = '/user/:uid/following';
+  static String followingPath(String uid) => '/user/$uid/following';
   static const editProfile = '/profile/edit';
   static const settings = '/settings';
   static const privacyPolicy = '/privacy';
