@@ -135,8 +135,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                                             selected:
                                                 _cuisineFilter == cuisine,
                                             onSelected: (_) {
-                                              setState(() =>
-                                                  _cuisineFilter = cuisine);
+                                              setState(() {
+                                                _cuisineFilter = cuisine;
+                                              });
                                               Navigator.pop(ctx);
                                             },
                                           ),

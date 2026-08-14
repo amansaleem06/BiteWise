@@ -270,7 +270,7 @@ class FirestoreUserRepository implements UserRepository {
         final parent = d.reference.parent.parent;
         if (parent != null) followerIds.add(parent.id);
       }
-      return _hydrateUsers(followerIds);
+      return await _hydrateUsers(followerIds);
     } catch (_) {
       return const [];
     }

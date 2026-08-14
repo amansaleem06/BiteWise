@@ -73,7 +73,7 @@ class FirebaseAuthRepository implements AuthRepository {
         email: email.trim(),
         password: password,
       );
-      return _loadOrCreateProfile(cred.user!);
+      return await _loadOrCreateProfile(cred.user!);
     } on fb.FirebaseAuthException catch (e) {
       throw _mapAuthError(e);
     }
@@ -126,7 +126,7 @@ class FirebaseAuthRepository implements AuthRepository {
               emailVerified: true,
             ),
           );
-      return _loadOrCreateProfile(user);
+      return await _loadOrCreateProfile(user);
     } on fb.FirebaseAuthException catch (e) {
       throw _mapAuthError(e);
     }
@@ -148,7 +148,7 @@ class FirebaseAuthRepository implements AuthRepository {
           idToken: googleAuth.idToken,
         ),
       );
-      return _loadOrCreateProfile(cred.user!);
+      return await _loadOrCreateProfile(cred.user!);
     } on fb.FirebaseAuthException catch (e) {
       throw _mapAuthError(e);
     }
@@ -161,7 +161,7 @@ class FirebaseAuthRepository implements AuthRepository {
         ..addScope('email')
         ..addScope('name');
       final cred = await _auth.signInWithProvider(provider);
-      return _loadOrCreateProfile(cred.user!);
+      return await _loadOrCreateProfile(cred.user!);
     } on fb.FirebaseAuthException catch (e) {
       throw _mapAuthError(e);
     }

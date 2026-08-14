@@ -106,7 +106,7 @@ class FirestoreExploreRepository implements ExploreRepository {
     }
 
     final restaurants = snap.docs
-        .map((d) => RestaurantModel.fromDoc(d))
+        .map(RestaurantModel.fromDoc)
         .where((r) => r.hasLocation)
         .toList()
       ..sort((a, b) => squaredDistance(a).compareTo(squaredDistance(b)));

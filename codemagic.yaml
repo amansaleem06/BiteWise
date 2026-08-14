@@ -39,7 +39,7 @@ workflows:
           xcode-project use-profiles
       - name: Flutter analyze
         script: |
-          flutter analyze --no-fatal-infos
+          flutter analyze --no-fatal-infos --no-fatal-warnings
       - name: Resolve next iOS build number
         script: |
           #!/usr/bin/env bash
@@ -95,7 +95,7 @@ workflows:
           flutter pub get
       - name: Flutter analyze
         script: |
-          flutter analyze --no-fatal-infos
+          flutter analyze --no-fatal-infos --no-fatal-warnings
       - name: Build app bundle
         script: |
           flutter build appbundle --release

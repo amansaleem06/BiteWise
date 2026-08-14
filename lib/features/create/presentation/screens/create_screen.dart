@@ -65,7 +65,7 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
       _caption.clear();
       _price.clear();
       _tags.clear();
-      setState(() => _cuisines.clear());
+      setState(_cuisines.clear);
       AppSnackbar.success(context, 'Posted!');
       context.go(Routes.home);
     }

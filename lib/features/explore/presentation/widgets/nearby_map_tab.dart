@@ -121,9 +121,13 @@ class _NearbyMapTabState extends ConsumerState<NearbyMapTab> {
               zoomControlsEnabled: false,
               // Win the gesture arena against the parent TabBarView.
               gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
-                Factory<EagerGestureRecognizer>(EagerGestureRecognizer.new),
-                Factory<PanGestureRecognizer>(PanGestureRecognizer.new),
-                Factory<ScaleGestureRecognizer>(ScaleGestureRecognizer.new),
+                const Factory<EagerGestureRecognizer>(
+                  EagerGestureRecognizer.new,
+                ),
+                const Factory<PanGestureRecognizer>(PanGestureRecognizer.new),
+                const Factory<ScaleGestureRecognizer>(
+                  ScaleGestureRecognizer.new,
+                ),
               },
               onTap: (_) => setState(() => _selected = null),
               markers: {
