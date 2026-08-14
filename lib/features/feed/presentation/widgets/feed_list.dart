@@ -176,7 +176,7 @@ class _FeedListState extends ConsumerState<FeedList> {
           child: ListView.builder(
             controller: _scroll,
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.only(bottom: 120, top: 4),
+            padding: const EdgeInsets.only(bottom: 160, top: 4),
             itemCount: posts.length + (feed.isLoadingMore ? 1 : 0),
             itemBuilder: (context, index) {
               if (index >= posts.length) {

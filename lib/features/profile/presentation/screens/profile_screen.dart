@@ -56,7 +56,7 @@ class ProfileScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: Text(
-          'Table',
+          'Cellar',
           style: GoogleFonts.fraunces(
             fontWeight: FontWeight.w800,
             fontSize: 26,

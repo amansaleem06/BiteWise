@@ -82,7 +82,7 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: Text(
-          'Pass',
+          'Ember',
           style: GoogleFonts.fraunces(
             fontWeight: FontWeight.w800,
             fontSize: 26,

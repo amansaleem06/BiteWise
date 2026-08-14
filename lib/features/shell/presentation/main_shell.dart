@@ -10,7 +10,7 @@ import '../../../app/theme/app_spacing.dart';
 import '../../../app/theme/theme_mode_provider.dart';
 import '../../notifications/presentation/providers/notification_providers.dart';
 
-/// Taste Stage shell: floating orb + radial course menu (no IG tab bar).
+/// Taste Stage: floating seal + rotatable tasting ring (no IG tab bar).
 class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key, required this.navigationShell});
 
@@ -25,22 +25,27 @@ class _MainShellState extends ConsumerState<MainShell>
   StatefulNavigationShell get navigationShell => widget.navigationShell;
 
   var _menuOpen = false;
+  /// Degrees the ring has been spun by the user.
+  var _orbitSpin = 0.0;
   late final AnimationController _fan;
 
+  /// Tasting-menu courses — equal slices on a full circle.
   static const _courses = <_Course>[
-    _Course(0, 'Plate', Icons.restaurant_menu_rounded, -110),
-    _Course(1, 'Atlas', Icons.public_rounded, -55),
-    _Course(2, 'Pass', Icons.add_rounded, 0),
-    _Course(3, 'Booth', Icons.forum_rounded, 55),
-    _Course(4, 'Table', Icons.table_restaurant_rounded, 110),
+    _Course(0, 'Amuse', Icons.auto_awesome_rounded),
+    _Course(1, 'Forage', Icons.explore_rounded),
+    _Course(2, 'Ember', Icons.local_fire_department_rounded),
+    _Course(3, 'Whisper', Icons.forum_rounded),
+    _Course(4, 'Cellar', Icons.wine_bar_rounded),
   ];
+
+  static const _radius = 118.0;
 
   @override
   void initState() {
     super.initState();
     _fan = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 320),
+      duration: const Duration(milliseconds: 340),
     );
     Future<void>.microtask(() async {
       try {
@@ -79,11 +84,18 @@ class _MainShellState extends ConsumerState<MainShell>
     if (_menuOpen) _toggleMenu();
   }
 
+  void _spinBy(double dx) {
+    // Horizontal drag → orbit rotation (deg).
+    setState(() => _orbitSpin += dx * 0.45);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final bottom = MediaQuery.paddingOf(context).bottom;
     final index = navigationShell.currentIndex;
+    // Lift the whole stage so the ring clears the home indicator & screen edge.
+    final stageBottom = bottom + 56;
 
     return Scaffold(
       body: Stack(
@@ -93,91 +105,111 @@ class _MainShellState extends ConsumerState<MainShell>
             Positioned.fill(
               child: GestureDetector(
                 onTap: _toggleMenu,
-                child: AnimatedOpacity(
-                  duration: AppDurations.fast,
-                  opacity: _menuOpen ? 1 : 0,
-                  child: ColoredBox(
-                    color: Colors.black.withValues(alpha: 0.45),
-                  ),
+                child: ColoredBox(
+                  color: Colors.black.withValues(alpha: 0.48),
                 ),
               ),
             ),
           Positioned(
             left: 0,
             right: 0,
-            bottom: bottom + 12,
+            bottom: stageBottom,
             child: SizedBox(
-              height: 168,
-              child: Stack(
-                alignment: Alignment.bottomCenter,
-                children: [
-                  ..._courses.map((c) {
-                    return AnimatedBuilder(
-                      animation: _fan,
-                      builder: (context, child) {
-                        final t = Curves.easeOutBack.transform(_fan.value);
-                        final angle = c.degrees * math.pi / 180;
-                        final radius = 96.0 * t;
-                        final dx = math.sin(angle) * radius;
-                        final dy = -math.cos(angle) * radius * 0.92;
-                        return Positioned(
-                          bottom: 28 + dy,
-                          left: 0,
-                          right: 0,
-                          child: Opacity(
-                            opacity: t.clamp(0.0, 1.0),
-                            child: Transform.translate(
-                              offset: Offset(dx, 0),
-                              child: child,
+              height: _radius * 2 + 72,
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onHorizontalDragUpdate: _menuOpen
+                    ? (d) => _spinBy(d.delta.dx)
+                    : null,
+                onPanUpdate: _menuOpen ? (d) => _spinBy(d.delta.dx) : null,
+                child: AnimatedBuilder(
+                  animation: _fan,
+                  builder: (context, _) {
+                    final t = Curves.easeOutBack.transform(_fan.value);
+                    final r = _radius * t;
+
+                    return Stack(
+                      alignment: Alignment.center,
+                      clipBehavior: Clip.none,
+                      children: [
+                        // Soft orbit guide when open.
+                        if (t > 0.05)
+                          Opacity(
+                            opacity: (t * 0.35).clamp(0.0, 0.35),
+                            child: Container(
+                              width: r * 2 + 8,
+                              height: r * 2 + 8,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: AppColors.primary
+                                      .withValues(alpha: 0.35),
+                                  width: 1.5,
+                                ),
+                              ),
                             ),
                           ),
-                        );
-                      },
-                      child: Center(
-                        child: _CourseChip(
-                          label: c.label,
-                          icon: c.icon,
-                          selected: index == c.index,
-                          onTap: () => _goCourse(c.index),
-                        ),
-                      ),
-                    );
-                  }),
-                  GestureDetector(
-                    onTap: _toggleMenu,
-                    onLongPress: () => _goCourse(2),
-                    child: Container(
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: AppColors.brandGradient,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.4),
-                            blurRadius: 18,
-                            offset: const Offset(0, 6),
+                        for (var i = 0; i < _courses.length; i++)
+                          _orbitChip(
+                            course: _courses[i],
+                            index: i,
+                            selected: index == _courses[i].index,
+                            radius: r,
+                            opacity: t.clamp(0.0, 1.0),
                           ),
-                        ],
-                        border: Border.all(
-                          color: theme.colorScheme.surface,
-                          width: 3,
+                        // Center seal — always visible, higher on screen.
+                        GestureDetector(
+                          onTap: _toggleMenu,
+                          onLongPress: () => _goCourse(2),
+                          child: Container(
+                            width: 68,
+                            height: 68,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: AppColors.brandGradient,
+                              boxShadow: [
+                                BoxShadow(
+                                  color:
+                                      AppColors.primary.withValues(alpha: 0.42),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                              border: Border.all(
+                                color: theme.colorScheme.surface,
+                                width: 3,
+                              ),
+                            ),
+                            child: AnimatedRotation(
+                              turns: _menuOpen ? 0.125 : 0,
+                              duration: AppDurations.normal,
+                              child: Icon(
+                                _menuOpen
+                                    ? Icons.close_rounded
+                                    : Icons.restaurant_rounded,
+                                color: Colors.white,
+                                size: 30,
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
-                      child: AnimatedRotation(
-                        turns: _menuOpen ? 0.125 : 0,
-                        duration: AppDurations.normal,
-                        child: Icon(
-                          _menuOpen
-                              ? Icons.close_rounded
-                              : Icons.restaurant_rounded,
-                          color: Colors.white,
-                          size: 30,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                        if (_menuOpen)
+                          Positioned(
+                            bottom: 0,
+                            child: Text(
+                              'Drag to spin the ring',
+                              style: GoogleFonts.sourceSans3(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: theme.colorScheme.onSurface
+                                    .withValues(alpha: 0.55),
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
               ),
             ),
           ),
@@ -185,14 +217,41 @@ class _MainShellState extends ConsumerState<MainShell>
       ),
     );
   }
+
+  Widget _orbitChip({
+    required _Course course,
+    required int index,
+    required bool selected,
+    required double radius,
+    required double opacity,
+  }) {
+    // Equal spacing around a full circle; spin shifts the whole ring.
+    final slice = 360.0 / _courses.length;
+    final degrees = -90 + index * slice + _orbitSpin;
+    final angle = degrees * math.pi / 180;
+    final dx = math.sin(angle) * radius;
+    final dy = -math.cos(angle) * radius;
+
+    return Transform.translate(
+      offset: Offset(dx, dy),
+      child: Opacity(
+        opacity: opacity,
+        child: _CourseChip(
+          label: course.label,
+          icon: course.icon,
+          selected: selected,
+          onTap: () => _goCourse(course.index),
+        ),
+      ),
+    );
+  }
 }
 
 class _Course {
-  const _Course(this.index, this.label, this.icon, this.degrees);
+  const _Course(this.index, this.label, this.icon);
   final int index;
   final String label;
   final IconData icon;
-  final double degrees;
 }
 
 class _CourseChip extends StatelessWidget {
@@ -214,15 +273,15 @@ class _CourseChip extends StatelessWidget {
     return Material(
       color: selected
           ? AppColors.primary
-          : theme.colorScheme.surface.withValues(alpha: 0.95),
-      elevation: 6,
-      shadowColor: Colors.black38,
+          : theme.colorScheme.surface.withValues(alpha: 0.96),
+      elevation: 8,
+      shadowColor: Colors.black45,
       shape: const StadiumBorder(),
       child: InkWell(
         onTap: onTap,
         customBorder: const StadiumBorder(),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [

@@ -56,7 +56,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'Plate course',
+                  'Amuse course',
                   style: GoogleFonts.fraunces(
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
@@ -153,7 +153,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 title: Row(
                   children: [
                     Text(
-                      'Plate',
+                      'Amuse',
                       style: GoogleFonts.fraunces(
                         fontWeight: FontWeight.w800,
                         fontSize: 28,

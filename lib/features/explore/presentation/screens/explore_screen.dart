@@ -52,7 +52,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: Text(
-          'Atlas',
+          'Forage',
           style: GoogleFonts.fraunces(
             fontWeight: FontWeight.w800,
             fontSize: 26,
