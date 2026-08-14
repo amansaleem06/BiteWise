@@ -48,6 +48,8 @@ class Post extends Equatable {
     this.isBookmarkedByMe = false,
     this.isRepostedByMe = false,
     this.restaurantVerified = false,
+    this.previewCommentAuthor,
+    this.previewCommentText,
     this.createdAt,
   });
 
@@ -72,7 +74,19 @@ class Post extends Equatable {
   final bool isBookmarkedByMe;
   final bool isRepostedByMe;
   final bool restaurantVerified;
+
+  /// Latest comment teaser for the feed card.
+  final String? previewCommentAuthor;
+  final String? previewCommentText;
+
   final DateTime? createdAt;
+
+  bool get hasRestaurant => restaurantName.trim().isNotEmpty;
+
+  bool get hasCommentPreview =>
+      commentCount > 0 &&
+      previewCommentText != null &&
+      previewCommentText!.trim().isNotEmpty;
 
   Post copyWith({
     int? likeCount,
@@ -82,6 +96,8 @@ class Post extends Equatable {
     bool? isBookmarkedByMe,
     bool? isRepostedByMe,
     bool? restaurantVerified,
+    String? previewCommentAuthor,
+    String? previewCommentText,
   }) =>
       Post(
         id: id,
@@ -105,6 +121,9 @@ class Post extends Equatable {
         isBookmarkedByMe: isBookmarkedByMe ?? this.isBookmarkedByMe,
         isRepostedByMe: isRepostedByMe ?? this.isRepostedByMe,
         restaurantVerified: restaurantVerified ?? this.restaurantVerified,
+        previewCommentAuthor:
+            previewCommentAuthor ?? this.previewCommentAuthor,
+        previewCommentText: previewCommentText ?? this.previewCommentText,
         createdAt: createdAt,
       );
 
@@ -118,5 +137,7 @@ class Post extends Equatable {
         isBookmarkedByMe,
         isRepostedByMe,
         restaurantVerified,
+        previewCommentAuthor,
+        previewCommentText,
       ];
 }

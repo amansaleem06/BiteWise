@@ -57,8 +57,21 @@ class CreatePostState {
   /// Upload progress 0..1 while submitting.
   final double progress;
 
-  bool get canSubmit =>
-      images.isNotEmpty && restaurant != null && !isSubmitting;
+  bool get canSubmit {
+    if (images.isEmpty || isSubmitting) return false;
+    // Rating always requires a restaurant; photo-only posts are fine.
+    if (rating != null && restaurant == null) return false;
+    return true;
+  }
+
+  String? get submitBlockedReason {
+    if (isSubmitting) return null;
+    if (images.isEmpty) return 'Add at least one photo to publish.';
+    if (rating != null && restaurant == null) {
+      return 'Tag a restaurant to publish a rating.';
+    }
+    return null;
+  }
 
   CreatePostState copyWith({
     List<XFile>? images,
@@ -127,12 +140,18 @@ class CreatePostController extends AutoDisposeNotifier<CreatePostState> {
     double? price,
     required List<String> tags,
   }) async {
-    if (!state.canSubmit) return 'Add at least one photo and a restaurant.';
+    if (!state.canSubmit) {
+      return state.submitBlockedReason ??
+          'Add at least one photo to publish.';
+    }
+    if (state.rating != null && state.restaurant == null) {
+      return 'Tag a restaurant to publish a rating.';
+    }
     state = state.copyWith(isSubmitting: true, progress: 0);
     try {
       await ref.read(createPostRepositoryProvider).publishPost(
             images: state.images,
-            restaurant: state.restaurant!,
+            restaurant: state.restaurant,
             dishName: dishName,
             caption: caption,
             rating: state.rating,

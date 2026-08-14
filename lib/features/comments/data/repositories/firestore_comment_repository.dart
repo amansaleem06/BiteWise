@@ -61,6 +61,9 @@ class FirestoreCommentRepository implements CommentRepository {
 
     final commentRef = _comments(postId).doc();
     final postRef = _firestore.collection('posts').doc(postId);
+    final preview = trimmed.length > 140
+        ? '${trimmed.substring(0, 140)}…'
+        : trimmed;
     final batch = _firestore.batch()
       ..set(commentRef, {
         'authorId': user.uid,
@@ -70,7 +73,11 @@ class FirestoreCommentRepository implements CommentRepository {
         'replyToName': replyToName,
         'createdAt': FieldValue.serverTimestamp(),
       })
-      ..update(postRef, {'commentCount': FieldValue.increment(1)});
+      ..update(postRef, {
+        'commentCount': FieldValue.increment(1),
+        'latestCommentAuthor': user.displayName ?? 'Someone',
+        'latestCommentText': preview,
+      });
     await batch.commit();
 
     final post = await postRef.get();

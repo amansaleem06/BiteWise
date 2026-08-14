@@ -130,7 +130,7 @@ class FirebaseCreatePostRepository implements CreatePostRepository {
   @override
   Future<void> publishPost({
     required List<XFile> images,
-    required RestaurantRef restaurant,
+    RestaurantRef? restaurant,
     String? dishName,
     required String caption,
     double? rating,
@@ -139,6 +139,9 @@ class FirebaseCreatePostRepository implements CreatePostRepository {
     void Function(double progress)? onProgress,
   }) async {
     final user = _user;
+    if (rating != null && restaurant == null) {
+      throw const AppException('Tag a restaurant to publish a rating.');
+    }
 
     final uploaded = await _uploads.uploadImages(
       uid: user.uid,
@@ -150,8 +153,8 @@ class FirebaseCreatePostRepository implements CreatePostRepository {
       'authorId': user.uid,
       'authorName': user.displayName ?? '',
       'authorPhotoUrl': user.photoURL,
-      'restaurantId': restaurant.id,
-      'restaurantName': restaurant.name,
+      'restaurantId': restaurant?.id ?? '',
+      'restaurantName': restaurant?.name ?? '',
       'dishId': null,
       'dishName': (dishName?.trim().isEmpty ?? true) ? null : dishName!.trim(),
       'caption': caption.trim(),
@@ -175,9 +178,11 @@ class FirebaseCreatePostRepository implements CreatePostRepository {
       'createdAt': FieldValue.serverTimestamp(),
     });
 
-    // Keep restaurant aggregates fresh even when Cloud Functions lag.
+    final restaurantId = restaurant?.id;
+    if (restaurantId == null || restaurantId.isEmpty) return;
+
     final restaurantRef =
-        _firestore.collection('restaurants').doc(restaurant.id);
+        _firestore.collection('restaurants').doc(restaurantId);
     await _firestore.runTransaction((tx) async {
       final snap = await tx.get(restaurantRef);
       if (!snap.exists) return;

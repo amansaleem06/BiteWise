@@ -31,11 +31,11 @@ class _MainShellState extends ConsumerState<MainShell>
 
   /// Tasting-menu courses — equal slices on a full circle.
   static const _courses = <_Course>[
-    _Course(0, 'Amuse', Icons.auto_awesome_rounded),
-    _Course(1, 'Forage', Icons.explore_rounded),
-    _Course(2, 'Ember', Icons.local_fire_department_rounded),
-    _Course(3, 'Whisper', Icons.forum_rounded),
-    _Course(4, 'Cellar', Icons.wine_bar_rounded),
+    _Course(0, 'Feed', Icons.home_rounded),
+    _Course(1, 'Explore', Icons.explore_rounded),
+    _Course(2, 'Create', Icons.add_rounded),
+    _Course(3, 'Messages', Icons.chat_bubble_rounded),
+    _Course(4, 'Profile', Icons.person_rounded),
   ];
 
   static const _radius = 118.0;

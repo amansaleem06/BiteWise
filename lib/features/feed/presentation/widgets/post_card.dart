@@ -107,19 +107,20 @@ class PostCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                      GestureDetector(
-                        onTap: onRestaurantTap,
-                        child: Text(
-                          post.restaurantName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.sourceSans3(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13,
-                            color: AppColors.primary,
+                      if (post.hasRestaurant)
+                        GestureDetector(
+                          onTap: onRestaurantTap,
+                          child: Text(
+                            post.restaurantName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.sourceSans3(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                              color: AppColors.primary,
+                            ),
                           ),
                         ),
-                      ),
                     ],
                   ),
                 ),
@@ -278,6 +279,70 @@ class PostCard extends StatelessWidget {
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   ),
+                if (post.hasCommentPreview) ...[
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: onComment,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerHighest
+                            .withValues(alpha: 0.55),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
+                      child: Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                              text: '${post.previewCommentAuthor ?? 'Comment'} ',
+                              style: GoogleFonts.sourceSans3(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13,
+                                color: theme.colorScheme.onSurface,
+                              ),
+                            ),
+                            TextSpan(
+                              text: post.previewCommentText!,
+                              style: GoogleFonts.sourceSans3(
+                                fontSize: 13,
+                                color: theme.colorScheme.onSurface
+                                    .withValues(alpha: 0.85),
+                              ),
+                            ),
+                            if (post.commentCount > 1)
+                              TextSpan(
+                                text: '  · View all ${post.commentCount}',
+                                style: GoogleFonts.sourceSans3(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                          ],
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                ] else if (post.commentCount > 0) ...[
+                  const SizedBox(height: 6),
+                  GestureDetector(
+                    onTap: onComment,
+                    child: Text(
+                      'View ${post.commentCount} comment${post.commentCount == 1 ? '' : 's'}',
+                      style: GoogleFonts.sourceSans3(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ],
                 if (post.tags.isNotEmpty) ...[
                   const SizedBox(height: 6),
                   Text(

@@ -108,6 +108,7 @@ service cloud.firestore {
       allow create: if isSignedIn()
         && request.resource.data.authorId == request.auth.uid
         && request.resource.data.restaurantId is string
+        && request.resource.data.restaurantName is string
         && request.resource.data.caption is string
         && request.resource.data.caption.size() <= 2200
         && request.resource.data.media is list
@@ -120,7 +121,8 @@ service cloud.firestore {
         && (!('rating' in request.resource.data)
             || request.resource.data.rating == null
             || (request.resource.data.rating >= 1.0
-                && request.resource.data.rating <= 5.0));
+                && request.resource.data.rating <= 5.0
+                && request.resource.data.restaurantId.size() >= 1));
 
       allow update: if isSignedIn() && (
         (request.auth.uid == resource.data.authorId
@@ -132,6 +134,10 @@ service cloud.firestore {
                 .hasOnly(['likeCount'])
             && (request.resource.data.likeCount == resource.data.get('likeCount', 0) + 1
                 || request.resource.data.likeCount == resource.data.get('likeCount', 0) - 1))
+        || (request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(['commentCount', 'latestCommentAuthor', 'latestCommentText'])
+            && (request.resource.data.commentCount == resource.data.get('commentCount', 0) + 1
+                || request.resource.data.commentCount == resource.data.get('commentCount', 0) - 1))
         || (request.resource.data.diff(resource.data).affectedKeys()
                 .hasOnly(['commentCount'])
             && (request.resource.data.commentCount == resource.data.get('commentCount', 0) + 1

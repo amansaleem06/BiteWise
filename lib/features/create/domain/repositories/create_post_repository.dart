@@ -18,7 +18,7 @@ abstract interface class CreatePostRepository {
   /// Uploads media then writes the post document.
   Future<void> publishPost({
     required List<XFile> images,
-    required RestaurantRef restaurant,
+    RestaurantRef? restaurant,
     String? dishName,
     required String caption,
     double? rating,

@@ -82,7 +82,7 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: Text(
-          'Ember',
+          'Create',
           style: GoogleFonts.fraunces(
             fontWeight: FontWeight.w800,
             fontSize: 26,
@@ -107,8 +107,15 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Restaurant — required, the anchor of every post.
-                const _SectionLabel('Restaurant *'),
+                const _SectionLabel('Restaurant'),
+                Text(
+                  state.rating != null
+                      ? 'Required when you add a rating.'
+                      : 'Optional — skip for a photo-only post.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const CircleAvatar(
@@ -119,7 +126,7 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
                     ),
                   ),
                   title: Text(
-                    state.restaurant?.name ?? 'Tag the restaurant',
+                    state.restaurant?.name ?? 'Tag a restaurant (optional)',
                     style: state.restaurant == null
                         ? theme.textTheme.bodyMedium?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
@@ -146,7 +153,7 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
                 TextField(
                   controller: _dish,
                   decoration: const InputDecoration(
-                    hintText: 'e.g. Truffle mushroom pizza',
+                    hintText: 'Optional — e.g. Truffle mushroom pizza',
                   ),
                   textCapitalization: TextCapitalization.sentences,
                 ),
@@ -155,7 +162,7 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
                 TextField(
                   controller: _caption,
                   decoration: const InputDecoration(
-                    hintText: 'Tell the story of this bite…',
+                    hintText: 'Optional — tell the story, or leave blank',
                   ),
                   maxLines: 4,
                   maxLength: 2200,
@@ -163,6 +170,12 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 const _SectionLabel('Your rating'),
+                Text(
+                  'Optional. If you rate, tag a restaurant first.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
                 const SizedBox(height: AppSpacing.xxs),
                 StarRatingInput(
                   value: state.rating,
@@ -252,11 +265,8 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
                 if (!state.canSubmit && !state.isSubmitting) ...[
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    state.images.isEmpty && state.restaurant == null
-                        ? 'Add at least one photo and tag a restaurant to publish.'
-                        : state.images.isEmpty
-                            ? 'Add at least one photo to publish.'
-                            : 'Tag a restaurant to publish.',
+                    state.submitBlockedReason ??
+                        'Add at least one photo to publish.',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
