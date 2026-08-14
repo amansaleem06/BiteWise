@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -12,6 +11,7 @@ import '../../../../core/errors/error_text.dart';
 import '../providers/feed_providers.dart';
 import 'feed_shimmer.dart';
 import 'post_card.dart';
+import 'share_post_sheet.dart';
 
 class FeedList extends ConsumerStatefulWidget {
   const FeedList({super.key, required this.tab, this.cuisineFilter});
@@ -47,14 +47,13 @@ class _FeedListState extends ConsumerState<FeedList> {
     }
   }
 
-  Future<void> _share(String postId, String restaurant, String caption) async {
-    await SharePlus.instance.share(
-      ShareParams(
-        text:
-            'Taste this on TasteWise: $restaurant\n$caption\nhttps://tastewise.app/post/$postId',
-      ),
+  Future<void> _share(String postId, String restaurant, String caption) {
+    return SharePostSheet.show(
+      context,
+      postId: postId,
+      restaurantName: restaurant,
+      caption: caption,
     );
-    await ref.read(feedControllerProvider(widget.tab).notifier).sharePost(postId);
   }
 
   void _openTray({

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -12,6 +11,7 @@ import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../feed/presentation/providers/feed_providers.dart';
 import '../../../feed/presentation/widgets/feed_shimmer.dart';
 import '../../../feed/presentation/widgets/post_card.dart';
+import '../../../feed/presentation/widgets/share_post_sheet.dart';
 import '../providers/comment_providers.dart';
 import '../widgets/comment_tile.dart';
 
@@ -105,18 +105,12 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                             .setReposted(post.id, reposted: next);
                         ref.invalidate(postDetailProvider(widget.postId));
                       },
-                      onShare: () async {
-                        await SharePlus.instance.share(
-                          ShareParams(
-                            text:
-                                'Taste this on TasteWise: ${post.restaurantName}\n${post.caption}\nhttps://tastewise.app/post/${post.id}',
-                          ),
-                        );
-                        await ref
-                            .read(feedRepositoryProvider)
-                            .recordShare(post.id);
-                        ref.invalidate(postDetailProvider(widget.postId));
-                      },
+                      onShare: () => SharePostSheet.show(
+                        context,
+                        postId: post.id,
+                        restaurantName: post.restaurantName,
+                        caption: post.caption,
+                      ),
                       onComment: _inputFocus.requestFocus,
                       onAuthorTap: () =>
                           context.push(Routes.userPath(post.authorId)),
