@@ -4,36 +4,72 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/router/routes.dart';
-import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/widgets/async_error_view.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
+import '../../../restaurants/presentation/screens/restaurant_screen.dart';
 import '../providers/profile_providers.dart';
 import '../widgets/profile_widgets.dart';
 
-/// Own profile tab: header + posts grid + settings.
+/// Table course: diner profile, or restaurant-first home for owners.
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final uid = ref.watch(currentUserProvider)?.uid;
+    final me = ref.watch(currentUserProvider);
+    final uid = me?.uid;
+    final ownedId = me?.ownedRestaurantId;
 
+    if (ownedId != null && ownedId.isNotEmpty) {
+      return Scaffold(
+        body: Stack(
+          children: [
+            RestaurantScreen(restaurantId: ownedId),
+            Positioned(
+              top: MediaQuery.paddingOf(context).top + 4,
+              right: 8,
+              child: Row(
+                children: [
+                  IconButton.filledTonal(
+                    tooltip: 'Saved',
+                    onPressed: () => context.push(Routes.saved),
+                    icon: const Icon(Icons.bookmark_outline_rounded),
+                  ),
+                  IconButton.filledTonal(
+                    tooltip: AppStrings.settings,
+                    onPressed: () => context.push(Routes.settings),
+                    icon: const Icon(Icons.settings_outlined),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: Text(
-          ref.watch(currentUserProvider)?.displayName ?? AppStrings.navProfile,
+          'Table',
           style: GoogleFonts.fraunces(
             fontWeight: FontWeight.w800,
-            fontSize: 24,
+            fontSize: 26,
             letterSpacing: -0.6,
-            color: AppColors.primaryDark,
+            color: theme.colorScheme.onSurface,
           ),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.bookmark_outline_rounded),
+            tooltip: 'Saved',
+            onPressed: () => context.push(Routes.saved),
+          ),
           IconButton(
             icon: const Icon(Icons.calendar_month_outlined),
             tooltip: 'Reservations',

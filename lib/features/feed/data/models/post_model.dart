@@ -2,15 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../domain/entities/post.dart';
 
-/// Firestore (de)serialization for [Post].
-///
-/// Document path: `posts/{postId}`
-/// Viewer state:  `posts/{postId}/likes/{uid}`, `users/{uid}/bookmarks/{postId}`
 abstract final class PostModel {
   static Post fromDoc(
     DocumentSnapshot<Map<String, dynamic>> doc, {
     bool isLikedByMe = false,
     bool isBookmarkedByMe = false,
+    bool isRepostedByMe = false,
   }) {
     final data = doc.data() ?? const <String, dynamic>{};
     final mediaRaw = (data['media'] as List?) ?? const [];
@@ -42,8 +39,11 @@ abstract final class PostModel {
       tags: ((data['tags'] as List?) ?? const []).whereType<String>().toList(),
       likeCount: (data['likeCount'] as num?)?.toInt() ?? 0,
       commentCount: (data['commentCount'] as num?)?.toInt() ?? 0,
+      shareCount: (data['shareCount'] as num?)?.toInt() ?? 0,
       isLikedByMe: isLikedByMe,
       isBookmarkedByMe: isBookmarkedByMe,
+      isRepostedByMe: isRepostedByMe,
+      restaurantVerified: data['restaurantVerified'] == true,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
     );
   }

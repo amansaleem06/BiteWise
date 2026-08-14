@@ -12,6 +12,7 @@ import '../../features/comments/presentation/screens/post_detail_screen.dart';
 import '../../features/create/presentation/screens/create_screen.dart';
 import '../../features/explore/presentation/screens/explore_screen.dart';
 import '../../features/explore/presentation/screens/search_screen.dart';
+import '../../features/feed/presentation/screens/saved_plates_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/messages/presentation/screens/chat_screen.dart';
 import '../../features/messages/presentation/screens/messages_screen.dart';
@@ -150,6 +151,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.reservations,
         builder: (_, __) => const MyReservationsScreen(),
+      ),
+      GoRoute(
+        path: Routes.saved,
+        builder: (_, __) => const SavedPlatesScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>

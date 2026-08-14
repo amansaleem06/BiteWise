@@ -59,18 +59,21 @@ class FirestoreCommentRepository implements CommentRepository {
     final trimmed = text.trim();
     if (trimmed.isEmpty) throw const AppException('Comment cannot be empty');
 
-    // Single write — commentCount is maintained by Cloud Functions.
     final commentRef = _comments(postId).doc();
-    await commentRef.set({
-      'authorId': user.uid,
-      'authorName': user.displayName ?? '',
-      'authorPhotoUrl': user.photoURL,
-      'text': trimmed,
-      'replyToName': replyToName,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+    final postRef = _firestore.collection('posts').doc(postId);
+    final batch = _firestore.batch()
+      ..set(commentRef, {
+        'authorId': user.uid,
+        'authorName': user.displayName ?? '',
+        'authorPhotoUrl': user.photoURL,
+        'text': trimmed,
+        'replyToName': replyToName,
+        'createdAt': FieldValue.serverTimestamp(),
+      })
+      ..update(postRef, {'commentCount': FieldValue.increment(1)});
+    await batch.commit();
 
-    final post = await _firestore.collection('posts').doc(postId).get();
+    final post = await postRef.get();
     final authorId = post.data()?['authorId'] as String?;
     final media = post.data()?['media'];
     String? mediaUrl;
@@ -106,7 +109,12 @@ class FirestoreCommentRepository implements CommentRepository {
     required String postId,
     required String commentId,
   }) async {
-    await _comments(postId).doc(commentId).delete();
+    final batch = _firestore.batch()
+      ..delete(_comments(postId).doc(commentId))
+      ..update(_firestore.collection('posts').doc(postId), {
+        'commentCount': FieldValue.increment(-1),
+      });
+    await batch.commit();
   }
 
   Comment _fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {

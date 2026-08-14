@@ -34,6 +34,13 @@ class PostDetailController
             .setBookmarked(arg, bookmarked: !p.isBookmarkedByMe),
       );
 
+  Future<void> toggleRepost() => _toggle(
+        apply: (p) => p.copyWith(isRepostedByMe: !p.isRepostedByMe),
+        write: (p) => ref
+            .read(feedRepositoryProvider)
+            .setReposted(arg, reposted: !p.isRepostedByMe),
+      );
+
   void adjustCommentCount(int delta) {
     final post = state.valueOrNull;
     if (post == null) return;
@@ -157,6 +164,8 @@ class CommentsController
         ),
       );
       ref.read(postDetailProvider(arg).notifier).adjustCommentCount(1);
+      ref.invalidate(feedControllerProvider(FeedTab.forYou));
+      ref.invalidate(feedControllerProvider(FeedTab.following));
       return true;
     } catch (_) {
       state = AsyncData(current.copyWith(isSending: false));

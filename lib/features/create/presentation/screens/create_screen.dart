@@ -78,21 +78,21 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
     final controller = ref.read(createPostControllerProvider.notifier);
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: Text(
-          'New post',
+          'Pass',
           style: GoogleFonts.fraunces(
             fontWeight: FontWeight.w800,
             fontSize: 26,
             letterSpacing: -0.8,
-            color: AppColors.primaryDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
+        padding: const EdgeInsets.only(bottom: 140),
         children: [
           const SizedBox(height: AppSpacing.sm),
           MediaPickerGrid(

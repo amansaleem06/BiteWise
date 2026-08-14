@@ -152,7 +152,7 @@ class FirebaseCreatePostRepository implements CreatePostRepository {
       'authorPhotoUrl': user.photoURL,
       'restaurantId': restaurant.id,
       'restaurantName': restaurant.name,
-      'dishId': null, // dish entities arrive with the Dishes milestone
+      'dishId': null,
       'dishName': (dishName?.trim().isEmpty ?? true) ? null : dishName!.trim(),
       'caption': caption.trim(),
       'media': [
@@ -169,8 +169,38 @@ class FirebaseCreatePostRepository implements CreatePostRepository {
       'tags': tags,
       'likeCount': 0,
       'commentCount': 0,
+      'shareCount': 0,
       'trendingScore': 0,
+      'restaurantVerified': false,
       'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    // Keep restaurant aggregates fresh even when Cloud Functions lag.
+    final restaurantRef =
+        _firestore.collection('restaurants').doc(restaurant.id);
+    await _firestore.runTransaction((tx) async {
+      final snap = await tx.get(restaurantRef);
+      if (!snap.exists) return;
+      final data = snap.data() ?? {};
+      final postCount = ((data['postCount'] as num?)?.toInt() ?? 0) + 1;
+      final updates = <String, dynamic>{
+        'postCount': postCount,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+      if (rating != null) {
+        final ratingSum =
+            ((data['ratingSum'] as num?)?.toDouble() ?? 0) + rating;
+        final ratingCount = ((data['ratingCount'] as num?)?.toInt() ?? 0) + 1;
+        updates['ratingSum'] = ratingSum;
+        updates['ratingCount'] = ratingCount;
+        updates['ratingAvg'] = ratingCount == 0 ? 0 : ratingSum / ratingCount;
+      } else if (data['ratingAvg'] == null &&
+          ((data['ratingCount'] as num?)?.toInt() ?? 0) > 0) {
+        final sum = (data['ratingSum'] as num?)?.toDouble() ?? 0;
+        final count = (data['ratingCount'] as num?)?.toInt() ?? 0;
+        updates['ratingAvg'] = count == 0 ? 0 : sum / count;
+      }
+      tx.update(restaurantRef, updates);
     });
   }
 }

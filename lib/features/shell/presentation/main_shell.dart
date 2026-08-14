@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,14 +7,10 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_spacing.dart';
-import '../../../core/constants/app_strings.dart';
+import '../../../app/theme/theme_mode_provider.dart';
 import '../../notifications/presentation/providers/notification_providers.dart';
 
-/// App scaffold with bottom navigation hosting the five main tabs.
-///
-/// Uses [StatefulNavigationShell] so each tab keeps its own navigation
-/// stack and scroll position. Also owns the FCM registration lifecycle —
-/// this widget only exists while a verified user is signed in.
+/// Taste Stage shell: floating orb + radial course menu (no IG tab bar).
 class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key, required this.navigationShell});
 
@@ -22,12 +20,28 @@ class MainShell extends ConsumerStatefulWidget {
   ConsumerState<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends ConsumerState<MainShell> {
+class _MainShellState extends ConsumerState<MainShell>
+    with SingleTickerProviderStateMixin {
   StatefulNavigationShell get navigationShell => widget.navigationShell;
+
+  var _menuOpen = false;
+  late final AnimationController _fan;
+
+  static const _courses = <_Course>[
+    _Course(0, 'Plate', Icons.restaurant_menu_rounded, -110),
+    _Course(1, 'Atlas', Icons.public_rounded, -55),
+    _Course(2, 'Pass', Icons.add_rounded, 0),
+    _Course(3, 'Booth', Icons.forum_rounded, 55),
+    _Course(4, 'Table', Icons.table_restaurant_rounded, 110),
+  ];
 
   @override
   void initState() {
     super.initState();
+    _fan = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 320),
+    );
     Future<void>.microtask(() async {
       try {
         await ref
@@ -38,189 +52,198 @@ class _MainShellState extends ConsumerState<MainShell> {
     });
   }
 
-  void _onTap(int index) {
+  @override
+  void dispose() {
+    _fan.dispose();
+    super.dispose();
+  }
+
+  void _toggleMenu() {
+    setState(() => _menuOpen = !_menuOpen);
+    if (_menuOpen) {
+      _fan.forward();
+    } else {
+      _fan.reverse();
+    }
+  }
+
+  void _goCourse(int index) {
+    final wasSame = index == navigationShell.currentIndex;
     navigationShell.goBranch(
       index,
-      initialLocation: index == navigationShell.currentIndex,
+      initialLocation: wasSame,
     );
+    if (index == 0 && wasSame) {
+      ref.read(plateScrollToTopTickProvider.notifier).state++;
+    }
+    if (_menuOpen) _toggleMenu();
   }
 
   @override
   Widget build(BuildContext context) {
-    final index = navigationShell.currentIndex;
+    final theme = Theme.of(context);
     final bottom = MediaQuery.paddingOf(context).bottom;
+    final index = navigationShell.currentIndex;
 
     return Scaffold(
-      body: navigationShell,
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      bottomNavigationBar: Padding(
-        padding: EdgeInsets.fromLTRB(
-          AppSpacing.md,
-          0,
-          AppSpacing.md,
-          bottom > 0 ? bottom : AppSpacing.sm,
-        ),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(28),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.charcoal.withValues(alpha: 0.12),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(28),
-            child: ColoredBox(
-              color: Colors.white.withValues(alpha: 0.94),
-              child: SizedBox(
-                height: 72,
-                child: Row(
-                  children: [
-                    _NavItem(
-                      selected: index == 0,
-                      icon: Icons.home_outlined,
-                      selectedIcon: Icons.home_rounded,
-                      label: AppStrings.navHome,
-                      onTap: () => _onTap(0),
-                    ),
-                    _NavItem(
-                      selected: index == 1,
-                      icon: Icons.explore_outlined,
-                      selectedIcon: Icons.explore_rounded,
-                      label: AppStrings.navExplore,
-                      onTap: () => _onTap(1),
-                    ),
-                    _CreateNavItem(
-                      selected: index == 2,
-                      onTap: () => _onTap(2),
-                    ),
-                    _NavItem(
-                      selected: index == 3,
-                      icon: Icons.chat_bubble_outline_rounded,
-                      selectedIcon: Icons.chat_bubble_rounded,
-                      label: AppStrings.navMessages,
-                      onTap: () => _onTap(3),
-                    ),
-                    _NavItem(
-                      selected: index == 4,
-                      icon: Icons.person_outline_rounded,
-                      selectedIcon: Icons.person_rounded,
-                      label: AppStrings.navProfile,
-                      onTap: () => _onTap(4),
-                    ),
-                  ],
+      body: Stack(
+        children: [
+          Positioned.fill(child: navigationShell),
+          if (_menuOpen)
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: _toggleMenu,
+                child: AnimatedOpacity(
+                  duration: AppDurations.fast,
+                  opacity: _menuOpen ? 1 : 0,
+                  child: ColoredBox(
+                    color: Colors.black.withValues(alpha: 0.45),
+                  ),
                 ),
               ),
             ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: bottom + 12,
+            child: SizedBox(
+              height: 168,
+              child: Stack(
+                alignment: Alignment.bottomCenter,
+                children: [
+                  ..._courses.map((c) {
+                    return AnimatedBuilder(
+                      animation: _fan,
+                      builder: (context, child) {
+                        final t = Curves.easeOutBack.transform(_fan.value);
+                        final angle = c.degrees * math.pi / 180;
+                        final radius = 96.0 * t;
+                        final dx = math.sin(angle) * radius;
+                        final dy = -math.cos(angle) * radius * 0.92;
+                        return Positioned(
+                          bottom: 28 + dy,
+                          left: 0,
+                          right: 0,
+                          child: Opacity(
+                            opacity: t.clamp(0.0, 1.0),
+                            child: Transform.translate(
+                              offset: Offset(dx, 0),
+                              child: child,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Center(
+                        child: _CourseChip(
+                          label: c.label,
+                          icon: c.icon,
+                          selected: index == c.index,
+                          onTap: () => _goCourse(c.index),
+                        ),
+                      ),
+                    );
+                  }),
+                  GestureDetector(
+                    onTap: _toggleMenu,
+                    onLongPress: () => _goCourse(2),
+                    child: Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: AppColors.brandGradient,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.4),
+                            blurRadius: 18,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                        border: Border.all(
+                          color: theme.colorScheme.surface,
+                          width: 3,
+                        ),
+                      ),
+                      child: AnimatedRotation(
+                        turns: _menuOpen ? 0.125 : 0,
+                        duration: AppDurations.normal,
+                        child: Icon(
+                          _menuOpen
+                              ? Icons.close_rounded
+                              : Icons.restaurant_rounded,
+                          color: Colors.white,
+                          size: 30,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 }
 
-class _NavItem extends StatelessWidget {
-  const _NavItem({
-    required this.selected,
-    required this.icon,
-    required this.selectedIcon,
+class _Course {
+  const _Course(this.index, this.label, this.icon, this.degrees);
+  final int index;
+  final String label;
+  final IconData icon;
+  final double degrees;
+}
+
+class _CourseChip extends StatelessWidget {
+  const _CourseChip({
     required this.label,
+    required this.icon,
+    required this.selected,
     required this.onTap,
   });
 
-  final bool selected;
-  final IconData icon;
-  final IconData selectedIcon;
   final String label;
+  final IconData icon;
+  final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppColors.primary : AppColors.textSecondaryLight;
-
-    return Expanded(
+    final theme = Theme.of(context);
+    return Material(
+      color: selected
+          ? AppColors.primary
+          : theme.colorScheme.surface.withValues(alpha: 0.95),
+      elevation: 6,
+      shadowColor: Colors.black38,
+      shape: const StadiumBorder(),
       child: InkWell(
         onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AnimatedContainer(
-              duration: AppDurations.fast,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: selected
-                    ? AppColors.primary.withValues(alpha: 0.12)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(AppRadius.pill),
+        customBorder: const StadiumBorder(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 18,
+                color: selected ? Colors.white : AppColors.primary,
               ),
-              child: Icon(
-                selected ? selectedIcon : icon,
-                size: 24,
-                color: color,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.sourceSans3(
-                fontSize: 11,
-                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                color: selected ? AppColors.primaryDark : color,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CreateNavItem extends StatelessWidget {
-  const _CreateNavItem({required this.selected, required this.onTap});
-
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AnimatedContainer(
-              duration: AppDurations.fast,
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                gradient: AppColors.brandGradient,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.35),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-                border: Border.all(
-                  color: selected ? Colors.white : Colors.transparent,
-                  width: 2,
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: GoogleFonts.sourceSans3(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13,
+                  color: selected
+                      ? Colors.white
+                      : theme.colorScheme.onSurface,
                 ),
               ),
-              child: const Icon(
-                Icons.add_rounded,
-                color: Colors.white,
-                size: 28,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

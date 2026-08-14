@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../app/theme/theme_mode_provider.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/errors/error_text.dart';
 import '../../../../core/widgets/app_snackbar.dart';
@@ -34,6 +35,17 @@ class SettingsScreen extends ConsumerWidget {
             leading: const Icon(Icons.person_outline_rounded),
             title: const Text('Edit profile'),
             onTap: () => context.push(Routes.editProfile),
+          ),
+          ListTile(
+            leading: const Icon(Icons.palette_outlined),
+            title: const Text('Appearance'),
+            subtitle: Text(_appearanceLabel(ref.watch(themeModeProvider))),
+            onTap: () => _pickAppearance(context, ref),
+          ),
+          ListTile(
+            leading: const Icon(Icons.bookmark_outline_rounded),
+            title: const Text('Saved plates'),
+            onTap: () => context.push(Routes.saved),
           ),
           ListTile(
             leading: authState.isLoading
@@ -144,6 +156,39 @@ class SettingsScreen extends ConsumerWidget {
         );
     if (ok && context.mounted) {
       AppSnackbar.success(context, AppStrings.accountDeleted);
+    }
+  }
+
+  static String _appearanceLabel(ThemeMode mode) => switch (mode) {
+        ThemeMode.light => 'Light',
+        ThemeMode.dark => 'Dark',
+        ThemeMode.system => 'System',
+      };
+
+  Future<void> _pickAppearance(BuildContext context, WidgetRef ref) async {
+    final current = ref.read(themeModeProvider);
+    final chosen = await showModalBottomSheet<ThemeMode>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final mode in ThemeMode.values)
+              ListTile(
+                title: Text(_appearanceLabel(mode)),
+                trailing: mode == current
+                    ? const Icon(Icons.check_rounded, color: AppColors.primary)
+                    : null,
+                onTap: () => Navigator.pop(ctx, mode),
+              ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+        ),
+      ),
+    );
+    if (chosen != null) {
+      await ref.read(themeModeProvider.notifier).setMode(chosen);
     }
   }
 }

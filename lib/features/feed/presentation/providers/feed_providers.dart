@@ -108,6 +108,34 @@ class FeedController extends FamilyAsyncNotifier<FeedState, FeedTab> {
             _repo.setBookmarked(postId, bookmarked: !p.isBookmarkedByMe),
       );
 
+  Future<void> toggleRepost(String postId) => _toggle(
+        postId,
+        apply: (p) => p.copyWith(isRepostedByMe: !p.isRepostedByMe),
+        write: (p) =>
+            _repo.setReposted(postId, reposted: !p.isRepostedByMe),
+      );
+
+  Future<void> sharePost(String postId) async {
+    final current = state.valueOrNull;
+    if (current == null) return;
+    final index = current.posts.indexWhere((p) => p.id == postId);
+    if (index == -1) return;
+    final original = current.posts[index];
+    final updated = [...current.posts]
+      ..[index] = original.copyWith(shareCount: original.shareCount + 1);
+    state = AsyncData(current.copyWith(posts: updated));
+    try {
+      await _repo.recordShare(postId);
+    } catch (_) {
+      final latest = state.valueOrNull;
+      if (latest == null) return;
+      final i = latest.posts.indexWhere((p) => p.id == postId);
+      if (i == -1) return;
+      final rolled = [...latest.posts]..[i] = original;
+      state = AsyncData(latest.copyWith(posts: rolled));
+    }
+  }
+
   Future<void> _toggle(
     String postId, {
     required Post Function(Post) apply,

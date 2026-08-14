@@ -45,7 +45,7 @@ abstract final class AppTheme {
       onInverseSurface: isDark ? AppColors.charcoal : AppColors.cream,
       inversePrimary: AppColors.primaryLight,
       surfaceContainerHighest:
-          isDark ? AppColors.charcoalLight : AppColors.cream,
+          isDark ? const Color(0xFF2E353D) : AppColors.cream,
     );
 
     final textTheme = AppTypography.textTheme(
@@ -106,7 +106,7 @@ abstract final class AppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.primaryDark,
+          foregroundColor: AppColors.primary,
           textStyle: textTheme.labelLarge,
         ),
       ),

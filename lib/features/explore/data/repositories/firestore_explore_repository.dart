@@ -30,18 +30,32 @@ class FirestoreExploreRepository implements ExploreRepository {
 
   @override
   Future<List<Restaurant>> fetchTopRatedRestaurants({int limit = 20}) async {
-    // ratingAvg is denormalized by Cloud Functions whenever a rated post
-    // is created/deleted. Restaurants without ratings lack the field and
-    // are excluded automatically.
-    final snap = await _firestore
-        .collection('restaurants')
-        .orderBy('ratingAvg', descending: true)
-        .limit(limit)
-        .get();
-    return snap.docs
+    try {
+      final snap = await _firestore
+          .collection('restaurants')
+          .orderBy('ratingAvg', descending: true)
+          .limit(limit)
+          .get();
+      final ranked = snap.docs
+          .map(RestaurantModel.fromDoc)
+          .where((r) => r.ratingCount > 0)
+          .toList();
+      if (ranked.isNotEmpty) return ranked;
+    } catch (_) {
+      // Fall through to client-side ranking when index/field is missing.
+    }
+
+    final snap = await _firestore.collection('restaurants').limit(80).get();
+    final ranked = snap.docs
         .map(RestaurantModel.fromDoc)
         .where((r) => r.ratingCount > 0)
-        .toList();
+        .toList()
+      ..sort((a, b) {
+        final ar = a.averageRating ?? 0;
+        final br = b.averageRating ?? 0;
+        return br.compareTo(ar);
+      });
+    return ranked.take(limit).toList();
   }
 
   @override

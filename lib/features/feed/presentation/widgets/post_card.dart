@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
@@ -6,8 +7,7 @@ import '../../../../core/utils/formatters.dart';
 import '../../domain/entities/post.dart';
 import 'media_carousel.dart';
 
-/// The flagship feed component: header (author + restaurant), media,
-/// actions, rating/price context, caption, and comment teaser.
+/// Editorial Taste Stage plate — media hero + score badge + action tray.
 class PostCard extends StatelessWidget {
   const PostCard({
     super.key,
@@ -16,8 +16,10 @@ class PostCard extends StatelessWidget {
     required this.onBookmark,
     this.onComment,
     this.onShare,
+    this.onRepost,
     this.onRestaurantTap,
     this.onAuthorTap,
+    this.onOpenActions,
   });
 
   final Post post;
@@ -25,29 +27,36 @@ class PostCard extends StatelessWidget {
   final VoidCallback onBookmark;
   final VoidCallback? onComment;
   final VoidCallback? onShare;
+  final VoidCallback? onRepost;
   final VoidCallback? onRestaurantTap;
   final VoidCallback? onAuthorTap;
+  final VoidCallback? onOpenActions;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final surface = theme.colorScheme.surface;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(
         AppSpacing.sm,
         0,
         AppSpacing.sm,
-        AppSpacing.sm,
+        AppSpacing.md,
       ),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.92),
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.08)),
+        color: surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.55),
+        ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.charcoal.withValues(alpha: 0.05),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
+            color: theme.brightness == Brightness.dark
+                ? Colors.black.withValues(alpha: 0.35)
+                : AppColors.charcoal.withValues(alpha: 0.07),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -55,324 +64,280 @@ class PostCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _Header(
-            post: post,
-            onRestaurantTap: onRestaurantTap,
-            onAuthorTap: onAuthorTap,
-          ),
-          MediaCarousel(
-            media: post.media,
-            onDoubleTap: post.isLikedByMe ? null : onLike,
-          ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.xs,
-              AppSpacing.xxs,
-              AppSpacing.xs,
-              0,
-            ),
+            padding: const EdgeInsets.fromLTRB(14, 12, 8, 8),
             child: Row(
-              children: [
-                _ActionButton(
-                  icon: post.isLikedByMe
-                      ? Icons.favorite_rounded
-                      : Icons.favorite_border_rounded,
-                  color: post.isLikedByMe
-                      ? AppColors.primary
-                      : AppColors.charcoal.withValues(alpha: 0.85),
-                  label: post.likeCount > 0
-                      ? Formatters.compactCount(post.likeCount)
-                      : null,
-                  onTap: onLike,
-                ),
-                _ActionButton(
-                  icon: Icons.mode_comment_outlined,
-                  color: AppColors.charcoal.withValues(alpha: 0.85),
-                  label: post.commentCount > 0
-                      ? Formatters.compactCount(post.commentCount)
-                      : null,
-                  onTap: onComment,
-                ),
-                _ActionButton(
-                  icon: Icons.send_outlined,
-                  color: AppColors.charcoal.withValues(alpha: 0.85),
-                  onTap: onShare,
-                ),
-                const Spacer(),
-                _ActionButton(
-                  icon: post.isBookmarkedByMe
-                      ? Icons.bookmark_rounded
-                      : Icons.bookmark_border_rounded,
-                  color: post.isBookmarkedByMe
-                      ? AppColors.accent
-                      : AppColors.charcoal.withValues(alpha: 0.85),
-                  onTap: onBookmark,
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.md,
-              AppSpacing.xxs,
-              AppSpacing.md,
-              AppSpacing.md,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (post.rating != null || post.price != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
-                    child: _RatingPriceRow(post: post),
-                  ),
-                if (post.caption.isNotEmpty)
-                  _Caption(
-                    authorName: post.authorName,
-                    caption: post.caption,
-                  ),
-                if (post.tags.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: AppSpacing.xxs),
-                    child: Text(
-                      post.tags.map((t) => '#$t').join(' '),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                const SizedBox(height: AppSpacing.xxs),
-                Text(
-                  Formatters.relativeTime(post.createdAt),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondaryLight,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Header extends StatelessWidget {
-  const _Header({required this.post, this.onRestaurantTap, this.onAuthorTap});
-
-  final Post post;
-  final VoidCallback? onRestaurantTap;
-  final VoidCallback? onAuthorTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.md,
-        AppSpacing.sm,
-        AppSpacing.xs,
-        AppSpacing.sm,
-      ),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: onAuthorTap,
-            child: CircleAvatar(
-              radius: 18,
-              backgroundColor: AppColors.primaryLight,
-              backgroundImage: post.authorPhotoUrl != null
-                  ? NetworkImage(post.authorPhotoUrl!)
-                  : null,
-              child: post.authorPhotoUrl == null
-                  ? Text(
-                      post.authorName.isNotEmpty
-                          ? post.authorName[0].toUpperCase()
-                          : '?',
-                      style: theme.textTheme.titleSmall
-                          ?.copyWith(color: AppColors.primaryDark),
-                    )
-                  : null,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 GestureDetector(
                   onTap: onAuthorTap,
-                  child: Row(
+                  child: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                    backgroundImage: post.authorPhotoUrl != null
+                        ? NetworkImage(post.authorPhotoUrl!)
+                        : null,
+                    child: post.authorPhotoUrl == null
+                        ? Text(
+                            post.authorName.isNotEmpty
+                                ? post.authorName[0].toUpperCase()
+                                : '?',
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurface,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          )
+                        : null,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Flexible(
+                      GestureDetector(
+                        onTap: onAuthorTap,
                         child: Text(
                           post.authorName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleSmall,
+                          style: GoogleFonts.sourceSans3(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15,
+                            color: theme.colorScheme.onSurface,
+                          ),
                         ),
                       ),
-                      Text(
-                        ' · Member',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                      GestureDetector(
+                        onTap: onRestaurantTap,
+                        child: Text(
+                          post.restaurantName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.sourceSans3(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                            color: AppColors.primary,
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-                // Restaurant is the place page — distinct from the member above.
-                GestureDetector(
-                  onTap: onRestaurantTap,
+                if (post.restaurantVerified)
+                  const Padding(
+                    padding: EdgeInsets.only(right: 4),
+                    child: Icon(
+                      Icons.verified_rounded,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
+                  ),
+                IconButton(
+                  onPressed: onOpenActions,
+                  icon: Icon(
+                    Icons.more_horiz_rounded,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Stack(
+            children: [
+              MediaCarousel(
+                media: post.media,
+                onDoubleTap: post.isLikedByMe ? null : onLike,
+              ),
+              if (post.rating != null)
+                Positioned(
+                  right: 12,
+                  bottom: 12,
                   child: Container(
-                    margin: const EdgeInsets.only(top: 3),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
+                      horizontal: 10,
+                      vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.feedAccentSoft,
+                      color: Colors.black.withValues(alpha: 0.72),
                       borderRadius: BorderRadius.circular(AppRadius.pill),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(
-                          Icons.storefront_rounded,
-                          size: 13,
-                          color: AppColors.primary,
+                          Icons.star_rounded,
+                          color: AppColors.ratingStar,
+                          size: 18,
                         ),
                         const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            post.dishName != null
-                                ? '${post.dishName} · ${post.restaurantName}'
-                                : post.restaurantName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: AppColors.primaryDark,
-                              fontWeight: FontWeight.w700,
-                            ),
+                        Text(
+                          post.rating!.toStringAsFixed(1),
+                          style: GoogleFonts.sourceSans3(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14,
                           ),
                         ),
                       ],
                     ),
                   ),
                 ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 6, 8, 4),
+            child: Row(
+              children: [
+                _TrayAction(
+                  icon: post.isLikedByMe
+                      ? Icons.favorite_rounded
+                      : Icons.favorite_border_rounded,
+                  color: post.isLikedByMe
+                      ? AppColors.primary
+                      : theme.colorScheme.onSurface,
+                  label: post.likeCount > 0
+                      ? Formatters.compactCount(post.likeCount)
+                      : null,
+                  onTap: onLike,
+                ),
+                _TrayAction(
+                  icon: Icons.mode_comment_outlined,
+                  color: theme.colorScheme.onSurface,
+                  label: post.commentCount > 0
+                      ? Formatters.compactCount(post.commentCount)
+                      : null,
+                  onTap: onComment,
+                ),
+                _TrayAction(
+                  icon: Icons.ios_share_rounded,
+                  color: theme.colorScheme.onSurface,
+                  label: post.shareCount > 0
+                      ? Formatters.compactCount(post.shareCount)
+                      : null,
+                  onTap: onShare,
+                ),
+                _TrayAction(
+                  icon: post.isRepostedByMe
+                      ? Icons.repeat_on_rounded
+                      : Icons.repeat_rounded,
+                  color: post.isRepostedByMe
+                      ? AppColors.accent
+                      : theme.colorScheme.onSurface,
+                  onTap: onRepost,
+                ),
+                const Spacer(),
+                _TrayAction(
+                  icon: post.isBookmarkedByMe
+                      ? Icons.bookmark_rounded
+                      : Icons.bookmark_border_rounded,
+                  color: post.isBookmarkedByMe
+                      ? AppColors.accent
+                      : theme.colorScheme.onSurface,
+                  onTap: onBookmark,
+                ),
               ],
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.more_horiz_rounded),
-            onPressed: () {},
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RatingPriceRow extends StatelessWidget {
-  const _RatingPriceRow({required this.post});
-
-  final Post post;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      children: [
-        if (post.rating != null) ...[
-          const Icon(Icons.star_rounded, size: 18, color: AppColors.ratingStar),
-          const SizedBox(width: 2),
-          Text(
-            post.rating!.toStringAsFixed(1),
-            style: theme.textTheme.titleSmall,
-          ),
-        ],
-        if (post.rating != null && post.price != null)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-            child: Text('·', style: theme.textTheme.bodySmall),
+            padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (post.dishName != null && post.dishName!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      post.dishName!,
+                      style: GoogleFonts.fraunces(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                if (post.caption.isNotEmpty)
+                  Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '${post.authorName} ',
+                          style: GoogleFonts.sourceSans3(
+                            fontWeight: FontWeight.w800,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
+                        TextSpan(
+                          text: post.caption,
+                          style: GoogleFonts.sourceSans3(
+                            color: theme.colorScheme.onSurface
+                                .withValues(alpha: 0.9),
+                          ),
+                        ),
+                      ],
+                    ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                if (post.tags.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    post.tags.map((t) => '#$t').join(' '),
+                    style: GoogleFonts.sourceSans3(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 6),
+                Text(
+                  Formatters.relativeTime(post.createdAt),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
           ),
-        if (post.price != null)
-          Text(
-            Formatters.price(post.price!, post.currencyCode),
-            style: theme.textTheme.titleSmall
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-          ),
-      ],
-    );
-  }
-}
-
-class _Caption extends StatelessWidget {
-  const _Caption({required this.authorName, required this.caption});
-
-  final String authorName;
-  final String caption;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Text.rich(
-      TextSpan(
-        children: [
-          TextSpan(
-            text: '$authorName ',
-            style: theme.textTheme.titleSmall,
-          ),
-          TextSpan(text: caption, style: theme.textTheme.bodyMedium),
         ],
       ),
-      maxLines: 3,
-      overflow: TextOverflow.ellipsis,
     );
   }
 }
 
-class _ActionButton extends StatelessWidget {
-  const _ActionButton({
+class _TrayAction extends StatelessWidget {
+  const _TrayAction({
     required this.icon,
+    required this.color,
     this.label,
-    this.color,
     this.onTap,
   });
 
   final IconData icon;
+  final Color color;
   final String? label;
-  final Color? color;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.pill),
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.xs,
-          vertical: AppSpacing.xs,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         child: Row(
           children: [
-            AnimatedSwitcher(
-              duration: AppDurations.fast,
-              transitionBuilder: (child, anim) =>
-                  ScaleTransition(scale: anim, child: child),
-              child: Icon(
-                icon,
-                key: ValueKey(icon),
-                size: 26,
-                color: color ?? theme.colorScheme.onSurface,
-              ),
-            ),
+            Icon(icon, size: 24, color: color),
             if (label != null) ...[
               const SizedBox(width: 4),
-              Text(label!, style: theme.textTheme.titleSmall),
+              Text(
+                label!,
+                style: GoogleFonts.sourceSans3(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
             ],
           ],
         ),

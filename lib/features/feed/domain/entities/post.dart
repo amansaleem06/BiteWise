@@ -8,7 +8,6 @@ enum MediaType {
       key == 'video' ? MediaType.video : MediaType.image;
 }
 
-/// A single media item within a post.
 class PostMedia extends Equatable {
   const PostMedia({
     required this.url,
@@ -19,19 +18,13 @@ class PostMedia extends Equatable {
 
   final String url;
   final MediaType type;
-
-  /// For videos: poster frame. For images: optional low-res preview.
   final String? thumbnailUrl;
-
-  /// width / height — lets the feed reserve layout space before load.
   final double aspectRatio;
 
   @override
   List<Object?> get props => [url, type, thumbnailUrl, aspectRatio];
 }
 
-/// A food post. Every post belongs to a restaurant (TasteWise is
-/// food-centric, not post-centric); dish is optional but encouraged.
 class Post extends Equatable {
   const Post({
     required this.id,
@@ -50,49 +43,45 @@ class Post extends Equatable {
     this.tags = const [],
     this.likeCount = 0,
     this.commentCount = 0,
+    this.shareCount = 0,
     this.isLikedByMe = false,
     this.isBookmarkedByMe = false,
+    this.isRepostedByMe = false,
+    this.restaurantVerified = false,
     this.createdAt,
   });
 
   final String id;
-
-  // Author (denormalized to avoid N+1 reads when rendering the feed).
   final String authorId;
   final String authorName;
   final String? authorPhotoUrl;
-
-  // Food context (denormalized names for the same reason).
   final String restaurantId;
   final String restaurantName;
   final String? dishId;
   final String? dishName;
-
   final List<PostMedia> media;
   final String caption;
-
-  /// 1.0–5.0 in half steps, or null if the author didn't rate.
   final double? rating;
-
-  /// What the author paid, or null.
   final double? price;
   final String currencyCode;
-
   final List<String> tags;
   final int likeCount;
   final int commentCount;
-
-  // Viewer-specific state (resolved separately from the post document).
+  final int shareCount;
   final bool isLikedByMe;
   final bool isBookmarkedByMe;
-
+  final bool isRepostedByMe;
+  final bool restaurantVerified;
   final DateTime? createdAt;
 
   Post copyWith({
     int? likeCount,
     int? commentCount,
+    int? shareCount,
     bool? isLikedByMe,
     bool? isBookmarkedByMe,
+    bool? isRepostedByMe,
+    bool? restaurantVerified,
   }) =>
       Post(
         id: id,
@@ -111,12 +100,23 @@ class Post extends Equatable {
         tags: tags,
         likeCount: likeCount ?? this.likeCount,
         commentCount: commentCount ?? this.commentCount,
+        shareCount: shareCount ?? this.shareCount,
         isLikedByMe: isLikedByMe ?? this.isLikedByMe,
         isBookmarkedByMe: isBookmarkedByMe ?? this.isBookmarkedByMe,
+        isRepostedByMe: isRepostedByMe ?? this.isRepostedByMe,
+        restaurantVerified: restaurantVerified ?? this.restaurantVerified,
         createdAt: createdAt,
       );
 
   @override
-  List<Object?> get props =>
-      [id, likeCount, commentCount, isLikedByMe, isBookmarkedByMe];
+  List<Object?> get props => [
+        id,
+        likeCount,
+        commentCount,
+        shareCount,
+        isLikedByMe,
+        isBookmarkedByMe,
+        isRepostedByMe,
+        restaurantVerified,
+      ];
 }

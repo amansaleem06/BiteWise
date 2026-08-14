@@ -7,7 +7,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
-import '../../../../core/constants/app_strings.dart';
 import '../../../../core/constants/cuisines.dart';
 import '../../../../core/widgets/async_error_view.dart';
 import '../../../feed/domain/entities/post.dart';
@@ -31,7 +30,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 3, vsync: this);
+    _tabs = TabController(length: 3, vsync: this, initialIndex: 0);
     _tabs.addListener(() {
       if (!_tabs.indexIsChanging) setState(() {});
     });
@@ -46,23 +45,23 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final nearbyActive = _tabs.index == 2;
+    final mapActive = _tabs.index == 0;
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: Text(
-          AppStrings.navExplore,
+          'Atlas',
           style: GoogleFonts.fraunces(
             fontWeight: FontWeight.w800,
             fontSize: 26,
             letterSpacing: -0.8,
-            color: AppColors.primaryDark,
+            color: theme.colorScheme.onSurface,
           ),
         ),
         bottom: PreferredSize(
-          preferredSize: Size.fromHeight(nearbyActive ? 104 : 152),
+          preferredSize: Size.fromHeight(mapActive ? 104 : 152),
           child: Column(
             children: [
               Padding(
@@ -87,7 +86,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                   ),
                 ),
               ),
-              if (!nearbyActive)
+              if (!mapActive)
                 SizedBox(
                   height: 44,
                   child: ListView(
@@ -159,9 +158,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                 dividerHeight: 0.5,
                 dividerColor: theme.colorScheme.outline,
                 tabs: const [
+                  Tab(text: 'Map'),
                   Tab(text: 'Trending'),
                   Tab(text: 'Top Rated'),
-                  Tab(text: 'Nearby'),
                 ],
               ),
             ],
@@ -170,14 +169,13 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
       ),
       body: TabBarView(
         controller: _tabs,
-        // Disable horizontal swipe on Nearby so map pan/zoom wins.
-        physics: nearbyActive
+        physics: mapActive
             ? const NeverScrollableScrollPhysics()
             : const PageScrollPhysics(),
         children: [
+          NearbyMapTab(isActive: mapActive),
           _TrendingTab(cuisineFilter: _cuisineFilter),
           const _TopRatedTab(),
-          NearbyMapTab(isActive: nearbyActive),
         ],
       ),
     );

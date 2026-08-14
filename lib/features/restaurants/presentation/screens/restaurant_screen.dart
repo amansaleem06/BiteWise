@@ -12,6 +12,7 @@ import '../../../reservations/presentation/widgets/booking_sheet.dart';
 import '../../domain/entities/restaurant.dart';
 import '../providers/restaurant_providers.dart';
 import '../widgets/restaurant_posts_grid.dart';
+import '../widgets/restaurant_ratings_tab.dart';
 
 /// Restaurant profile: cover header, identity, follow, Posts/About tabs.
 class RestaurantScreen extends ConsumerWidget {
@@ -54,7 +55,7 @@ class _RestaurantBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: NestedScrollView(
         headerSliverBuilder: (context, _) => [
           _CoverAppBar(restaurant: restaurant),
@@ -70,7 +71,11 @@ class _RestaurantBody extends StatelessWidget {
               TabBar(
                 labelStyle: Theme.of(context).textTheme.titleSmall,
                 indicatorSize: TabBarIndicatorSize.label,
-                tabs: const [Tab(text: 'Posts'), Tab(text: 'About')],
+                tabs: const [
+                  Tab(text: 'Posts'),
+                  Tab(text: 'Ratings'),
+                  Tab(text: 'About'),
+                ],
               ),
               Theme.of(context).scaffoldBackgroundColor,
             ),
@@ -79,6 +84,7 @@ class _RestaurantBody extends StatelessWidget {
         body: TabBarView(
           children: [
             RestaurantPostsGrid(restaurantId: restaurant.id),
+            RestaurantRatingsTab(restaurantId: restaurant.id),
             _AboutTab(restaurant: restaurant),
           ],
         ),

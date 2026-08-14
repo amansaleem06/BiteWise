@@ -7,7 +7,6 @@ import '../../domain/entities/post.dart';
 import '../../domain/repositories/feed_repository.dart';
 import '../models/post_model.dart';
 
-/// Firestore-backed feed.
 class FirestoreFeedRepository implements FeedRepository {
   FirestoreFeedRepository({
     FirebaseFirestore? firestore,
@@ -44,12 +43,19 @@ class FirestoreFeedRepository implements FeedRepository {
           .collection('bookmarks')
           .doc(postId)
           .get(),
+      _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('reposts')
+          .doc(postId)
+          .get(),
     ]);
     if (!results[0].exists) throw const AppException('Post not found');
     return PostModel.fromDoc(
       results[0],
       isLikedByMe: results[1].exists,
       isBookmarkedByMe: results[2].exists,
+      isRepostedByMe: results[3].exists,
     );
   }
 
@@ -63,8 +69,6 @@ class FirestoreFeedRepository implements FeedRepository {
 
   @override
   Future<FeedPage> fetchFollowing({Object? cursor, int limit = _pageSize}) async {
-    // NOTE: `whereIn` caps at 30 ids. Fine for early product; the backend
-    // milestone replaces this with a fanned-out timeline per user.
     final following = await _firestore
         .collection('users')
         .doc(_uid)
@@ -83,6 +87,36 @@ class FirestoreFeedRepository implements FeedRepository {
     return _runPageQuery(query, limit);
   }
 
+  @override
+  Future<FeedPage> fetchBookmarks({Object? cursor, int limit = _pageSize}) async {
+    Query<Map<String, dynamic>> query = _firestore
+        .collection('users')
+        .doc(_uid)
+        .collection('bookmarks')
+        .orderBy('createdAt', descending: true)
+        .limit(limit);
+    if (cursor is DocumentSnapshot) query = query.startAfterDocument(cursor);
+    final snap = await query.get();
+    if (snap.docs.isEmpty) return const FeedPage(posts: [], hasMore: false);
+
+    final posts = <Post>[];
+    for (final edge in snap.docs) {
+      final postSnap = await _posts.doc(edge.id).get();
+      if (!postSnap.exists) continue;
+      posts.add(
+        PostModel.fromDoc(
+          postSnap,
+          isBookmarkedByMe: true,
+        ),
+      );
+    }
+    return FeedPage(
+      posts: posts,
+      cursor: snap.docs.last,
+      hasMore: snap.docs.length == limit,
+    );
+  }
+
   Future<FeedPage> _runPageQuery(
     Query<Map<String, dynamic>> query,
     int limit,
@@ -93,12 +127,9 @@ class FirestoreFeedRepository implements FeedRepository {
     final uid = _uid;
     final postIds = snap.docs.map((d) => d.id).toList();
 
-    // Resolve viewer state for this page in parallel.
     final results = await Future.wait([
       Future.wait(
-        postIds.map(
-          (id) => _posts.doc(id).collection('likes').doc(uid).get(),
-        ),
+        postIds.map((id) => _posts.doc(id).collection('likes').doc(uid).get()),
       ),
       Future.wait(
         postIds.map(
@@ -110,9 +141,20 @@ class FirestoreFeedRepository implements FeedRepository {
               .get(),
         ),
       ),
+      Future.wait(
+        postIds.map(
+          (id) => _firestore
+              .collection('users')
+              .doc(uid)
+              .collection('reposts')
+              .doc(id)
+              .get(),
+        ),
+      ),
     ]);
     final likeDocs = results[0];
     final bookmarkDocs = results[1];
+    final repostDocs = results[2];
 
     final posts = <Post>[];
     for (var i = 0; i < snap.docs.length; i++) {
@@ -121,6 +163,7 @@ class FirestoreFeedRepository implements FeedRepository {
           snap.docs[i],
           isLikedByMe: likeDocs[i].exists,
           isBookmarkedByMe: bookmarkDocs[i].exists,
+          isRepostedByMe: repostDocs[i].exists,
         ),
       );
     }
@@ -135,9 +178,19 @@ class FirestoreFeedRepository implements FeedRepository {
   @override
   Future<void> setLiked(String postId, {required bool liked}) async {
     final likeRef = _posts.doc(postId).collection('likes').doc(_uid);
+    final postRef = _posts.doc(postId);
+    final batch = _firestore.batch();
     if (liked) {
-      await likeRef.set({'createdAt': FieldValue.serverTimestamp()});
-      final post = await _posts.doc(postId).get();
+      batch.set(likeRef, {'createdAt': FieldValue.serverTimestamp()});
+      batch.update(postRef, {'likeCount': FieldValue.increment(1)});
+    } else {
+      batch.delete(likeRef);
+      batch.update(postRef, {'likeCount': FieldValue.increment(-1)});
+    }
+    await batch.commit();
+
+    if (liked) {
+      final post = await postRef.get();
       final authorId = post.data()?['authorId'] as String?;
       final media = post.data()?['media'];
       String? mediaUrl;
@@ -155,8 +208,6 @@ class FirestoreFeedRepository implements FeedRepository {
           postMediaUrl: mediaUrl,
         );
       }
-    } else {
-      await likeRef.delete();
     }
   }
 
@@ -174,6 +225,59 @@ class FirestoreFeedRepository implements FeedRepository {
       });
     } else {
       await ref.delete();
+    }
+  }
+
+  @override
+  Future<void> recordShare(String postId) async {
+    await _posts.doc(postId).update({
+      'shareCount': FieldValue.increment(1),
+    });
+  }
+
+  @override
+  Future<void> setReposted(String postId, {required bool reposted}) async {
+    final ref = _firestore
+        .collection('users')
+        .doc(_uid)
+        .collection('reposts')
+        .doc(postId);
+    if (reposted) {
+      await ref.set({
+        'createdAt': FieldValue.serverTimestamp(),
+        'postId': postId,
+      });
+      final post = await _posts.doc(postId).get();
+      final authorId = post.data()?['authorId'] as String?;
+      if (authorId != null && authorId != _uid) {
+        await _notifications.notify(
+          recipientUid: authorId,
+          type: 'repost',
+          postId: postId,
+        );
+      }
+    } else {
+      await ref.delete();
+    }
+  }
+
+  @override
+  Future<void> setRestaurantVerified(
+    String postId, {
+    required bool verified,
+  }) async {
+    if (verified) {
+      await _posts.doc(postId).update({
+        'restaurantVerified': true,
+        'verifiedAt': FieldValue.serverTimestamp(),
+        'verifiedBy': _uid,
+      });
+    } else {
+      await _posts.doc(postId).update({
+        'restaurantVerified': false,
+        'verifiedAt': FieldValue.delete(),
+        'verifiedBy': FieldValue.delete(),
+      });
     }
   }
 }

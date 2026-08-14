@@ -55,8 +55,12 @@ service cloud.firestore {
 
     // ---------- User subcollections ----------
     match /users/{uid}/bookmarks/{postId} {
-      // Bookmarks are private to their owner.
       allow read, write: if isSelf(uid);
+    }
+
+    match /users/{uid}/reposts/{postId} {
+      allow read: if isSignedIn();
+      allow create, delete: if isSelf(uid);
     }
 
     match /users/{uid}/following/{targetUid} {
@@ -81,13 +85,20 @@ service cloud.firestore {
       allow create: if isSignedIn()
         && request.resource.data.actorId == request.auth.uid
         && request.resource.data.actorId != uid
-        && request.resource.data.type in ['like', 'comment', 'follow']
+        && request.resource.data.type in ['like', 'comment', 'follow', 'repost']
         && request.resource.data.read == false
         && request.resource.data.actorName is string;
       allow update: if isSelf(uid)
         && request.resource.data.diff(resource.data).affectedKeys()
             .hasOnly(['read'])
         && request.resource.data.read == true;
+    }
+
+    function ownsRestaurant(restaurantId) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/restaurants/$(restaurantId))
+        && get(/databases/$(database)/documents/restaurants/$(restaurantId)).data.ownerId
+            == request.auth.uid;
     }
 
     // ---------- Posts ----------
@@ -104,30 +115,43 @@ service cloud.firestore {
         && request.resource.data.media.size() <= 10
         && request.resource.data.likeCount == 0
         && request.resource.data.commentCount == 0
+        && request.resource.data.shareCount == 0
         && request.resource.data.trendingScore == 0
         && (!('rating' in request.resource.data)
             || request.resource.data.rating == null
             || (request.resource.data.rating >= 1.0
                 && request.resource.data.rating <= 5.0));
 
-      // Author may edit content fields only; counters and trendingScore
-      // are maintained exclusively by Cloud Functions.
-      allow update: if isSignedIn()
-        && request.auth.uid == resource.data.authorId
-        && request.resource.data.authorId == resource.data.authorId
-        && request.resource.data.likeCount == resource.data.likeCount
-        && request.resource.data.commentCount == resource.data.commentCount;
+      allow update: if isSignedIn() && (
+        (request.auth.uid == resource.data.authorId
+          && request.resource.data.authorId == resource.data.authorId
+          && request.resource.data.likeCount == resource.data.likeCount
+          && request.resource.data.commentCount == resource.data.commentCount
+          && request.resource.data.shareCount == resource.data.shareCount)
+        || (request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(['likeCount'])
+            && (request.resource.data.likeCount == resource.data.get('likeCount', 0) + 1
+                || request.resource.data.likeCount == resource.data.get('likeCount', 0) - 1))
+        || (request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(['commentCount'])
+            && (request.resource.data.commentCount == resource.data.get('commentCount', 0) + 1
+                || request.resource.data.commentCount == resource.data.get('commentCount', 0) - 1))
+        || (request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(['shareCount'])
+            && request.resource.data.shareCount == resource.data.get('shareCount', 0) + 1)
+        || (ownsRestaurant(resource.data.restaurantId)
+            && request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(['restaurantVerified', 'verifiedAt', 'verifiedBy']))
+      );
 
       allow delete: if isSignedIn()
         && (request.auth.uid == resource.data.authorId || isAdmin());
 
-      // ---------- Likes ----------
       match /likes/{uid} {
         allow read: if isSignedIn();
         allow create, delete: if isSelf(uid);
       }
 
-      // ---------- Comments ----------
       match /comments/{commentId} {
         allow read: if isSignedIn();
         allow create: if isSignedIn()
@@ -137,7 +161,7 @@ service cloud.firestore {
           && request.resource.data.text.size() <= 500;
         allow delete: if isSignedIn()
           && (request.auth.uid == resource.data.authorId || isAdmin());
-        allow update: if false; // comments are immutable
+        allow update: if false;
       }
     }
 
@@ -161,14 +185,23 @@ service cloud.firestore {
             && request.resource.data.ownerId == request.auth.uid)
         );
 
-      // Owners may edit profile fields; counters stay Cloud Function–owned.
+      // Owners may edit profile fields; counters stay locked except rating
+      // aggregates / postCount bumped by any signed-in publisher.
       allow update: if isAdmin()
         || (isSignedIn()
           && resource.data.ownerId == request.auth.uid
           && request.resource.data.ownerId == resource.data.ownerId
           && request.resource.data.claimed == resource.data.claimed
-          && request.resource.data.followerCount == resource.data.followerCount
-          && request.resource.data.postCount == resource.data.postCount);
+          && request.resource.data.followerCount == resource.data.get('followerCount', 0)
+          && request.resource.data.postCount == resource.data.get('postCount', 0)
+          && request.resource.data.get('ratingSum', 0) == resource.data.get('ratingSum', 0)
+          && request.resource.data.get('ratingCount', 0) == resource.data.get('ratingCount', 0))
+        || (isSignedIn()
+          && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['ratingSum', 'ratingCount', 'ratingAvg', 'postCount', 'updatedAt'])
+          && request.resource.data.ownerId == resource.data.ownerId
+          && request.resource.data.claimed == resource.data.claimed
+          && request.resource.data.followerCount == resource.data.get('followerCount', 0));
       allow delete: if isAdmin();
 
       match /followers/{uid} {
