@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../core/errors/app_exception.dart';
 import '../../../../core/services/places_search_service.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
+import '../../../explore/presentation/providers/explore_providers.dart';
 import '../../../feed/presentation/providers/feed_providers.dart';
 import '../../../profile/presentation/providers/profile_providers.dart';
 import '../../../restaurants/domain/entities/restaurant_ref.dart';
@@ -160,6 +161,7 @@ class CreatePostController extends AutoDisposeNotifier<CreatePostState> {
             onProgress: (p) => state = state.copyWith(progress: p),
           );
       ref.invalidate(feedControllerProvider(FeedTab.forYou));
+      ref.invalidate(topRatedRestaurantsProvider);
       final uid = ref.read(currentUserProvider)?.uid;
       if (uid != null) {
         ref.invalidate(userProfileProvider(uid));

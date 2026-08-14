@@ -8,7 +8,7 @@ import '../../../app/theme/app_spacing.dart';
 import '../../../app/theme/theme_mode_provider.dart';
 import '../../notifications/presentation/providers/notification_providers.dart';
 
-/// Taste Stage: low horizontal course bar with center Create seal.
+/// Taste Stage: floating seal that opens a horizontal course row.
 class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key, required this.navigationShell});
 
@@ -18,20 +18,28 @@ class MainShell extends ConsumerStatefulWidget {
   ConsumerState<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends ConsumerState<MainShell> {
+class _MainShellState extends ConsumerState<MainShell>
+    with SingleTickerProviderStateMixin {
   StatefulNavigationShell get navigationShell => widget.navigationShell;
 
+  var _menuOpen = false;
+  late final AnimationController _fan;
+
   static const _courses = <_Course>[
-    _Course(0, 'Feed', Icons.home_outlined, Icons.home_rounded),
-    _Course(1, 'Explore', Icons.explore_outlined, Icons.explore_rounded),
-    _Course(2, 'Create', Icons.add_rounded, Icons.add_rounded),
-    _Course(3, 'Messages', Icons.chat_bubble_outline_rounded, Icons.chat_bubble_rounded),
-    _Course(4, 'Profile', Icons.person_outline_rounded, Icons.person_rounded),
+    _Course(0, 'Feed', Icons.home_rounded),
+    _Course(1, 'Explore', Icons.explore_rounded),
+    _Course(2, 'Create', Icons.add_rounded),
+    _Course(3, 'Messages', Icons.chat_bubble_rounded),
+    _Course(4, 'Profile', Icons.person_rounded),
   ];
 
   @override
   void initState() {
     super.initState();
+    _fan = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 280),
+    );
     Future<void>.microtask(() async {
       try {
         await ref
@@ -40,6 +48,21 @@ class _MainShellState extends ConsumerState<MainShell> {
             .timeout(const Duration(seconds: 8));
       } catch (_) {}
     });
+  }
+
+  @override
+  void dispose() {
+    _fan.dispose();
+    super.dispose();
+  }
+
+  void _toggleMenu() {
+    setState(() => _menuOpen = !_menuOpen);
+    if (_menuOpen) {
+      _fan.forward();
+    } else {
+      _fan.reverse();
+    }
   }
 
   void _goCourse(int index) {
@@ -51,6 +74,7 @@ class _MainShellState extends ConsumerState<MainShell> {
     if (index == 0 && wasSame) {
       ref.read(plateScrollToTopTickProvider.notifier).state++;
     }
+    if (_menuOpen) _toggleMenu();
   }
 
   @override
@@ -58,167 +82,164 @@ class _MainShellState extends ConsumerState<MainShell> {
     final theme = Theme.of(context);
     final bottom = MediaQuery.paddingOf(context).bottom;
     final index = navigationShell.currentIndex;
+    final stageBottom = bottom > 0 ? bottom + 10 : 16.0;
 
     return Scaffold(
-      body: navigationShell,
-      bottomNavigationBar: Padding(
-        padding: EdgeInsets.fromLTRB(
-          AppSpacing.md,
-          0,
-          AppSpacing.md,
-          bottom > 0 ? bottom : AppSpacing.sm,
-        ),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(28),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.charcoal.withValues(alpha: 0.14),
-                blurRadius: 22,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(28),
-            child: ColoredBox(
-              color: theme.colorScheme.surface.withValues(alpha: 0.96),
-              child: SizedBox(
-                height: 72,
-                child: Row(
-                  children: [
-                    for (final course in _courses)
-                      if (course.index == 2)
-                        _CreateSeal(
-                          selected: index == 2,
-                          onTap: () => _goCourse(2),
-                        )
-                      else
-                        _NavItem(
-                          label: course.label,
-                          icon: course.icon,
-                          selectedIcon: course.selectedIcon,
-                          selected: index == course.index,
-                          onTap: () => _goCourse(course.index),
-                        ),
-                  ],
+      body: Stack(
+        children: [
+          Positioned.fill(child: navigationShell),
+          if (_menuOpen)
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: _toggleMenu,
+                child: ColoredBox(
+                  color: Colors.black.withValues(alpha: 0.45),
                 ),
               ),
             ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: stageBottom,
+            child: AnimatedBuilder(
+              animation: _fan,
+              builder: (context, _) {
+                final t = Curves.easeOutCubic.transform(_fan.value);
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (t > 0.02)
+                      Opacity(
+                        opacity: t.clamp(0.0, 1.0),
+                        child: Transform.translate(
+                          offset: Offset(0, (1 - t) * 16),
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(12, 0, 12, 14),
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  for (var i = 0; i < _courses.length; i++) ...[
+                                    if (i > 0) const SizedBox(width: 8),
+                                    _CourseChip(
+                                      label: _courses[i].label,
+                                      icon: _courses[i].icon,
+                                      selected: index == _courses[i].index,
+                                      onTap: () =>
+                                          _goCourse(_courses[i].index),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    Center(
+                      child: GestureDetector(
+                        onTap: _toggleMenu,
+                        onLongPress: () => _goCourse(2),
+                        child: Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: AppColors.brandGradient,
+                            boxShadow: [
+                              BoxShadow(
+                                color:
+                                    AppColors.primary.withValues(alpha: 0.4),
+                                blurRadius: 18,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
+                            border: Border.all(
+                              color: theme.colorScheme.surface,
+                              width: 3,
+                            ),
+                          ),
+                          child: AnimatedRotation(
+                            turns: _menuOpen ? 0.125 : 0,
+                            duration: AppDurations.normal,
+                            child: Icon(
+                              _menuOpen
+                                  ? Icons.close_rounded
+                                  : Icons.restaurant_rounded,
+                              color: Colors.white,
+                              size: 28,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 }
 
 class _Course {
-  const _Course(this.index, this.label, this.icon, this.selectedIcon);
+  const _Course(this.index, this.label, this.icon);
   final int index;
   final String label;
   final IconData icon;
-  final IconData selectedIcon;
 }
 
-class _NavItem extends StatelessWidget {
-  const _NavItem({
+class _CourseChip extends StatelessWidget {
+  const _CourseChip({
     required this.label,
     required this.icon,
-    required this.selectedIcon,
     required this.selected,
     required this.onTap,
   });
 
   final String label;
   final IconData icon;
-  final IconData selectedIcon;
   final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = selected
-        ? AppColors.primary
-        : theme.colorScheme.onSurfaceVariant;
-
-    return Expanded(
+    return Material(
+      color: selected
+          ? AppColors.primary
+          : theme.colorScheme.surface.withValues(alpha: 0.96),
+      elevation: 8,
+      shadowColor: Colors.black45,
+      shape: const StadiumBorder(),
       child: InkWell(
         onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AnimatedContainer(
-              duration: AppDurations.fast,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: selected
-                    ? AppColors.primary.withValues(alpha: 0.12)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(AppRadius.pill),
+        customBorder: const StadiumBorder(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 18,
+                color: selected ? Colors.white : AppColors.primary,
               ),
-              child: Icon(
-                selected ? selectedIcon : icon,
-                size: 24,
-                color: color,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.sourceSans3(
-                fontSize: 11,
-                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                color: selected ? AppColors.primaryDark : color,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CreateSeal extends StatelessWidget {
-  const _CreateSeal({required this.selected, required this.onTap});
-
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                gradient: AppColors.brandGradient,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.35),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-                border: Border.all(
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: GoogleFonts.sourceSans3(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13,
                   color: selected
-                      ? Theme.of(context).colorScheme.surface
-                      : Colors.transparent,
-                  width: 2,
+                      ? Colors.white
+                      : theme.colorScheme.onSurface,
                 ),
               ),
-              child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

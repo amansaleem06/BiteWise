@@ -30,32 +30,131 @@ class FirestoreExploreRepository implements ExploreRepository {
 
   @override
   Future<List<Restaurant>> fetchTopRatedRestaurants({int limit = 20}) async {
+    // Prefer denormalized ratingAvg (written on publish / by Cloud Functions).
     try {
       final snap = await _firestore
           .collection('restaurants')
+          .where('ratingAvg', isGreaterThan: 0)
           .orderBy('ratingAvg', descending: true)
           .limit(limit)
           .get();
-      final ranked = snap.docs
-          .map(RestaurantModel.fromDoc)
-          .where((r) => r.ratingCount > 0)
-          .toList();
-      if (ranked.isNotEmpty) return ranked;
+      if (snap.docs.isNotEmpty) {
+        return snap.docs.map(RestaurantModel.fromDoc).toList();
+      }
     } catch (_) {
-      // Fall through to client-side ranking when index/field is missing.
+      // Fall through — field/index may be missing on older docs.
     }
 
-    final snap = await _firestore.collection('restaurants').limit(80).get();
-    final ranked = snap.docs
-        .map(RestaurantModel.fromDoc)
-        .where((r) => r.ratingCount > 0)
-        .toList()
+    try {
+      final snap = await _firestore
+          .collection('restaurants')
+          .where('ratingCount', isGreaterThan: 0)
+          .orderBy('ratingCount', descending: true)
+          .limit(limit * 3)
+          .get();
+      final ranked = snap.docs.map(RestaurantModel.fromDoc).toList()
+        ..sort((a, b) {
+          final ar = a.averageRating ?? 0;
+          final br = b.averageRating ?? 0;
+          final byAvg = br.compareTo(ar);
+          if (byAvg != 0) return byAvg;
+          return b.ratingCount.compareTo(a.ratingCount);
+        });
+      if (ranked.isNotEmpty) return ranked.take(limit).toList();
+    } catch (_) {
+      // Fall through to post-derived ranking.
+    }
+
+    // Last resort: aggregate from rated posts so Top Rated isn't empty when
+    // restaurant docs never got ratingSum/ratingCount/ratingAvg backfilled.
+    return _topRatedFromPosts(limit: limit);
+  }
+
+  Future<List<Restaurant>> _topRatedFromPosts({required int limit}) async {
+    QuerySnapshot<Map<String, dynamic>> snap;
+    try {
+      snap = await _firestore
+          .collection('posts')
+          .where('rating', isGreaterThan: 0)
+          .orderBy('rating', descending: true)
+          .limit(250)
+          .get();
+    } catch (_) {
+      snap = await _firestore.collection('posts').limit(250).get();
+    }
+
+    final sums = <String, double>{};
+    final counts = <String, int>{};
+    final names = <String, String>{};
+
+    for (final doc in snap.docs) {
+      final data = doc.data();
+      final restaurantId = (data['restaurantId'] as String?)?.trim() ?? '';
+      final rating = (data['rating'] as num?)?.toDouble();
+      if (restaurantId.isEmpty || rating == null || rating <= 0) continue;
+      sums[restaurantId] = (sums[restaurantId] ?? 0) + rating;
+      counts[restaurantId] = (counts[restaurantId] ?? 0) + 1;
+      final name = (data['restaurantName'] as String?)?.trim();
+      if (name != null && name.isNotEmpty) {
+        names[restaurantId] = name;
+      }
+    }
+
+    if (counts.isEmpty) return const [];
+
+    final rankedIds = counts.keys.toList()
       ..sort((a, b) {
-        final ar = a.averageRating ?? 0;
-        final br = b.averageRating ?? 0;
-        return br.compareTo(ar);
+        final ar = (sums[a] ?? 0) / (counts[a] ?? 1);
+        final br = (sums[b] ?? 0) / (counts[b] ?? 1);
+        final byAvg = br.compareTo(ar);
+        if (byAvg != 0) return byAvg;
+        return (counts[b] ?? 0).compareTo(counts[a] ?? 0);
       });
-    return ranked.take(limit).toList();
+
+    final take = rankedIds.take(limit).toList(growable: false);
+    final restaurantSnaps = await Future.wait(
+      take.map((id) => _firestore.collection('restaurants').doc(id).get()),
+    );
+
+    final byId = <String, Restaurant>{};
+    for (final doc in restaurantSnaps) {
+      if (!doc.exists) continue;
+      byId[doc.id] = RestaurantModel.fromDoc(doc);
+    }
+
+    return [
+      for (final id in take)
+        if (byId.containsKey(id))
+          Restaurant(
+            id: id,
+            name: byId[id]!.name,
+            description: byId[id]!.description,
+            coverUrl: byId[id]!.coverUrl,
+            logoUrl: byId[id]!.logoUrl,
+            city: byId[id]!.city,
+            address: byId[id]!.address,
+            phone: byId[id]!.phone,
+            website: byId[id]!.website,
+            cuisines: byId[id]!.cuisines,
+            priceLevel: byId[id]!.priceLevel,
+            claimed: byId[id]!.claimed,
+            ownerId: byId[id]!.ownerId,
+            followerCount: byId[id]!.followerCount,
+            postCount: byId[id]!.postCount,
+            ratingSum: sums[id] ?? byId[id]!.ratingSum,
+            ratingCount: counts[id] ?? byId[id]!.ratingCount,
+            openingHours: byId[id]!.openingHours,
+            latitude: byId[id]!.latitude,
+            longitude: byId[id]!.longitude,
+          )
+        else
+          Restaurant(
+            id: id,
+            name: names[id] ?? 'Restaurant',
+            ratingSum: sums[id] ?? 0,
+            ratingCount: counts[id] ?? 0,
+          ),
+    ];
   }
 
   @override
