@@ -24,6 +24,12 @@ abstract interface class ChatRepository {
 
   Future<void> sendImage(String chatId, XFile image);
 
+  Future<void> sendAudio(
+    String chatId, {
+    required String filePath,
+    required int durationMs,
+  });
+
   /// Updates the viewer's lastReadAt (read receipt + clears unread).
   Future<void> markRead(String chatId);
 

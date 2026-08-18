@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/errors/error_text.dart';
+import '../../../auth/domain/entities/app_user.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../feed/presentation/providers/feed_providers.dart';
 import '../../data/repositories/firestore_user_repository.dart';
@@ -101,12 +102,28 @@ class EditProfileController extends AutoDisposeAsyncNotifier<void> {
   final _picker = ImagePicker();
 
   /// Returns true on success.
-  Future<bool> save({required String displayName, required String bio}) async {
+  Future<bool> save({
+    required String displayName,
+    required String bio,
+    String? phone,
+  }) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(
+      () => ref.read(userRepositoryProvider).updateProfile(
+            displayName: displayName,
+            bio: bio,
+            phone: phone,
+          ),
+    );
+    return !state.hasError;
+  }
+
+  Future<bool> setMessagePrivacy(MessagePrivacy privacy) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
       () => ref
           .read(userRepositoryProvider)
-          .updateProfile(displayName: displayName, bio: bio),
+          .updateProfile(messagePrivacy: privacy),
     );
     return !state.hasError;
   }

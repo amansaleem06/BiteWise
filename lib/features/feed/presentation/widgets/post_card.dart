@@ -159,7 +159,7 @@ class PostCard extends StatelessWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.accent,
+                      color: AppColors.primary.withValues(alpha: 0.92),
                       borderRadius: BorderRadius.circular(AppRadius.pill),
                     ),
                     child: Row(
@@ -167,16 +167,16 @@ class PostCard extends StatelessWidget {
                       children: [
                         const Icon(
                           Icons.star_rounded,
-                          color: AppColors.onAccent,
-                          size: 18,
+                          color: AppColors.ratingStar,
+                          size: 16,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           post.rating!.toStringAsFixed(1),
                           style: GoogleFonts.sourceSans3(
-                            color: AppColors.onAccent,
+                            color: AppColors.cream,
                             fontWeight: FontWeight.w800,
-                            fontSize: 14,
+                            fontSize: 13,
                           ),
                         ),
                       ],
@@ -379,10 +379,8 @@ class _TagPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const styles = [
-      (AppColors.accent, AppColors.onAccent),
-      (AppColors.primary, AppColors.cream),
       (AppColors.primaryLight, AppColors.primary),
-      (AppColors.secondary, AppColors.cream),
+      (AppColors.cream, AppColors.primary),
     ];
     final style = styles[index % styles.length];
     return Container(

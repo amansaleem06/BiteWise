@@ -23,6 +23,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _name;
   late final TextEditingController _bio;
+  late final TextEditingController _phone;
 
   @override
   void initState() {
@@ -30,20 +31,24 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final user = ref.read(currentUserProvider);
     _name = TextEditingController(text: user?.displayName ?? '');
     _bio = TextEditingController(text: user?.bio ?? '');
+    _phone = TextEditingController(text: user?.phone ?? '');
   }
 
   @override
   void dispose() {
     _name.dispose();
     _bio.dispose();
+    _phone.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    final ok = await ref
-        .read(editProfileControllerProvider.notifier)
-        .save(displayName: _name.text, bio: _bio.text);
+    final ok = await ref.read(editProfileControllerProvider.notifier).save(
+          displayName: _name.text,
+          bio: _bio.text,
+          phone: _phone.text,
+        );
     if (!mounted) return;
     if (ok) {
       AppSnackbar.success(context, 'Profile updated');
@@ -138,6 +143,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         maxLength: 160,
                         decoration: const InputDecoration(labelText: 'Bio'),
                         textCapitalization: TextCapitalization.sentences,
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      AppTextField(
+                        label: 'Phone (for calls)',
+                        controller: _phone,
+                        keyboardType: TextInputType.phone,
+                        validator: Validators.optionalPhone,
+                        textInputAction: TextInputAction.done,
                       ),
                     ],
                   ),

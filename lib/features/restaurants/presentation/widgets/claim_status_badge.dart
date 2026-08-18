@@ -21,8 +21,8 @@ class ClaimStatusBadge extends StatelessWidget {
     if (restaurant.isClaimed) {
       label = 'Verified Owner';
       icon = Icons.verified_rounded;
-      bg = AppColors.accent;
-      fg = AppColors.onAccent;
+      bg = AppColors.primary;
+      fg = AppColors.cream;
     } else if (restaurant.isPendingClaim) {
       label = 'Claim pending review';
       icon = Icons.hourglass_top_rounded;

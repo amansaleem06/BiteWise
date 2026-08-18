@@ -36,6 +36,13 @@ class ChatActions {
   Future<void> sendImage(String chatId, XFile image) =>
       _repo.sendImage(chatId, image);
 
+  Future<void> sendAudio(
+    String chatId, {
+    required String filePath,
+    required int durationMs,
+  }) =>
+      _repo.sendAudio(chatId, filePath: filePath, durationMs: durationMs);
+
   Future<void> markRead(String chatId) => _repo.markRead(chatId);
 
   /// At most one typing write every 3 seconds.

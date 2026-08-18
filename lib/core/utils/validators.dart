@@ -29,6 +29,12 @@ abstract final class Validators {
     return null;
   }
 
+  static String? optionalPhone(String? value) {
+    final v = value?.trim() ?? '';
+    if (v.isEmpty) return null;
+    return phone(v);
+  }
+
   static String? address(String? value) {
     final v = value?.trim() ?? '';
     if (v.length < 6) return 'Enter the business street address';

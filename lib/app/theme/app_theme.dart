@@ -89,14 +89,14 @@ abstract final class AppTheme {
         style: FilledButton.styleFrom(
           minimumSize: const Size.fromHeight(54),
           elevation: 0,
-          backgroundColor: AppColors.accent,
-          foregroundColor: AppColors.onAccent,
-          disabledBackgroundColor: AppColors.accent.withValues(alpha: 0.4),
-          disabledForegroundColor: AppColors.onAccent.withValues(alpha: 0.5),
+          backgroundColor: AppColors.primary,
+          foregroundColor: AppColors.cream,
+          disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.4),
+          disabledForegroundColor: AppColors.cream.withValues(alpha: 0.5),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.pill),
           ),
-          textStyle: textTheme.labelLarge?.copyWith(color: AppColors.onAccent),
+          textStyle: textTheme.labelLarge?.copyWith(color: AppColors.cream),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(

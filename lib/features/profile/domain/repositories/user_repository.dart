@@ -20,7 +20,12 @@ abstract interface class UserRepository {
 
   /// Updates displayName/bio; also syncs Firebase Auth displayName so new
   /// posts/comments denormalize the fresh name.
-  Future<void> updateProfile({String? displayName, String? bio});
+  Future<void> updateProfile({
+    String? displayName,
+    String? bio,
+    String? phone,
+    MessagePrivacy? messagePrivacy,
+  });
 
   /// Uploads a new avatar and updates Firestore + Auth photoUrl.
   Future<String> updateAvatar(XFile image);

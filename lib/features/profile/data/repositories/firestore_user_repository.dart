@@ -299,7 +299,12 @@ class FirestoreUserRepository implements UserRepository {
   }
 
   @override
-  Future<void> updateProfile({String? displayName, String? bio}) async {
+  Future<void> updateProfile({
+    String? displayName,
+    String? bio,
+    String? phone,
+    MessagePrivacy? messagePrivacy,
+  }) async {
     final user = _auth.currentUser;
     if (user == null) throw const AppException('Not signed in');
 
@@ -312,6 +317,10 @@ class FirestoreUserRepository implements UserRepository {
       await user.updateDisplayName(displayName.trim());
     }
     if (bio != null) updates['bio'] = bio.trim();
+    if (phone != null) updates['phone'] = phone.trim();
+    if (messagePrivacy != null) {
+      updates['messagePrivacy'] = messagePrivacy.name;
+    }
 
     await _users.doc(user.uid).update(updates);
   }

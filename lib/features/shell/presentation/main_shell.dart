@@ -8,7 +8,7 @@ import '../../../app/theme/app_spacing.dart';
 import '../../../app/theme/theme_mode_provider.dart';
 import '../../notifications/presentation/providers/notification_providers.dart';
 
-/// Taste Stage: maroon seal that opens a horizontal course row.
+/// Floating menu seal that opens a horizontal course row.
 class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key, required this.navigationShell});
 
@@ -19,18 +19,19 @@ class MainShell extends ConsumerStatefulWidget {
 }
 
 class _MainShellState extends ConsumerState<MainShell>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   StatefulNavigationShell get navigationShell => widget.navigationShell;
 
   var _menuOpen = false;
   late final AnimationController _fan;
+  late final AnimationController _pulse;
 
   static const _courses = <_Course>[
-    _Course(0, 'Feed', Icons.home_rounded),
-    _Course(1, 'Explore', Icons.explore_rounded),
+    _Course(0, 'Feed', Icons.home_outlined),
+    _Course(1, 'Explore', Icons.explore_outlined),
     _Course(2, 'Create', Icons.add_rounded),
-    _Course(3, 'Messages', Icons.chat_bubble_rounded),
-    _Course(4, 'Profile', Icons.person_rounded),
+    _Course(3, 'Messages', Icons.chat_bubble_outline_rounded),
+    _Course(4, 'Profile', Icons.person_outline_rounded),
   ];
 
   @override
@@ -38,8 +39,12 @@ class _MainShellState extends ConsumerState<MainShell>
     super.initState();
     _fan = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 280),
+      duration: const Duration(milliseconds: 320),
     );
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2200),
+    )..repeat(reverse: true);
     Future<void>.microtask(() async {
       try {
         await ref
@@ -53,6 +58,7 @@ class _MainShellState extends ConsumerState<MainShell>
   @override
   void dispose() {
     _fan.dispose();
+    _pulse.dispose();
     super.dispose();
   }
 
@@ -60,8 +66,10 @@ class _MainShellState extends ConsumerState<MainShell>
     setState(() => _menuOpen = !_menuOpen);
     if (_menuOpen) {
       _fan.forward();
+      _pulse.stop();
     } else {
       _fan.reverse();
+      _pulse.repeat(reverse: true);
     }
   }
 
@@ -91,8 +99,12 @@ class _MainShellState extends ConsumerState<MainShell>
             Positioned.fill(
               child: GestureDetector(
                 onTap: _toggleMenu,
-                child: ColoredBox(
-                  color: AppColors.charcoal.withValues(alpha: 0.42),
+                child: AnimatedOpacity(
+                  duration: AppDurations.fast,
+                  opacity: 1,
+                  child: ColoredBox(
+                    color: AppColors.charcoal.withValues(alpha: 0.28),
+                  ),
                 ),
               ),
             ),
@@ -101,9 +113,10 @@ class _MainShellState extends ConsumerState<MainShell>
             right: 0,
             bottom: stageBottom,
             child: AnimatedBuilder(
-              animation: _fan,
+              animation: Listenable.merge([_fan, _pulse]),
               builder: (context, _) {
                 final t = Curves.easeOutCubic.transform(_fan.value);
+                final pulse = 0.96 + (_pulse.value * 0.08);
                 return Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -111,27 +124,31 @@ class _MainShellState extends ConsumerState<MainShell>
                       Opacity(
                         opacity: t.clamp(0.0, 1.0),
                         child: Transform.translate(
-                          offset: Offset(0, (1 - t) * 18),
+                          offset: Offset(0, (1 - t) * 14),
                           child: Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
                             child: DecoratedBox(
                               decoration: BoxDecoration(
-                                color: AppColors.cream.withValues(alpha: 0.96),
+                                color: AppColors.cream.withValues(alpha: 0.97),
                                 borderRadius:
                                     BorderRadius.circular(AppRadius.pill),
+                                border: Border.all(
+                                  color: AppColors.primary
+                                      .withValues(alpha: 0.08),
+                                ),
                                 boxShadow: [
                                   BoxShadow(
                                     color: AppColors.charcoal
-                                        .withValues(alpha: 0.16),
-                                    blurRadius: 24,
+                                        .withValues(alpha: 0.1),
+                                    blurRadius: 20,
                                     offset: const Offset(0, 8),
                                   ),
                                 ],
                               ),
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 8,
+                                  horizontal: 6,
+                                  vertical: 6,
                                 ),
                                 child: Row(
                                   children: [
@@ -140,7 +157,8 @@ class _MainShellState extends ConsumerState<MainShell>
                                         label: course.label,
                                         icon: course.icon,
                                         selected: index == course.index,
-                                        onTap: () => _goCourse(course.index),
+                                        onTap: () =>
+                                            _goCourse(course.index),
                                       ),
                                   ],
                                 ),
@@ -153,45 +171,40 @@ class _MainShellState extends ConsumerState<MainShell>
                       child: GestureDetector(
                         onTap: _toggleMenu,
                         onLongPress: () => _goCourse(2),
-                        child: Container(
-                          width: 76,
-                          height: 76,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: AppColors.primary,
-                            boxShadow: [
-                              BoxShadow(
-                                color:
-                                    AppColors.primary.withValues(alpha: 0.38),
-                                blurRadius: 22,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                            border: Border.all(
-                              color: AppColors.cream,
-                              width: 3,
-                            ),
-                          ),
-                          alignment: Alignment.center,
-                          child: AnimatedSwitcher(
-                            duration: AppDurations.fast,
-                            child: _menuOpen
-                                ? const Icon(
-                                    key: ValueKey('close'),
-                                    Icons.close_rounded,
-                                    color: AppColors.cream,
-                                    size: 30,
-                                  )
-                                : Text(
-                                    key: const ValueKey('stage'),
-                                    'Stage',
-                                    style: GoogleFonts.fraunces(
-                                      color: AppColors.cream,
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 16,
-                                      height: 1,
-                                    ),
+                        child: Transform.scale(
+                          scale: _menuOpen ? 1 : pulse,
+                          child: Container(
+                            width: 62,
+                            height: 62,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.primary,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primary.withValues(
+                                    alpha: _menuOpen ? 0.22 : 0.18 + _pulse.value * 0.12,
                                   ),
+                                  blurRadius: _menuOpen ? 12 : 16 + _pulse.value * 8,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
+                              border: Border.all(
+                                color: AppColors.cream.withValues(alpha: 0.9),
+                                width: 2,
+                              ),
+                            ),
+                            alignment: Alignment.center,
+                            child: AnimatedSwitcher(
+                              duration: AppDurations.fast,
+                              child: Icon(
+                                _menuOpen
+                                    ? Icons.close_rounded
+                                    : Icons.restaurant_menu_rounded,
+                                key: ValueKey(_menuOpen),
+                                color: AppColors.cream,
+                                size: 26,
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -237,7 +250,9 @@ class _CourseChip extends StatelessWidget {
           duration: AppDurations.fast,
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            color: selected ? AppColors.accent : Colors.transparent,
+            color: selected
+                ? AppColors.primary.withValues(alpha: 0.1)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(AppRadius.pill),
           ),
           child: Column(
@@ -246,7 +261,7 @@ class _CourseChip extends StatelessWidget {
               Icon(
                 icon,
                 size: 18,
-                color: selected ? AppColors.onAccent : AppColors.primary,
+                color: AppColors.primary,
               ),
               const SizedBox(height: 2),
               Text(
@@ -254,9 +269,9 @@ class _CourseChip extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.sourceSans3(
-                  fontWeight: FontWeight.w800,
+                  fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                   fontSize: 10,
-                  color: selected ? AppColors.onAccent : AppColors.primary,
+                  color: AppColors.primary,
                 ),
               ),
             ],

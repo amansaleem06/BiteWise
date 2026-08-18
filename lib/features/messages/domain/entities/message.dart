@@ -2,10 +2,14 @@ import 'package:equatable/equatable.dart';
 
 enum MessageType {
   text,
-  image;
+  image,
+  audio;
 
-  static MessageType fromKey(String? key) =>
-      key == 'image' ? MessageType.image : MessageType.text;
+  static MessageType fromKey(String? key) => switch (key) {
+        'image' => MessageType.image,
+        'audio' => MessageType.audio,
+        _ => MessageType.text,
+      };
 }
 
 class Message extends Equatable {
@@ -15,6 +19,8 @@ class Message extends Equatable {
     required this.type,
     this.text,
     this.imageUrl,
+    this.audioUrl,
+    this.durationMs,
     this.createdAt,
   });
 
@@ -23,6 +29,8 @@ class Message extends Equatable {
   final MessageType type;
   final String? text;
   final String? imageUrl;
+  final String? audioUrl;
+  final int? durationMs;
   final DateTime? createdAt;
 
   @override

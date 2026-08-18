@@ -2,6 +2,30 @@ import 'package:equatable/equatable.dart';
 
 import '../../../restaurants/domain/entities/claim_status.dart';
 
+/// Who may start a new conversation with this account.
+enum MessagePrivacy {
+  everyone,
+  followers,
+  none;
+
+  static MessagePrivacy fromKey(String? key) =>
+      MessagePrivacy.values.where((s) => s.name == key).firstOrNull ??
+      MessagePrivacy.everyone;
+
+  String get label => switch (this) {
+        MessagePrivacy.everyone => 'Anyone',
+        MessagePrivacy.followers => 'Followers only',
+        MessagePrivacy.none => 'Nobody new',
+      };
+
+  String get subtitle => switch (this) {
+        MessagePrivacy.everyone => 'Anyone on TasteWise can send you a message',
+        MessagePrivacy.followers => 'Only people who follow you can start a chat',
+        MessagePrivacy.none =>
+          'New chats are closed. Existing conversations stay open',
+      };
+}
+
 /// Role determines permissions throughout the app and in Security Rules.
 enum UserRole {
   user,
@@ -31,6 +55,8 @@ class AppUser extends Equatable {
     this.businessVerificationStatus,
     this.ownedRestaurantId,
     this.pendingClaimRestaurantId,
+    this.phone,
+    this.messagePrivacy = MessagePrivacy.everyone,
     this.emailVerified = false,
     this.followerCount = 0,
     this.followingCount = 0,
@@ -54,6 +80,8 @@ class AppUser extends Equatable {
   final BusinessVerificationStatus? businessVerificationStatus;
   final String? ownedRestaurantId;
   final String? pendingClaimRestaurantId;
+  final String? phone;
+  final MessagePrivacy messagePrivacy;
   final bool emailVerified;
   final int followerCount;
   final int followingCount;
@@ -91,6 +119,8 @@ class AppUser extends Equatable {
     String? ownedRestaurantId,
     String? pendingClaimRestaurantId,
     bool clearPendingClaim = false,
+    String? phone,
+    MessagePrivacy? messagePrivacy,
     bool? emailVerified,
   }) =>
       AppUser(
@@ -111,6 +141,8 @@ class AppUser extends Equatable {
         pendingClaimRestaurantId: clearPendingClaim
             ? null
             : (pendingClaimRestaurantId ?? this.pendingClaimRestaurantId),
+        phone: phone ?? this.phone,
+        messagePrivacy: messagePrivacy ?? this.messagePrivacy,
         emailVerified: emailVerified ?? this.emailVerified,
         followerCount: followerCount,
         followingCount: followingCount,
@@ -139,6 +171,8 @@ class AppUser extends Equatable {
         businessVerificationStatus: businessVerificationStatus,
         ownedRestaurantId: ownedRestaurantId,
         pendingClaimRestaurantId: pendingClaimRestaurantId,
+        phone: phone,
+        messagePrivacy: messagePrivacy,
         emailVerified: emailVerified,
         followerCount: followerCount ?? this.followerCount,
         followingCount: followingCount ?? this.followingCount,
@@ -162,6 +196,8 @@ class AppUser extends Equatable {
         businessVerificationStatus,
         ownedRestaurantId,
         pendingClaimRestaurantId,
+        phone,
+        messagePrivacy,
         emailVerified,
         followerCount,
         followingCount,

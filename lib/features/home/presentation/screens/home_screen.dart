@@ -11,6 +11,7 @@ import '../../../../core/constants/cuisines.dart';
 import '../../../feed/presentation/providers/feed_providers.dart';
 import '../../../feed/presentation/widgets/feed_list.dart';
 import '../../../notifications/presentation/providers/notification_providers.dart';
+import '../../../stories/presentation/widgets/stories_tray.dart';
 
 /// Plate course — editorial feed with mode pill + cuisine chips.
 class HomeScreen extends ConsumerStatefulWidget {
@@ -170,7 +171,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           borderRadius: BorderRadius.circular(AppRadius.pill),
                           child: Ink(
                             decoration: BoxDecoration(
-                              color: AppColors.accent,
+                              color: AppColors.primary,
                               borderRadius:
                                   BorderRadius.circular(AppRadius.pill),
                             ),
@@ -185,14 +186,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   Text(
                                     modeLabel,
                                     style: GoogleFonts.sourceSans3(
-                                      color: AppColors.onAccent,
+                                      color: AppColors.cream,
                                       fontWeight: FontWeight.w800,
                                       fontSize: 13,
                                     ),
                                   ),
                                   const Icon(
                                     Icons.expand_more_rounded,
-                                    color: AppColors.onAccent,
+                                    color: AppColors.cream,
                                     size: 18,
                                   ),
                                 ],
@@ -218,6 +219,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     onPressed: () => context.push(Routes.notifications),
                   ),
                 ],
+              ),
+              SliverToBoxAdapter(
+                child: AnimatedSize(
+                  duration: AppDurations.normal,
+                  alignment: Alignment.topCenter,
+                  child: _chromeVisible
+                      ? const StoriesTray()
+                      : const SizedBox.shrink(),
+                ),
               ),
               SliverToBoxAdapter(
                 child: AnimatedSize(
@@ -328,7 +338,7 @@ class _Chip extends StatelessWidget {
     final theme = Theme.of(context);
     return Material(
       color: selected
-          ? AppColors.accent
+          ? AppColors.primary
           : theme.colorScheme.surface.withValues(alpha: 0.9),
       borderRadius: BorderRadius.circular(AppRadius.pill),
       child: InkWell(
@@ -342,7 +352,7 @@ class _Chip extends StatelessWidget {
               fontWeight: FontWeight.w700,
               fontSize: 13,
               color: selected
-                  ? AppColors.onAccent
+                  ? AppColors.cream
                   : emphasized
                       ? AppColors.primary
                       : theme.colorScheme.onSurface,

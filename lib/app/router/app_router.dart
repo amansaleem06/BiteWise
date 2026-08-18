@@ -27,6 +27,7 @@ import '../../features/reservations/presentation/screens/my_reservations_screen.
 import '../../features/restaurants/presentation/screens/business_setup_screen.dart';
 import '../../features/restaurants/presentation/screens/restaurant_screen.dart';
 import '../../features/shell/presentation/main_shell.dart';
+import '../../features/stories/presentation/screens/story_viewer_screen.dart';
 import 'routes.dart';
 
 /// Notifies [GoRouter] whenever [authStateProvider] changes.
@@ -166,6 +167,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.businessSetup,
         builder: (_, __) => const BusinessSetupScreen(),
+      ),
+      GoRoute(
+        path: Routes.stories,
+        builder: (_, state) {
+          final extra = state.extra;
+          if (extra is StoryViewerArgs) {
+            return StoryViewerScreen(args: extra);
+          }
+          return const SizedBox.shrink();
+        },
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>

@@ -30,7 +30,7 @@ class AppButton extends StatelessWidget {
                 height: 22,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.5,
-                  color: AppColors.onAccent,
+                  color: AppColors.cream,
                 ),
               )
             : Row(

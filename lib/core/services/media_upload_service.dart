@@ -118,6 +118,48 @@ class MediaUploadService {
     return ref.getDownloadURL();
   }
 
+  /// Voice note. Path: `chats/{chatId}/{uid}/{uuid}.m4a`
+  Future<String> uploadChatAudio({
+    required String chatId,
+    required String uid,
+    required String filePath,
+  }) async {
+    final bytes = await XFile(filePath).readAsBytes();
+    if (bytes.length > 5 * 1024 * 1024) {
+      throw const AppException(
+        'Voice note is too long. Try a shorter one.',
+      );
+    }
+    final ref = _storage.ref('chats/$chatId/$uid/${_uuid.v4()}.m4a');
+    try {
+      await ref.putData(
+        bytes,
+        SettableMetadata(contentType: 'audio/mp4'),
+      );
+    } on FirebaseException catch (e) {
+      throw AppException('Voice note upload failed.', code: e.code);
+    }
+    return ref.getDownloadURL();
+  }
+
+  /// Story photo. Path: `stories/{uid}/{uuid}.jpg`
+  Future<String> uploadStoryImage({
+    required String uid,
+    required XFile file,
+  }) async {
+    final compressed = await _compress(file);
+    final ref = _storage.ref('stories/$uid/${_uuid.v4()}.jpg');
+    try {
+      await ref.putData(
+        compressed,
+        SettableMetadata(contentType: 'image/jpeg'),
+      );
+    } on FirebaseException catch (e) {
+      throw AppException('Story upload failed.', code: e.code);
+    }
+    return ref.getDownloadURL();
+  }
+
   Future<Uint8List> _compress(XFile file) async {
     final result = await FlutterImageCompress.compressWithFile(
       file.path,

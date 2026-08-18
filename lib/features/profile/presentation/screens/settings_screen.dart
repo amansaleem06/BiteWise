@@ -9,7 +9,9 @@ import '../../../../app/theme/theme_mode_provider.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/errors/error_text.dart';
 import '../../../../core/widgets/app_snackbar.dart';
+import '../../../auth/domain/entities/app_user.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
+import '../providers/profile_providers.dart';
 
 /// Account & legal settings — includes App Store–required account deletion.
 class SettingsScreen extends ConsumerWidget {
@@ -46,6 +48,15 @@ class SettingsScreen extends ConsumerWidget {
             leading: const Icon(Icons.bookmark_outline_rounded),
             title: const Text('Saved plates'),
             onTap: () => context.push(Routes.saved),
+          ),
+          ListTile(
+            leading: const Icon(Icons.forum_outlined),
+            title: const Text('Who can message you'),
+            subtitle: Text(
+              ref.watch(currentUserProvider)?.messagePrivacy.label ??
+                  MessagePrivacy.everyone.label,
+            ),
+            onTap: () => _pickMessagePrivacy(context, ref),
           ),
           ListTile(
             leading: authState.isLoading
@@ -189,6 +200,43 @@ class SettingsScreen extends ConsumerWidget {
     );
     if (chosen != null) {
       await ref.read(themeModeProvider.notifier).setMode(chosen);
+    }
+  }
+
+  Future<void> _pickMessagePrivacy(BuildContext context, WidgetRef ref) async {
+    final current =
+        ref.read(currentUserProvider)?.messagePrivacy ?? MessagePrivacy.everyone;
+    final chosen = await showModalBottomSheet<MessagePrivacy>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final privacy in MessagePrivacy.values)
+              ListTile(
+                title: Text(privacy.label),
+                subtitle: Text(privacy.subtitle),
+                trailing: privacy == current
+                    ? const Icon(Icons.check_rounded, color: AppColors.primary)
+                    : null,
+                onTap: () => Navigator.pop(ctx, privacy),
+              ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+        ),
+      ),
+    );
+    if (chosen == null || chosen == current) return;
+    try {
+      await ref
+          .read(userRepositoryProvider)
+          .updateProfile(messagePrivacy: chosen);
+      if (!context.mounted) return;
+      AppSnackbar.success(context, 'Message privacy updated');
+    } catch (e) {
+      if (!context.mounted) return;
+      AppSnackbar.error(context, userMessageFrom(e));
     }
   }
 }

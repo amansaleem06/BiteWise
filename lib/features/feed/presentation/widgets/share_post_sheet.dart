@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../core/errors/error_text.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../explore/presentation/providers/explore_providers.dart';
@@ -96,10 +97,10 @@ class _SharePostSheetState extends ConsumerState<SharePostSheet> {
       Navigator.pop(context);
       context.push(Routes.chatPath(chatId));
       AppSnackbar.success(context, 'Sent to $name');
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() => _sendingUid = null);
-      AppSnackbar.error(context, 'Couldn’t send. Try again.');
+      AppSnackbar.error(context, userMessageFrom(e));
     }
   }
 

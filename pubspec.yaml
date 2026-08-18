@@ -1,7 +1,7 @@
 name: bitewise
 description: "BiteWise — Discover. Taste. Share. A premium food-focused social platform."
 publish_to: "none"
-version: 1.0.0+17
+version: 1.0.0+18
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
@@ -47,7 +47,9 @@ dependencies:
   google_fonts: ^8.2.1
   http: ^1.6.0
   share_plus: ^13.3.0
-
+  record: ^7.1.1
+  audioplayers: ^6.8.1
+  path_provider: ^2.1.6
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -18,20 +18,20 @@ abstract final class RatingMapPin {
     final cached = _cache[key];
     if (cached != null) return cached;
 
-    const width = 92.0;
-    const height = 118.0;
+    const width = 48.0;
+    const height = 62.0;
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
 
     final pin = Path()
-      ..moveTo(width / 2, height - 8)
-      ..quadraticBezierTo(12, height * 0.55, 12, 46)
+      ..moveTo(width / 2, height - 4)
+      ..quadraticBezierTo(6, height * 0.55, 6, 24)
       ..arcToPoint(
-        const Offset(width - 12, 46),
-        radius: const Radius.circular(34),
+        const Offset(width - 6, 24),
+        radius: const Radius.circular(18),
         clockwise: true,
       )
-      ..quadraticBezierTo(width - 12, height * 0.55, width / 2, height - 8)
+      ..quadraticBezierTo(width - 6, height * 0.55, width / 2, height - 4)
       ..close();
 
     canvas.drawPath(
@@ -43,30 +43,30 @@ abstract final class RatingMapPin {
       Paint()
         ..color = AppColors.cream
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 3,
+        ..strokeWidth = 1.5,
     );
 
     final pill = RRect.fromRectAndRadius(
       Rect.fromCenter(
-        center: const Offset(width / 2, 36),
-        width: 64,
-        height: 28,
+        center: const Offset(width / 2, 20),
+        width: 34,
+        height: 16,
       ),
-      const Radius.circular(14),
+      const Radius.circular(8),
     );
-    canvas.drawRRect(pill, Paint()..color = AppColors.accent);
+    canvas.drawRRect(pill, Paint()..color = AppColors.cream);
 
     final paragraphStyle = ui.ParagraphStyle(
       textAlign: TextAlign.center,
-      fontSize: 14,
+      fontSize: 9,
       fontWeight: FontWeight.w800,
     );
     final builder = ui.ParagraphBuilder(paragraphStyle)
-      ..pushStyle(ui.TextStyle(color: AppColors.onAccent, fontSize: 14))
+      ..pushStyle(ui.TextStyle(color: AppColors.primary, fontSize: 9))
       ..addText(label);
     final paragraph = builder.build()
-      ..layout(const ui.ParagraphConstraints(width: 64));
-    canvas.drawParagraph(paragraph, const Offset((width - 64) / 2, 24));
+      ..layout(const ui.ParagraphConstraints(width: 34));
+    canvas.drawParagraph(paragraph, const Offset((width - 34) / 2, 13));
 
     final picture = recorder.endRecording();
     final image = await picture.toImage(width.toInt(), height.toInt());

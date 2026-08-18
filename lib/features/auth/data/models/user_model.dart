@@ -36,6 +36,8 @@ abstract final class UserModel {
       businessVerificationStatus: verification,
       ownedRestaurantId: ownedId,
       pendingClaimRestaurantId: data['pendingClaimRestaurantId'] as String?,
+      phone: data['phone'] as String?,
+      messagePrivacy: MessagePrivacy.fromKey(data['messagePrivacy'] as String?),
       emailVerified: (data['emailVerified'] as bool?) ?? false,
       followerCount: (data['followerCount'] as num?)?.toInt() ?? 0,
       followingCount: (data['followingCount'] as num?)?.toInt() ?? 0,
@@ -73,6 +75,7 @@ abstract final class UserModel {
                   ? BusinessVerificationStatus.verified.name
                   : BusinessVerificationStatus.pending.name,
         if (ownedRestaurantId != null) 'ownedRestaurantId': ownedRestaurantId,
+        'messagePrivacy': MessagePrivacy.everyone.name,
         'emailVerified': emailVerified,
         'followerCount': 0,
         'followingCount': 0,

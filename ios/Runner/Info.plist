@@ -11,9 +11,9 @@
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>BiteWise needs access to your photos so you can share your food experiences.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>BiteWise uses the camera to capture photos of your dishes.</string>
+	<string>TasteWise uses the camera to capture photos for posts, stories, and messages.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>BiteWise uses the microphone when you record videos of your food experiences.</string>
+	<string>TasteWise uses the microphone for voice notes in messages.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>BiteWise uses your location to show restaurants near you.</string>
 	<key>CFBundleExecutable</key>

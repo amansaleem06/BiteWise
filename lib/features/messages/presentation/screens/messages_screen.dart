@@ -7,7 +7,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../core/errors/error_text.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/async_error_view.dart';
 import '../../../explore/presentation/providers/explore_providers.dart';
 import '../../domain/entities/chat.dart';
@@ -250,16 +252,22 @@ class _NewChatSheetState extends ConsumerState<_NewChatSheet> {
                         ),
                         title: Text(user.displayName),
                         onTap: () async {
-                          final chatId = await ref
-                              .read(chatRepositoryProvider)
-                              .openChatWith(
-                                peerUid: user.uid,
-                                peerName: user.displayName,
-                                peerPhotoUrl: user.photoUrl,
-                              );
-                          if (context.mounted) {
-                            Navigator.of(context).pop();
-                            context.push(Routes.chatPath(chatId));
+                          try {
+                            final chatId = await ref
+                                .read(chatRepositoryProvider)
+                                .openChatWith(
+                                  peerUid: user.uid,
+                                  peerName: user.displayName,
+                                  peerPhotoUrl: user.photoUrl,
+                                );
+                            if (context.mounted) {
+                              Navigator.of(context).pop();
+                              context.push(Routes.chatPath(chatId));
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              AppSnackbar.error(context, userMessageFrom(e));
+                            }
                           }
                         },
                       ),

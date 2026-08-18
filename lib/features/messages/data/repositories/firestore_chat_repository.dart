@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/errors/app_exception.dart';
 import '../../../../core/services/media_upload_service.dart';
+import '../../../auth/domain/entities/app_user.dart';
 import '../../domain/entities/chat.dart';
 import '../../domain/entities/message.dart';
 import '../../domain/repositories/chat_repository.dart';
@@ -75,8 +76,22 @@ class FirestoreChatRepository implements ChatRepository {
   }) async {
     final user = _user;
     final chatId = Chat.idFor(user.uid, peerUid);
+    final existing = await _chats.doc(chatId).get();
+    if (existing.exists) {
+      await _chats.doc(chatId).set({
+        'participantInfo': {
+          user.uid: {
+            'name': user.displayName ?? '',
+            'photoUrl': user.photoURL,
+          },
+          peerUid: {'name': peerName, 'photoUrl': peerPhotoUrl},
+        },
+      }, SetOptions(merge: true),);
+      return chatId;
+    }
 
-    // Idempotent create/refresh of participant info.
+    await _assertCanMessage(peerUid);
+
     await _chats.doc(chatId).set({
       'participants': [user.uid, peerUid]..sort(),
       'participantInfo': {
@@ -87,9 +102,33 @@ class FirestoreChatRepository implements ChatRepository {
         peerUid: {'name': peerName, 'photoUrl': peerPhotoUrl},
       },
       'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true),);
+    });
 
     return chatId;
+  }
+
+  Future<void> _assertCanMessage(String peerUid) async {
+    final peerDoc = await _firestore.collection('users').doc(peerUid).get();
+    final privacy = MessagePrivacy.fromKey(
+      peerDoc.data()?['messagePrivacy'] as String?,
+    );
+    if (privacy == MessagePrivacy.everyone) return;
+    if (privacy == MessagePrivacy.none) {
+      throw const AppException(
+        'This account is not accepting new messages.',
+      );
+    }
+    final followsMe = await _firestore
+        .collection('users')
+        .doc(peerUid)
+        .collection('followers')
+        .doc(_user.uid)
+        .get();
+    if (!followsMe.exists) {
+      throw const AppException(
+        'They only accept messages from people who follow them.',
+      );
+    }
   }
 
   @override
@@ -109,26 +148,54 @@ class FirestoreChatRepository implements ChatRepository {
     await _send(chatId, type: MessageType.image, imageUrl: url);
   }
 
+  @override
+  Future<void> sendAudio(
+    String chatId, {
+    required String filePath,
+    required int durationMs,
+  }) async {
+    final url = await _uploads.uploadChatAudio(
+      chatId: chatId,
+      uid: _user.uid,
+      filePath: filePath,
+    );
+    await _send(
+      chatId,
+      type: MessageType.audio,
+      audioUrl: url,
+      durationMs: durationMs,
+    );
+  }
+
   Future<void> _send(
     String chatId, {
     required MessageType type,
     String? text,
     String? imageUrl,
+    String? audioUrl,
+    int? durationMs,
   }) async {
     final me = _user.uid;
+    final preview = switch (type) {
+      MessageType.image => 'Photo',
+      MessageType.audio => 'Voice note',
+      MessageType.text => text,
+    };
     final batch = _firestore.batch()
       ..set(_chats.doc(chatId).collection('messages').doc(), {
         'senderId': me,
         'type': type.name,
         'text': text,
         'imageUrl': imageUrl,
+        'audioUrl': audioUrl,
+        'durationMs': durationMs,
         'createdAt': FieldValue.serverTimestamp(),
       })
       ..set(
         _chats.doc(chatId),
         {
           'lastMessage': {
-            'text': type == MessageType.image ? '📷 Photo' : text,
+            'text': preview,
             'senderId': me,
           },
           'updatedAt': FieldValue.serverTimestamp(),
@@ -199,6 +266,8 @@ class FirestoreChatRepository implements ChatRepository {
       type: MessageType.fromKey(data['type'] as String?),
       text: data['text'] as String?,
       imageUrl: data['imageUrl'] as String?,
+      audioUrl: data['audioUrl'] as String?,
+      durationMs: (data['durationMs'] as num?)?.toInt(),
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
     );
   }

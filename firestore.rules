@@ -20,6 +20,14 @@ service cloud.firestore {
       return isSignedIn() && userRole() == 'admin';
     }
 
+    function canMessageUser(uid) {
+      let peer = get(/databases/$(database)/documents/users/$(uid)).data;
+      let privacy = peer.get('messagePrivacy', 'everyone');
+      return privacy == 'everyone'
+        || (privacy == 'followers'
+          && exists(/databases/$(database)/documents/users/$(uid)/followers/$(request.auth.uid)));
+    }
+
     function isRestaurantOwner() {
       return isSignedIn() && userRole() == 'restaurantOwner';
     }
@@ -253,7 +261,8 @@ service cloud.firestore {
       allow read: if isParticipant();
 
       // Creating a chat: exactly two participants including yourself,
-      // and the doc id must be the sorted uid pair.
+      // the doc id must be the sorted uid pair, and the other person
+      // must allow new messages (everyone / followers).
       allow create: if isSignedIn()
         && request.resource.data.participants is list
         && request.resource.data.participants.size() == 2
@@ -261,7 +270,12 @@ service cloud.firestore {
         && chatId == request.resource.data.participants[0]
             + '_' + request.resource.data.participants[1]
         && request.resource.data.participants[0]
-            < request.resource.data.participants[1];
+            < request.resource.data.participants[1]
+        && canMessageUser(
+             request.resource.data.participants[0] == request.auth.uid
+               ? request.resource.data.participants[1]
+               : request.resource.data.participants[0]
+           );
 
       // Participants may update receipts/typing/lastMessage/info but never
       // the participant list itself.
@@ -289,6 +303,12 @@ service cloud.firestore {
             ||
             (request.resource.data.type == 'image'
               && request.resource.data.imageUrl is string)
+            ||
+            (request.resource.data.type == 'audio'
+              && request.resource.data.audioUrl is string
+              && request.resource.data.durationMs is int
+              && request.resource.data.durationMs > 0
+              && request.resource.data.durationMs <= 180000)
           );
 
         // Messages are immutable.
@@ -335,6 +355,19 @@ service cloud.firestore {
         );
 
       allow delete: if isAdmin();
+    }
+
+    // ---------- Stories (24h photos) ----------
+    match /stories/{storyId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.mediaUrl is string
+        && request.resource.data.authorName is string
+        && request.resource.data.expiresAt is timestamp;
+      allow delete: if isSignedIn()
+        && request.auth.uid == resource.data.authorId;
+      allow update: if false;
     }
 
     // Future collections (dishes)

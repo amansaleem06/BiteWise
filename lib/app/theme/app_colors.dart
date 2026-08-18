@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// TasteWise brand palette from the editorial redesign:
-/// deep maroon, warm cream paper, lime call-to-action.
+/// TasteWise palette — maroon, cream, and a quiet champagne accent.
 abstract final class AppColors {
   // Brand
   static const Color primary = Color(0xFF4A0E0E);
@@ -11,9 +10,9 @@ abstract final class AppColors {
   static const Color secondary = Color(0xFF2A1A18);
   static const Color secondaryLight = Color(0xFFEDE4D8);
 
-  static const Color accent = Color(0xFFC6D92D);
-  static const Color accentDark = Color(0xFF8FA31A);
-  static const Color accentLight = Color(0xFFF4F8C8);
+  static const Color accent = Color(0xFFB8956A);
+  static const Color accentDark = Color(0xFF8C6E48);
+  static const Color accentLight = Color(0xFFF3E8D8);
   static const Color onAccent = Color(0xFF2F0808);
 
   // Neutrals
@@ -26,7 +25,7 @@ abstract final class AppColors {
   static const Color backgroundLight = Color(0xFFFDF8F1);
   static const Color outlineLight = Color(0xFFE2D5C6);
   static const Color feedWash = Color(0x334A0E0E);
-  static const Color feedAccentSoft = Color(0xFFF4F8C8);
+  static const Color feedAccentSoft = Color(0xFFF3E8D8);
 
   // Surfaces — dark
   static const Color surfaceDark = Color(0xFF2A1616);
