@@ -24,6 +24,7 @@ import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/profile/presentation/screens/settings_screen.dart';
 import '../../features/profile/presentation/screens/user_profile_screen.dart';
 import '../../features/reservations/presentation/screens/my_reservations_screen.dart';
+import '../../features/restaurants/presentation/screens/business_setup_screen.dart';
 import '../../features/restaurants/presentation/screens/restaurant_screen.dart';
 import '../../features/shell/presentation/main_shell.dart';
 import 'routes.dart';
@@ -72,7 +73,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       // Signed in — leave the auth funnel.
-      if (onAuthScreen || loc == Routes.verifyEmail) return Routes.home;
+      if (onAuthScreen || loc == Routes.verifyEmail) {
+        if (user.needsBusinessDetails) return Routes.businessSetup;
+        return Routes.home;
+      }
+      if (user.needsBusinessDetails && loc != Routes.businessSetup) {
+        return Routes.businessSetup;
+      }
       return null;
     },
     routes: [
@@ -155,6 +162,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.saved,
         builder: (_, __) => const SavedPlatesScreen(),
+      ),
+      GoRoute(
+        path: Routes.businessSetup,
+        builder: (_, __) => const BusinessSetupScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>

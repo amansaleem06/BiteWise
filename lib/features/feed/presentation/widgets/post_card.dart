@@ -46,17 +46,17 @@ class PostCard extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: surface,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(AppRadius.xxl),
         border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.55),
+          color: theme.colorScheme.outline.withValues(alpha: 0.45),
         ),
         boxShadow: [
           BoxShadow(
             color: theme.brightness == Brightness.dark
                 ? Colors.black.withValues(alpha: 0.35)
-                : AppColors.charcoal.withValues(alpha: 0.07),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
+                : AppColors.charcoal.withValues(alpha: 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
@@ -159,7 +159,7 @@ class PostCard extends StatelessWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.72),
+                      color: AppColors.accent,
                       borderRadius: BorderRadius.circular(AppRadius.pill),
                     ),
                     child: Row(
@@ -167,14 +167,14 @@ class PostCard extends StatelessWidget {
                       children: [
                         const Icon(
                           Icons.star_rounded,
-                          color: AppColors.ratingStar,
+                          color: AppColors.onAccent,
                           size: 18,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           post.rating!.toStringAsFixed(1),
                           style: GoogleFonts.sourceSans3(
-                            color: Colors.white,
+                            color: AppColors.onAccent,
                             fontWeight: FontWeight.w800,
                             fontSize: 14,
                           ),
@@ -232,7 +232,7 @@ class PostCard extends StatelessWidget {
                       ? Icons.bookmark_rounded
                       : Icons.bookmark_border_rounded,
                   color: post.isBookmarkedByMe
-                      ? AppColors.accent
+                      ? AppColors.accentDark
                       : theme.colorScheme.onSurface,
                   onTap: onBookmark,
                 ),
@@ -344,14 +344,14 @@ class PostCard extends StatelessWidget {
                   ),
                 ],
                 if (post.tags.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    post.tags.map((t) => '#$t').join(' '),
-                    style: GoogleFonts.sourceSans3(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
-                    ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      for (var i = 0; i < post.tags.length && i < 4; i++)
+                        _TagPill(label: post.tags[i], index: i),
+                    ],
                   ),
                 ],
                 const SizedBox(height: 6),
@@ -365,6 +365,39 @@ class PostCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _TagPill extends StatelessWidget {
+  const _TagPill({required this.label, required this.index});
+
+  final String label;
+  final int index;
+
+  @override
+  Widget build(BuildContext context) {
+    const styles = [
+      (AppColors.accent, AppColors.onAccent),
+      (AppColors.primary, AppColors.cream),
+      (AppColors.primaryLight, AppColors.primary),
+      (AppColors.secondary, AppColors.cream),
+    ];
+    final style = styles[index % styles.length];
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: style.$1,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.sourceSans3(
+          fontWeight: FontWeight.w800,
+          fontSize: 11,
+          color: style.$2,
+        ),
       ),
     );
   }

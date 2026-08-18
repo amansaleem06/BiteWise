@@ -16,7 +16,7 @@ abstract final class AppTheme {
     final colorScheme = ColorScheme(
       brightness: brightness,
       primary: AppColors.primary,
-      onPrimary: Colors.white,
+      onPrimary: AppColors.cream,
       primaryContainer:
           isDark ? AppColors.primaryDark : AppColors.primaryLight,
       onPrimaryContainer: isDark ? Colors.white : AppColors.secondary,
@@ -27,9 +27,9 @@ abstract final class AppTheme {
       onSecondaryContainer:
           isDark ? AppColors.textPrimaryDark : AppColors.secondary,
       tertiary: AppColors.accent,
-      onTertiary: Colors.white,
+      onTertiary: AppColors.onAccent,
       tertiaryContainer: isDark ? AppColors.charcoalLight : AppColors.accentLight,
-      onTertiaryContainer: isDark ? AppColors.accentLight : AppColors.accent,
+      onTertiaryContainer: AppColors.onAccent,
       error: AppColors.error,
       onError: Colors.white,
       surface: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
@@ -78,28 +78,35 @@ abstract final class AppTheme {
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          side: BorderSide(color: colorScheme.outline, width: 0.5),
+          borderRadius: BorderRadius.circular(AppRadius.xxl),
+          side: BorderSide(
+            color: colorScheme.outline.withValues(alpha: 0.55),
+            width: 0.5,
+          ),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           minimumSize: const Size.fromHeight(54),
           elevation: 0,
-          shadowColor: AppColors.primary.withValues(alpha: 0.35),
+          backgroundColor: AppColors.accent,
+          foregroundColor: AppColors.onAccent,
+          disabledBackgroundColor: AppColors.accent.withValues(alpha: 0.4),
+          disabledForegroundColor: AppColors.onAccent.withValues(alpha: 0.5),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.lg),
+            borderRadius: BorderRadius.circular(AppRadius.pill),
           ),
-          textStyle: textTheme.labelLarge?.copyWith(color: Colors.white),
+          textStyle: textTheme.labelLarge?.copyWith(color: AppColors.onAccent),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           minimumSize: const Size.fromHeight(54),
+          foregroundColor: AppColors.primary,
           side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.9)),
           backgroundColor: colorScheme.surface.withValues(alpha: 0.7),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.lg),
+            borderRadius: BorderRadius.circular(AppRadius.pill),
           ),
           textStyle: textTheme.labelLarge,
         ),
@@ -166,6 +173,31 @@ abstract final class AppTheme {
                 : colorScheme.onSurfaceVariant,
           ),
         ),
+      ),
+      tabBarTheme: TabBarThemeData(
+        labelColor: AppColors.primary,
+        unselectedLabelColor: colorScheme.onSurfaceVariant,
+        indicatorColor: AppColors.accent,
+        dividerColor: colorScheme.outline.withValues(alpha: 0.4),
+        overlayColor: WidgetStatePropertyAll(
+          AppColors.accent.withValues(alpha: 0.12),
+        ),
+      ),
+      chipTheme: ChipThemeData(
+        selectedColor: AppColors.accent,
+        secondarySelectedColor: AppColors.accent,
+        backgroundColor: colorScheme.surface,
+        labelStyle: textTheme.labelMedium?.copyWith(
+          color: colorScheme.onSurface,
+          fontWeight: FontWeight.w700,
+        ),
+        secondaryLabelStyle: textTheme.labelMedium?.copyWith(
+          color: AppColors.onAccent,
+          fontWeight: FontWeight.w800,
+        ),
+        shape: const StadiumBorder(),
+        side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.7)),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,

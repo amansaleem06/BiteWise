@@ -226,7 +226,7 @@ class UserPostsGrid extends ConsumerWidget {
             return false;
           },
           child: GridView.builder(
-            padding: const EdgeInsets.all(2),
+            padding: const EdgeInsets.fromLTRB(2, 2, 2, 160),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3,
               mainAxisSpacing: 2,

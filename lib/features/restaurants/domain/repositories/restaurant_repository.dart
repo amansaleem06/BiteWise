@@ -1,4 +1,6 @@
+import '../../../../core/services/places_search_service.dart';
 import '../../../feed/domain/repositories/feed_repository.dart';
+import '../claim_matcher.dart';
 import '../entities/restaurant.dart';
 
 abstract interface class RestaurantRepository {
@@ -9,4 +11,15 @@ abstract interface class RestaurantRepository {
   Future<FeedPage> fetchPosts(String restaurantId, {Object? cursor, int limit});
 
   Future<void> setFollowing(String restaurantId, {required bool following});
+
+  Future<void> saveBusinessDetails({
+    required String businessName,
+    required String address,
+    required String phone,
+    String? businessEmail,
+  });
+
+  Future<ClaimResult> claimFromPlace(PlaceSuggestion place);
+
+  Future<ClaimResult> claimRestaurant(String restaurantId);
 }

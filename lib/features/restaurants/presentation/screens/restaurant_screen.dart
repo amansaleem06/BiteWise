@@ -5,12 +5,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/errors/error_text.dart';
 import '../../../../core/utils/formatters.dart';
-import '../../../../core/widgets/identity_badge.dart';
+import '../../../../core/widgets/app_snackbar.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../feed/presentation/widgets/feed_shimmer.dart';
 import '../../../reservations/presentation/widgets/booking_sheet.dart';
 import '../../domain/entities/restaurant.dart';
 import '../providers/restaurant_providers.dart';
+import '../widgets/claim_status_badge.dart';
 import '../widgets/restaurant_posts_grid.dart';
 import '../widgets/restaurant_ratings_tab.dart';
 
@@ -127,7 +130,7 @@ class _CoverAppBar extends StatelessWidget {
   }
 }
 
-class _IdentitySection extends StatelessWidget {
+class _IdentitySection extends ConsumerWidget {
   const _IdentitySection({
     required this.restaurant,
     required this.onToggleFollow,
@@ -137,9 +140,14 @@ class _IdentitySection extends StatelessWidget {
   final VoidCallback onToggleFollow;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final rating = restaurant.averageRating;
+    final me = ref.watch(currentUserProvider);
+    final canClaim = me != null &&
+        me.isBusiness &&
+        restaurant.isUnclaimed &&
+        (me.ownedRestaurantId == null || me.ownedRestaurantId!.isEmpty);
 
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -171,7 +179,7 @@ class _IdentitySection extends StatelessWidget {
                     Text(restaurant.name,
                         style: theme.textTheme.headlineMedium,),
                     const SizedBox(height: AppSpacing.xxs),
-                    IdentityBadge.restaurant(claimed: restaurant.claimed),
+                    ClaimStatusBadge(restaurant: restaurant),
                     if (restaurant.city != null) ...[
                       const SizedBox(height: AppSpacing.xxs),
                       Text(restaurant.city!, style: theme.textTheme.bodySmall),
@@ -229,6 +237,37 @@ class _IdentitySection extends StatelessWidget {
             ),
           ],
           const SizedBox(height: AppSpacing.md),
+          if (canClaim) ...[
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () async {
+                  try {
+                    final result = await ref
+                        .read(restaurantRepositoryProvider)
+                        .claimRestaurant(restaurant.id);
+                    ref.invalidate(authStateProvider);
+                    ref.invalidate(
+                      restaurantControllerProvider(restaurant.id),
+                    );
+                    if (!context.mounted) return;
+                    AppSnackbar.success(
+                      context,
+                      result.isApproved
+                          ? 'This is now your restaurant page.'
+                          : 'Claim submitted for review.',
+                    );
+                  } catch (e) {
+                    if (!context.mounted) return;
+                    AppSnackbar.error(context, userMessageFrom(e));
+                  }
+                },
+                icon: const Icon(Icons.storefront_rounded),
+                label: const Text('This is my restaurant'),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
           Row(
             children: [
               Expanded(
@@ -306,10 +345,11 @@ class _AboutTab extends StatelessWidget {
               Text('No details yet', style: theme.textTheme.titleLarge),
               const SizedBox(height: AppSpacing.xs),
               Text(
-                restaurant.claimed
+                restaurant.isClaimed
                     ? 'This restaurant hasn\'t added details yet.'
-                    : 'This restaurant is unclaimed. Are you the owner? '
-                        'Claiming arrives soon.',
+                    : restaurant.isPendingClaim
+                        ? 'A claim is pending review. Ratings already on this listing stay here.'
+                        : 'Unclaimed Maps listing — ratings here are from TasteWise diners, with no verified owner. Are you the owner? Claim it from your business profile.',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium
                     ?.copyWith(color: theme.colorScheme.onSurfaceVariant),

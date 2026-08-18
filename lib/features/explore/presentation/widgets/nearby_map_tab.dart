@@ -13,7 +13,9 @@ import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/services/location_service.dart';
 import '../../../../core/widgets/async_error_view.dart';
 import '../../../restaurants/domain/entities/restaurant.dart';
+import '../../../restaurants/presentation/widgets/claim_status_badge.dart';
 import '../providers/explore_providers.dart';
+import 'rating_map_pin.dart';
 
 /// Viewer position + nearby restaurants, loaded together.
 class NearbyState {
@@ -51,6 +53,39 @@ class NearbyMapTab extends ConsumerStatefulWidget {
 
 class _NearbyMapTabState extends ConsumerState<NearbyMapTab> {
   Restaurant? _selected;
+  Set<Marker> _markers = {};
+  String? _markerKey;
+
+  Future<void> _syncMarkers(List<Restaurant> restaurants) async {
+    final key = restaurants.map((r) => '${r.id}:${r.averageRating}').join('|');
+    if (_markerKey == key) return;
+    _markerKey = key;
+    final next = <Marker>{};
+    for (final r in restaurants) {
+      if (r.latitude == null || r.longitude == null) continue;
+      final icon = await RatingMapPin.descriptor(
+        rating: r.averageRating,
+        claimed: r.isClaimed,
+      );
+      next.add(
+        Marker(
+          markerId: MarkerId(r.id),
+          position: LatLng(r.latitude!, r.longitude!),
+          icon: icon,
+          infoWindow: InfoWindow(
+            title: r.name,
+            snippet: [
+              if (r.averageRating != null)
+                '${r.averageRating!.toStringAsFixed(1)} ★',
+              r.isClaimed ? 'Verified Owner' : 'Unclaimed listing',
+            ].join(' · '),
+          ),
+          onTap: () => setState(() => _selected = r),
+        ),
+      );
+    }
+    if (mounted) setState(() => _markers = next);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,6 +108,9 @@ class _NearbyMapTabState extends ConsumerState<NearbyMapTab> {
         onRetry: () => ref.invalidate(nearbyProvider),
       ),
       data: (nearby) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _syncMarkers(nearby.restaurants);
+        });
         if (nearby.position == null) {
           return Center(
             child: Padding(
@@ -130,18 +168,7 @@ class _NearbyMapTabState extends ConsumerState<NearbyMapTab> {
                 ),
               },
               onTap: (_) => setState(() => _selected = null),
-              markers: {
-                for (final r in nearby.restaurants)
-                  if (r.latitude != null && r.longitude != null)
-                    Marker(
-                      markerId: MarkerId(r.id),
-                      position: LatLng(r.latitude!, r.longitude!),
-                      icon: BitmapDescriptor.defaultMarkerWithHue(
-                        BitmapDescriptor.hueOrange,
-                      ),
-                      onTap: () => setState(() => _selected = r),
-                    ),
-              },
+              markers: _markers,
             ),
             if (nearby.restaurants.isEmpty)
               Positioned(
@@ -216,6 +243,9 @@ class _RestaurantPreviewCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    const SizedBox(height: 4),
+                    ClaimStatusBadge(restaurant: restaurant),
+                    const SizedBox(height: 4),
                     Row(
                       children: [
                         if (rating != null) ...[

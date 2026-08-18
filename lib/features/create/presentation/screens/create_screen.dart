@@ -10,6 +10,9 @@ import '../../../../core/constants/cuisines.dart';
 import '../../../../core/utils/locale_currency.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_snackbar.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
+import '../../../restaurants/domain/entities/restaurant_ref.dart';
+import '../../../restaurants/presentation/providers/restaurant_providers.dart';
 import '../providers/create_post_providers.dart';
 import '../widgets/media_picker_grid.dart';
 import '../widgets/restaurant_picker_sheet.dart';
@@ -76,6 +79,22 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
     final theme = Theme.of(context);
     final state = ref.watch(createPostControllerProvider);
     final controller = ref.read(createPostControllerProvider.notifier);
+    final me = ref.watch(currentUserProvider);
+    final ownedId = me?.ownedRestaurantId;
+    if (me?.hasVerifiedBusiness == true &&
+        ownedId != null &&
+        state.restaurant == null) {
+      final owned =
+          ref.watch(restaurantControllerProvider(ownedId)).valueOrNull;
+      if (owned != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          controller.setRestaurant(
+            RestaurantRef(id: owned.id, name: owned.name, city: owned.city),
+          );
+        });
+      }
+    }
+    final restaurantLocked = me?.hasVerifiedBusiness == true;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -107,11 +126,13 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const _SectionLabel('Restaurant'),
+                const _SectionLabel('Tag restaurant'),
                 Text(
-                  state.rating != null
-                      ? 'Required when you add a rating.'
-                      : 'Optional — skip for a photo-only post.',
+                  restaurantLocked
+                      ? 'Owner posts are published on your restaurant page.'
+                      : state.rating != null
+                          ? 'Required when you add a rating.'
+                          : 'Optional — skip for a photo-only post.',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -133,13 +154,17 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
                           )
                         : theme.textTheme.titleMedium,
                   ),
-                  trailing: state.restaurant == null
-                      ? const Icon(Icons.chevron_right_rounded)
-                      : IconButton(
-                          icon: const Icon(Icons.close_rounded),
-                          onPressed: () => controller.setRestaurant(null),
-                        ),
-                  onTap: () async {
+                  trailing: restaurantLocked
+                      ? const Icon(Icons.lock_outline_rounded)
+                      : state.restaurant == null
+                          ? const Icon(Icons.chevron_right_rounded)
+                          : IconButton(
+                              icon: const Icon(Icons.close_rounded),
+                              onPressed: () => controller.setRestaurant(null),
+                            ),
+                  onTap: restaurantLocked
+                      ? null
+                      : () async {
                     final restaurant =
                         await RestaurantPickerSheet.show(context);
                     if (restaurant != null) {
@@ -162,14 +187,14 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
                 TextField(
                   controller: _caption,
                   decoration: const InputDecoration(
-                    hintText: 'Optional — tell the story, or leave blank',
+                    hintText: 'Explain the feeling — or leave blank',
                   ),
                   maxLines: 4,
                   maxLength: 2200,
                   textCapitalization: TextCapitalization.sentences,
                 ),
                 const SizedBox(height: AppSpacing.sm),
-                const _SectionLabel('Your rating'),
+                const _SectionLabel('Rate dish'),
                 Text(
                   'Optional. If you rate, tag a restaurant first.',
                   style: theme.textTheme.bodySmall?.copyWith(
@@ -289,6 +314,13 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(text, style: Theme.of(context).textTheme.titleSmall);
+    return Text(
+      text,
+      style: GoogleFonts.fraunces(
+        fontWeight: FontWeight.w700,
+        fontSize: 18,
+        color: Theme.of(context).colorScheme.onSurface,
+      ),
+    );
   }
 }

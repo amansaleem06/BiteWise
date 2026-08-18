@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../domain/entities/restaurant.dart';
+import '../../domain/entities/claim_status.dart';
 
 /// Firestore (de)serialization for [Restaurant].
 ///
@@ -38,7 +39,12 @@ abstract final class RestaurantModel {
           ((data['cuisines'] as List?) ?? const []).whereType<String>().toList(),
       priceLevel: (data['priceLevel'] as num?)?.toInt(),
       claimed: (data['claimed'] as bool?) ?? false,
+      claimStatus: ClaimStatus.fromKey(
+        data['claimStatus'] as String?,
+        claimed: (data['claimed'] as bool?) ?? false,
+      ),
       ownerId: data['ownerId'] as String?,
+      googlePlaceId: data['googlePlaceId'] as String?,
       followerCount: (data['followerCount'] as num?)?.toInt() ?? 0,
       postCount: (data['postCount'] as num?)?.toInt() ?? 0,
       ratingSum: ratingSum,

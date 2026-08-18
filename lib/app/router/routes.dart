@@ -28,6 +28,7 @@ abstract final class Routes {
   static String chatPath(String id) => '/chat/$id';
   static const reservations = '/reservations';
   static const saved = '/saved';
+  static const businessSetup = '/business/setup';
 
   // Shell tabs
   static const home = '/home';

@@ -88,6 +88,7 @@ class MessagesScreen extends ConsumerWidget {
             );
           }
           return ListView.builder(
+            padding: const EdgeInsets.only(bottom: 160),
             itemCount: chats.length,
             itemBuilder: (context, i) => _ChatTile(chat: chats[i]),
           );

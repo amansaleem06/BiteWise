@@ -19,7 +19,7 @@ abstract final class AppTypography {
       displayLarge: display.copyWith(fontSize: 36, fontWeight: FontWeight.w800),
       headlineLarge: display.copyWith(fontSize: 30),
       headlineMedium: display.copyWith(fontSize: 24),
-      titleLarge: body.copyWith(fontSize: 20, fontWeight: FontWeight.w700),
+      titleLarge: display.copyWith(fontSize: 22, fontWeight: FontWeight.w700),
       titleMedium: body.copyWith(fontSize: 16, fontWeight: FontWeight.w700),
       titleSmall: body.copyWith(fontSize: 14, fontWeight: FontWeight.w700),
       bodyLarge: body.copyWith(fontSize: 16),

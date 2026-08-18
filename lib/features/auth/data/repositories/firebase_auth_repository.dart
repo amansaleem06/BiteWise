@@ -98,20 +98,8 @@ class FirebaseAuthRepository implements AuthRepository {
 
       String? restaurantId;
       if (role == UserRole.restaurantOwner) {
-        final biz = (businessName ?? name).trim();
-        final doc = await _firestore.collection('restaurants').add({
-          'name': biz,
-          'nameLower': biz.toLowerCase(),
-          'claimed': true,
-          'ownerId': user.uid,
-          'createdBy': user.uid,
-          'followerCount': 0,
-          'postCount': 0,
-          'ratingSum': 0,
-          'ratingCount': 0,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-        restaurantId = doc.id;
+        // Restaurant pages are claimed from the Maps listing after signup —
+        // never invented here. Ratings already on that listing carry over.
       }
 
       await _users.doc(user.uid).set(

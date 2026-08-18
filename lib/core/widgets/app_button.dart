@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_spacing.dart';
 
 /// Primary filled button with a built-in loading state.
@@ -29,7 +30,7 @@ class AppButton extends StatelessWidget {
                 height: 22,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.5,
-                  color: Colors.white,
+                  color: AppColors.onAccent,
                 ),
               )
             : Row(

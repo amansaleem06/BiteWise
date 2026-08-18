@@ -7,7 +7,7 @@ abstract final class AppStrings {
   static const tagline = 'Discover. Taste. Share.';
 
   // Auth
-  static const welcomeTitle = 'Every dish has a story';
+  static const welcomeTitle = 'Taste is a place you can return to.';
   static const welcomeSubtitle =
       'Discover restaurants, share food experiences, and follow the tastes you love.';
   static const signIn = 'Sign in';

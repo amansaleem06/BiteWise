@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import 'claim_status.dart';
+
 /// Full restaurant profile.
 ///
 /// Stub restaurants (created while posting) have most fields empty until
@@ -18,7 +20,9 @@ class Restaurant extends Equatable {
     this.cuisines = const [],
     this.priceLevel,
     this.claimed = false,
+    this.claimStatus = ClaimStatus.unclaimed,
     this.ownerId,
+    this.googlePlaceId,
     this.followerCount = 0,
     this.postCount = 0,
     this.ratingSum = 0,
@@ -44,7 +48,9 @@ class Restaurant extends Equatable {
   final int? priceLevel;
 
   final bool claimed;
+  final ClaimStatus claimStatus;
   final String? ownerId;
+  final String? googlePlaceId;
   final int followerCount;
   final int postCount;
 
@@ -61,6 +67,11 @@ class Restaurant extends Equatable {
   /// an owner completes the profile. Null = not shown on the map.
   final double? latitude;
   final double? longitude;
+
+  bool get isClaimed => claimStatus == ClaimStatus.claimed || claimed;
+  bool get isPendingClaim => claimStatus == ClaimStatus.pending;
+  bool get isUnclaimed =>
+      claimStatus == ClaimStatus.unclaimed && !claimed;
 
   bool get hasLocation => latitude != null && longitude != null;
 
@@ -84,7 +95,9 @@ class Restaurant extends Equatable {
         cuisines: cuisines,
         priceLevel: priceLevel,
         claimed: claimed,
+        claimStatus: claimStatus,
         ownerId: ownerId,
+        googlePlaceId: googlePlaceId,
         followerCount: followerCount ?? this.followerCount,
         postCount: postCount,
         ratingSum: ratingSum,
@@ -96,5 +109,13 @@ class Restaurant extends Equatable {
       );
 
   @override
-  List<Object?> get props => [id, name, followerCount, isFollowedByMe];
+  List<Object?> get props => [
+        id,
+        name,
+        claimed,
+        claimStatus,
+        ownerId,
+        followerCount,
+        isFollowedByMe,
+      ];
 }

@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../restaurants/domain/entities/claim_status.dart';
+
 /// Role determines permissions throughout the app and in Security Rules.
 enum UserRole {
   user,
@@ -23,7 +25,12 @@ class AppUser extends Equatable {
     this.photoUrl,
     this.bio,
     this.businessName,
+    this.businessAddress,
+    this.businessPhone,
+    this.businessEmail,
+    this.businessVerificationStatus,
     this.ownedRestaurantId,
+    this.pendingClaimRestaurantId,
     this.emailVerified = false,
     this.followerCount = 0,
     this.followingCount = 0,
@@ -41,7 +48,12 @@ class AppUser extends Equatable {
 
   /// Set for [UserRole.restaurantOwner] accounts.
   final String? businessName;
+  final String? businessAddress;
+  final String? businessPhone;
+  final String? businessEmail;
+  final BusinessVerificationStatus? businessVerificationStatus;
   final String? ownedRestaurantId;
+  final String? pendingClaimRestaurantId;
   final bool emailVerified;
   final int followerCount;
   final int followingCount;
@@ -50,13 +62,35 @@ class AppUser extends Equatable {
 
   bool get isBusiness => role == UserRole.restaurantOwner;
 
+  bool get hasVerifiedBusiness =>
+      isBusiness &&
+      businessVerificationStatus == BusinessVerificationStatus.verified &&
+      ownedRestaurantId != null &&
+      ownedRestaurantId!.isNotEmpty;
+
+  bool get needsBusinessDetails {
+    if (!isBusiness) return false;
+    if (ownedRestaurantId != null && ownedRestaurantId!.isNotEmpty) {
+      return false;
+    }
+    final address = businessAddress?.trim() ?? '';
+    final phone = businessPhone?.trim() ?? '';
+    return address.isEmpty || phone.isEmpty;
+  }
+
   AppUser copyWith({
     String? displayName,
     String? username,
     String? photoUrl,
     String? bio,
     String? businessName,
+    String? businessAddress,
+    String? businessPhone,
+    String? businessEmail,
+    BusinessVerificationStatus? businessVerificationStatus,
     String? ownedRestaurantId,
+    String? pendingClaimRestaurantId,
+    bool clearPendingClaim = false,
     bool? emailVerified,
   }) =>
       AppUser(
@@ -68,7 +102,15 @@ class AppUser extends Equatable {
         photoUrl: photoUrl ?? this.photoUrl,
         bio: bio ?? this.bio,
         businessName: businessName ?? this.businessName,
+        businessAddress: businessAddress ?? this.businessAddress,
+        businessPhone: businessPhone ?? this.businessPhone,
+        businessEmail: businessEmail ?? this.businessEmail,
+        businessVerificationStatus:
+            businessVerificationStatus ?? this.businessVerificationStatus,
         ownedRestaurantId: ownedRestaurantId ?? this.ownedRestaurantId,
+        pendingClaimRestaurantId: clearPendingClaim
+            ? null
+            : (pendingClaimRestaurantId ?? this.pendingClaimRestaurantId),
         emailVerified: emailVerified ?? this.emailVerified,
         followerCount: followerCount,
         followingCount: followingCount,
@@ -91,7 +133,12 @@ class AppUser extends Equatable {
         photoUrl: photoUrl,
         bio: bio,
         businessName: businessName,
+        businessAddress: businessAddress,
+        businessPhone: businessPhone,
+        businessEmail: businessEmail,
+        businessVerificationStatus: businessVerificationStatus,
         ownedRestaurantId: ownedRestaurantId,
+        pendingClaimRestaurantId: pendingClaimRestaurantId,
         emailVerified: emailVerified,
         followerCount: followerCount ?? this.followerCount,
         followingCount: followingCount ?? this.followingCount,
@@ -101,8 +148,23 @@ class AppUser extends Equatable {
 
   @override
   List<Object?> get props => [
-        uid, email, displayName, role, username, photoUrl, bio,
-        businessName, ownedRestaurantId,
-        emailVerified, followerCount, followingCount, postCount,
+        uid,
+        email,
+        displayName,
+        role,
+        username,
+        photoUrl,
+        bio,
+        businessName,
+        businessAddress,
+        businessPhone,
+        businessEmail,
+        businessVerificationStatus,
+        ownedRestaurantId,
+        pendingClaimRestaurantId,
+        emailVerified,
+        followerCount,
+        followingCount,
+        postCount,
       ];
 }

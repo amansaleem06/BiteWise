@@ -8,7 +8,7 @@ import '../../../app/theme/app_spacing.dart';
 import '../../../app/theme/theme_mode_provider.dart';
 import '../../notifications/presentation/providers/notification_providers.dart';
 
-/// Taste Stage: floating seal that opens a horizontal course row.
+/// Taste Stage: maroon seal that opens a horizontal course row.
 class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key, required this.navigationShell});
 
@@ -79,10 +79,9 @@ class _MainShellState extends ConsumerState<MainShell>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final bottom = MediaQuery.paddingOf(context).bottom;
     final index = navigationShell.currentIndex;
-    final stageBottom = bottom > 0 ? bottom + 10 : 16.0;
+    final stageBottom = bottom > 0 ? bottom + 8 : 14.0;
 
     return Scaffold(
       body: Stack(
@@ -93,7 +92,7 @@ class _MainShellState extends ConsumerState<MainShell>
               child: GestureDetector(
                 onTap: _toggleMenu,
                 child: ColoredBox(
-                  color: Colors.black.withValues(alpha: 0.45),
+                  color: AppColors.charcoal.withValues(alpha: 0.42),
                 ),
               ),
             ),
@@ -112,25 +111,39 @@ class _MainShellState extends ConsumerState<MainShell>
                       Opacity(
                         opacity: t.clamp(0.0, 1.0),
                         child: Transform.translate(
-                          offset: Offset(0, (1 - t) * 16),
+                          offset: Offset(0, (1 - t) * 18),
                           child: Padding(
-                            padding: const EdgeInsets.fromLTRB(12, 0, 12, 14),
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  for (var i = 0; i < _courses.length; i++) ...[
-                                    if (i > 0) const SizedBox(width: 8),
-                                    _CourseChip(
-                                      label: _courses[i].label,
-                                      icon: _courses[i].icon,
-                                      selected: index == _courses[i].index,
-                                      onTap: () =>
-                                          _goCourse(_courses[i].index),
-                                    ),
-                                  ],
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: AppColors.cream.withValues(alpha: 0.96),
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.pill),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.charcoal
+                                        .withValues(alpha: 0.16),
+                                    blurRadius: 24,
+                                    offset: const Offset(0, 8),
+                                  ),
                                 ],
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 8,
+                                ),
+                                child: Row(
+                                  children: [
+                                    for (final course in _courses)
+                                      _CourseChip(
+                                        label: course.label,
+                                        icon: course.icon,
+                                        selected: index == course.index,
+                                        onTap: () => _goCourse(course.index),
+                                      ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
@@ -141,34 +154,44 @@ class _MainShellState extends ConsumerState<MainShell>
                         onTap: _toggleMenu,
                         onLongPress: () => _goCourse(2),
                         child: Container(
-                          width: 64,
-                          height: 64,
+                          width: 76,
+                          height: 76,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            gradient: AppColors.brandGradient,
+                            color: AppColors.primary,
                             boxShadow: [
                               BoxShadow(
                                 color:
-                                    AppColors.primary.withValues(alpha: 0.4),
-                                blurRadius: 18,
+                                    AppColors.primary.withValues(alpha: 0.38),
+                                blurRadius: 22,
                                 offset: const Offset(0, 8),
                               ),
                             ],
                             border: Border.all(
-                              color: theme.colorScheme.surface,
+                              color: AppColors.cream,
                               width: 3,
                             ),
                           ),
-                          child: AnimatedRotation(
-                            turns: _menuOpen ? 0.125 : 0,
-                            duration: AppDurations.normal,
-                            child: Icon(
-                              _menuOpen
-                                  ? Icons.close_rounded
-                                  : Icons.restaurant_rounded,
-                              color: Colors.white,
-                              size: 28,
-                            ),
+                          alignment: Alignment.center,
+                          child: AnimatedSwitcher(
+                            duration: AppDurations.fast,
+                            child: _menuOpen
+                                ? const Icon(
+                                    key: ValueKey('close'),
+                                    Icons.close_rounded,
+                                    color: AppColors.cream,
+                                    size: 30,
+                                  )
+                                : Text(
+                                    key: const ValueKey('stage'),
+                                    'Stage',
+                                    style: GoogleFonts.fraunces(
+                                      color: AppColors.cream,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 16,
+                                      height: 1,
+                                    ),
+                                  ),
                           ),
                         ),
                       ),
@@ -206,36 +229,34 @@ class _CourseChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Material(
-      color: selected
-          ? AppColors.primary
-          : theme.colorScheme.surface.withValues(alpha: 0.96),
-      elevation: 8,
-      shadowColor: Colors.black45,
-      shape: const StadiumBorder(),
-      child: InkWell(
+    return Expanded(
+      child: GestureDetector(
         onTap: onTap,
-        customBorder: const StadiumBorder(),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          child: Row(
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: AppDurations.fast,
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: selected ? AppColors.accent : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+          ),
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 icon,
                 size: 18,
-                color: selected ? Colors.white : AppColors.primary,
+                color: selected ? AppColors.onAccent : AppColors.primary,
               ),
-              const SizedBox(width: 6),
+              const SizedBox(height: 2),
               Text(
                 label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.sourceSans3(
                   fontWeight: FontWeight.w800,
-                  fontSize: 13,
-                  color: selected
-                      ? Colors.white
-                      : theme.colorScheme.onSurface,
+                  fontSize: 10,
+                  color: selected ? AppColors.onAccent : AppColors.primary,
                 ),
               ),
             ],

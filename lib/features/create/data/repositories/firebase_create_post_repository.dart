@@ -59,6 +59,7 @@ class FirebaseCreatePostRepository implements CreatePostRepository {
       'name': trimmed,
       'nameLower': trimmed.toLowerCase(),
       'claimed': false,
+      'claimStatus': 'unclaimed',
       'ownerId': null,
       'createdBy': _user.uid,
       'followerCount': 0,
@@ -107,6 +108,7 @@ class FirebaseCreatePostRepository implements CreatePostRepository {
       if (place.address != null) 'address': place.address,
       if (place.city != null) 'city': place.city,
       'claimed': false,
+      'claimStatus': 'unclaimed',
       'ownerId': null,
       'createdBy': _user.uid,
       'followerCount': 0,
@@ -149,6 +151,18 @@ class FirebaseCreatePostRepository implements CreatePostRepository {
       onProgress: onProgress,
     );
 
+    final restaurantId = restaurant?.id;
+    var ownerVerified = false;
+    if (restaurantId != null && restaurantId.isNotEmpty) {
+      final restSnap =
+          await _firestore.collection('restaurants').doc(restaurantId).get();
+      final ownerId = restSnap.data()?['ownerId'] as String?;
+      final claimed = (restSnap.data()?['claimed'] as bool?) ?? false;
+      final claimStatus = restSnap.data()?['claimStatus'] as String?;
+      ownerVerified = ownerId == user.uid &&
+          (claimed || claimStatus == 'claimed');
+    }
+
     await _firestore.collection('posts').add({
       'authorId': user.uid,
       'authorName': user.displayName ?? '',
@@ -174,11 +188,10 @@ class FirebaseCreatePostRepository implements CreatePostRepository {
       'commentCount': 0,
       'shareCount': 0,
       'trendingScore': 0,
-      'restaurantVerified': false,
+      'restaurantVerified': ownerVerified,
       'createdAt': FieldValue.serverTimestamp(),
     });
 
-    final restaurantId = restaurant?.id;
     if (restaurantId == null || restaurantId.isEmpty) return;
 
     final restaurantRef =

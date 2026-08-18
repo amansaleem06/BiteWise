@@ -43,7 +43,7 @@ class IdentityBadge extends StatelessWidget {
         ? AppColors.primary.withValues(alpha: 0.14)
         : theme.colorScheme.surfaceContainerHighest;
     final fg = emphasized
-        ? AppColors.primaryDark
+        ? AppColors.onAccent
         : theme.colorScheme.onSurfaceVariant;
 
     return Container(
@@ -52,7 +52,7 @@ class IdentityBadge extends StatelessWidget {
         vertical: 3,
       ),
       decoration: BoxDecoration(
-        color: bg,
+        color: emphasized ? AppColors.accent : bg,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(

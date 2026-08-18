@@ -2,9 +2,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 
 import '../../../../core/errors/app_exception.dart';
+import '../../../../core/services/places_search_service.dart';
+import '../../../auth/domain/entities/app_user.dart';
+import '../../../create/data/repositories/firebase_create_post_repository.dart';
 import '../../../feed/data/models/post_model.dart';
 import '../../../feed/domain/entities/post.dart';
 import '../../../feed/domain/repositories/feed_repository.dart';
+import '../../domain/claim_matcher.dart';
+import '../../domain/entities/claim_status.dart';
 import '../../domain/entities/restaurant.dart';
 import '../../domain/repositories/restaurant_repository.dart';
 import '../models/restaurant_model.dart';
@@ -107,5 +112,111 @@ class FirestoreRestaurantRepository implements RestaurantRepository {
     } else {
       await followerRef.delete();
     }
+  }
+
+  @override
+  Future<void> saveBusinessDetails({
+    required String businessName,
+    required String address,
+    required String phone,
+    String? businessEmail,
+  }) async {
+    final uid = _uid;
+    await _firestore.collection('users').doc(uid).update({
+      'businessName': businessName.trim(),
+      'businessAddress': address.trim(),
+      'businessPhone': phone.trim(),
+      if (businessEmail != null && businessEmail.trim().isNotEmpty)
+        'businessEmail': businessEmail.trim(),
+      'businessVerificationStatus': BusinessVerificationStatus.pending.name,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  @override
+  Future<ClaimResult> claimFromPlace(PlaceSuggestion place) async {
+    final createRepo = FirebaseCreatePostRepository(firestore: _firestore);
+    final ref = await createRepo.upsertRestaurantFromPlace(place);
+    return claimRestaurant(ref.id);
+  }
+
+  @override
+  Future<ClaimResult> claimRestaurant(String restaurantId) async {
+    final uid = _uid;
+    final userSnap = await _firestore.collection('users').doc(uid).get();
+    final user = userSnap.data() ?? {};
+    if ((user['role'] as String?) != UserRole.restaurantOwner.name) {
+      throw const AppException('Only business accounts can claim a restaurant.');
+    }
+
+    final owned = user['ownedRestaurantId'] as String?;
+    if (owned != null && owned.isNotEmpty && owned != restaurantId) {
+      throw const AppException(
+        'You already have a claimed restaurant on this account.',
+      );
+    }
+
+    final restaurantRef = _restaurants.doc(restaurantId);
+    late ClaimStatus nextStatus;
+
+    await _firestore.runTransaction((tx) async {
+      final snap = await tx.get(restaurantRef);
+      if (!snap.exists) {
+        throw const AppException('Restaurant not found.');
+      }
+      final data = snap.data() ?? {};
+      final existingOwner = data['ownerId'] as String?;
+      final existingClaim = ClaimStatus.fromKey(
+        data['claimStatus'] as String?,
+        claimed: (data['claimed'] as bool?) ?? false,
+      );
+
+      if (existingClaim == ClaimStatus.claimed &&
+          existingOwner != null &&
+          existingOwner != uid) {
+        throw const AppException(
+          'This restaurant already has a verified owner.',
+        );
+      }
+      if (existingClaim == ClaimStatus.pending &&
+          existingOwner != null &&
+          existingOwner != uid) {
+        throw const AppException(
+          'Another owner already submitted a claim for this listing.',
+        );
+      }
+
+      final autoApprove = ClaimMatcher.isStrongMatch(
+        businessName: (user['businessName'] as String?) ?? '',
+        businessAddress: user['businessAddress'] as String?,
+        restaurantName: (data['name'] as String?) ?? '',
+        restaurantAddress: data['address'] as String?,
+      );
+      nextStatus = autoApprove ? ClaimStatus.claimed : ClaimStatus.pending;
+
+      tx.update(restaurantRef, {
+        'ownerId': uid,
+        'claimed': autoApprove,
+        'claimStatus': nextStatus.name,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
+
+    final userUpdates = <String, dynamic>{
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+    if (nextStatus == ClaimStatus.claimed) {
+      userUpdates['ownedRestaurantId'] = restaurantId;
+      userUpdates['pendingClaimRestaurantId'] = FieldValue.delete();
+      userUpdates['businessVerificationStatus'] =
+          BusinessVerificationStatus.verified.name;
+    } else {
+      userUpdates['pendingClaimRestaurantId'] = restaurantId;
+      userUpdates['businessVerificationStatus'] =
+          BusinessVerificationStatus.pending.name;
+    }
+    await _firestore.collection('users').doc(uid).update(userUpdates);
+
+    return ClaimResult(restaurantId: restaurantId, status: nextStatus);
   }
 }

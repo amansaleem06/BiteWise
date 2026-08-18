@@ -231,7 +231,7 @@ class _TrendingTab extends ConsumerWidget {
           onRefresh: () async => ref.invalidate(trendingPostsProvider),
           child: GridView.builder(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(2),
+            padding: const EdgeInsets.fromLTRB(2, 2, 2, 160),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3,
               mainAxisSpacing: 2,
@@ -338,6 +338,7 @@ class _TopRatedTab extends ConsumerWidget {
           onRefresh: () async => ref.invalidate(topRatedRestaurantsProvider),
           child: ListView.builder(
             physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.only(top: 8, bottom: 160),
             itemCount: restaurants.length,
             itemBuilder: (context, i) =>
                 RestaurantTile(restaurant: restaurants[i], rank: i + 1),

@@ -1,40 +1,43 @@
 import 'package:flutter/material.dart';
 
-/// TasteWise brand palette — charcoal + crimson from the app icon.
+/// TasteWise brand palette from the editorial redesign:
+/// deep maroon, warm cream paper, lime call-to-action.
 abstract final class AppColors {
   // Brand
-  static const Color primary = Color(0xFFC33530);
-  static const Color primaryDark = Color(0xFF9E2A26);
-  static const Color primaryLight = Color(0xFFF6E4E3);
+  static const Color primary = Color(0xFF4A0E0E);
+  static const Color primaryDark = Color(0xFF2F0808);
+  static const Color primaryLight = Color(0xFFF3E4D4);
 
-  static const Color secondary = Color(0xFF2A2F35);
-  static const Color secondaryLight = Color(0xFFE8EAEC);
+  static const Color secondary = Color(0xFF2A1A18);
+  static const Color secondaryLight = Color(0xFFEDE4D8);
 
-  static const Color accent = Color(0xFFB45309);
-  static const Color accentLight = Color(0xFFFFF1D6);
+  static const Color accent = Color(0xFFC6D92D);
+  static const Color accentDark = Color(0xFF8FA31A);
+  static const Color accentLight = Color(0xFFF4F8C8);
+  static const Color onAccent = Color(0xFF2F0808);
 
   // Neutrals
-  static const Color cream = Color(0xFFF7F4F1);
-  static const Color charcoal = Color(0xFF1A1D21);
-  static const Color charcoalLight = Color(0xFF2A2F35);
+  static const Color cream = Color(0xFFFDF8F1);
+  static const Color charcoal = Color(0xFF1A0C0C);
+  static const Color charcoalLight = Color(0xFF2A1616);
 
   // Surfaces — light
-  static const Color surfaceLight = Color(0xFFFFFBFA);
-  static const Color backgroundLight = Color(0xFFF0EBE6);
-  static const Color outlineLight = Color(0xFFD0C6BE);
-  static const Color feedWash = Color(0x33C33530);
-  static const Color feedAccentSoft = Color(0xFFFFF0E8);
+  static const Color surfaceLight = Color(0xFFFFFBF6);
+  static const Color backgroundLight = Color(0xFFFDF8F1);
+  static const Color outlineLight = Color(0xFFE2D5C6);
+  static const Color feedWash = Color(0x334A0E0E);
+  static const Color feedAccentSoft = Color(0xFFF4F8C8);
 
-  // Surfaces — dark (stronger separation for readable contrast)
-  static const Color surfaceDark = Color(0xFF242A31);
-  static const Color backgroundDark = Color(0xFF12151A);
-  static const Color outlineDark = Color(0xFF3E4650);
+  // Surfaces — dark
+  static const Color surfaceDark = Color(0xFF2A1616);
+  static const Color backgroundDark = Color(0xFF140A0A);
+  static const Color outlineDark = Color(0xFF4A3330);
 
   // Text
-  static const Color textPrimaryLight = Color(0xFF14181D);
-  static const Color textSecondaryLight = Color(0xFF5C6570);
-  static const Color textPrimaryDark = Color(0xFFF3F5F7);
-  static const Color textSecondaryDark = Color(0xFFB0B8C2);
+  static const Color textPrimaryLight = Color(0xFF1A0C0C);
+  static const Color textSecondaryLight = Color(0xFF6B5752);
+  static const Color textPrimaryDark = Color(0xFFFDF8F1);
+  static const Color textSecondaryDark = Color(0xFFC9B8B0);
 
   // Semantic
   static const Color error = Color(0xFFDC2626);
@@ -42,13 +45,13 @@ abstract final class AppColors {
   static const Color ratingStar = Color(0xFFEAB308);
 
   static const LinearGradient brandGradient = LinearGradient(
-    colors: [Color(0xFFD64540), Color(0xFF8F2420)],
+    colors: [Color(0xFF5C1616), Color(0xFF3A0A0A)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient authBackground = LinearGradient(
-    colors: [Color(0xFFF7F4F1), Color(0xFFF0E6E4), Color(0xFFE8EEF2)],
+    colors: [Color(0xFFFDF8F1), Color(0xFFF6EDE4), Color(0xFFEEE4D4)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
@@ -58,13 +61,13 @@ abstract final class AppColors {
       return const LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [Color(0xFF1A1214), Color(0xFF12151A), Color(0xFF161B22)],
+        colors: [Color(0xFF1C0F0F), Color(0xFF140A0A), Color(0xFF1A1010)],
       );
     }
     return const LinearGradient(
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
-      colors: [Color(0xFFF6EDEA), Color(0xFFF0EBE6), Color(0xFFE8E4DF)],
+      colors: [Color(0xFFFDF8F1), Color(0xFFF7F0E6), Color(0xFFF0E6D8)],
     );
   }
 }

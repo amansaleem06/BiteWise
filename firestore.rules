@@ -20,6 +20,26 @@ service cloud.firestore {
       return isSignedIn() && userRole() == 'admin';
     }
 
+    function isRestaurantOwner() {
+      return isSignedIn() && userRole() == 'restaurantOwner';
+    }
+
+    function isClaimingRestaurant() {
+      return isRestaurantOwner()
+        && resource.data.get('claimed', false) == false
+        && (
+          !('ownerId' in resource.data)
+          || resource.data.ownerId == null
+          || resource.data.ownerId == request.auth.uid
+        )
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.get('claimStatus', '') in ['pending', 'claimed']
+        && request.resource.data.followerCount == resource.data.get('followerCount', 0)
+        && request.resource.data.get('ratingSum', 0) == resource.data.get('ratingSum', 0)
+        && request.resource.data.get('ratingCount', 0) == resource.data.get('ratingCount', 0)
+        && request.resource.data.name == resource.data.name;
+    }
+
     // ---------- Users ----------
     match /users/{uid} {
       // Public profiles: any signed-in user can read.
@@ -38,15 +58,22 @@ service cloud.firestore {
             && request.resource.data.businessName.size() <= 80)
         );
 
-      // A user may update their own profile but never role or counters —
-      // all counters are maintained exclusively by Cloud Functions
-      // (Admin SDK bypasses these rules).
+      // A user may update their own profile but never role or counters.
+      // Business owners may attach verification details and a claimed restaurant.
       allow update: if isAdmin()
         || (isSelf(uid)
           && request.resource.data.role == resource.data.role
           && request.resource.data.followerCount == resource.data.followerCount
           && request.resource.data.followingCount == resource.data.followingCount
-          && request.resource.data.postCount == resource.data.postCount);
+          && request.resource.data.postCount == resource.data.postCount
+          && (
+            request.resource.data.get('businessVerificationStatus', 'pending')
+              != 'verified'
+            || request.resource.data.ownedRestaurantId is string
+          )
+          && request.resource.data.get('businessVerificationStatus', 'pending')
+            != 'rejected'
+        );
 
       // Self-delete required for App Store account deletion (Guideline 5.1.1).
       // Cascade cleanup of posts/follows continues in Cloud Functions.
@@ -194,6 +221,7 @@ service cloud.firestore {
       // Owners may edit profile fields; counters stay locked except rating
       // aggregates / postCount bumped by any signed-in publisher.
       allow update: if isAdmin()
+        || isClaimingRestaurant()
         || (isSignedIn()
           && resource.data.ownerId == request.auth.uid
           && request.resource.data.ownerId == resource.data.ownerId

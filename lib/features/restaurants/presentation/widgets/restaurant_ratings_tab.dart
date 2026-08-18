@@ -70,6 +70,23 @@ class RestaurantRatingsTab extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
       children: [
+        Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: (restaurant?.isClaimed ?? false)
+                ? AppColors.accentLight
+                : Theme.of(context).colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Text(
+            (restaurant?.isClaimed ?? false)
+                ? 'Verified owner page — diner ratings on this listing stay here, including reviews posted before the claim.'
+                : 'Unclaimed listing. These ratings come from TasteWise diners and are not moderated by a restaurant owner.',
+            style: theme.textTheme.bodySmall,
+          ),
+        ),
         if (isOwner) ...[
           Text(
             'Pending plates',

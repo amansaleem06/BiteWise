@@ -22,6 +22,20 @@ abstract final class Validators {
     return null;
   }
 
+  static String? phone(String? value) {
+    final v = value?.trim() ?? '';
+    if (v.length < 7) return 'Enter a valid phone number';
+    if (v.length > 24) return 'Phone number is too long';
+    return null;
+  }
+
+  static String? address(String? value) {
+    final v = value?.trim() ?? '';
+    if (v.length < 6) return 'Enter the business street address';
+    if (v.length > 160) return 'Address is too long';
+    return null;
+  }
+
   static String? displayName(String? value) {
     final v = value?.trim() ?? '';
     if (v.isEmpty) return 'Name is required';

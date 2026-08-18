@@ -42,7 +42,7 @@ class BrandMark extends StatelessWidget {
                 padding: EdgeInsets.only(bottom: size * 0.08),
                 child: Icon(
                   Icons.restaurant_rounded,
-                  color: AppColors.primaryDark,
+                  color: AppColors.cream,
                   size: size * 0.22,
                 ),
               ),

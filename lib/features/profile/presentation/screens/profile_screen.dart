@@ -4,15 +4,17 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/router/routes.dart';
+import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/widgets/async_error_view.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
-import '../../../restaurants/presentation/screens/restaurant_screen.dart';
+import '../../../restaurants/presentation/providers/restaurant_providers.dart';
 import '../providers/profile_providers.dart';
+import '../widgets/owned_restaurant_banner.dart';
 import '../widgets/profile_widgets.dart';
 
-/// Table course: diner profile, or restaurant-first home for owners.
+/// Personal profile. Business owners also get a restaurant banner on top.
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
@@ -20,37 +22,11 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final me = ref.watch(currentUserProvider);
     final uid = me?.uid;
-    final ownedId = me?.ownedRestaurantId;
-
-    if (ownedId != null && ownedId.isNotEmpty) {
-      return Scaffold(
-        body: Stack(
-          children: [
-            RestaurantScreen(restaurantId: ownedId),
-            Positioned(
-              top: MediaQuery.paddingOf(context).top + 4,
-              right: 8,
-              child: Row(
-                children: [
-                  IconButton.filledTonal(
-                    tooltip: 'Saved',
-                    onPressed: () => context.push(Routes.saved),
-                    icon: const Icon(Icons.bookmark_outline_rounded),
-                  ),
-                  IconButton.filledTonal(
-                    tooltip: AppStrings.settings,
-                    onPressed: () => context.push(Routes.settings),
-                    icon: const Icon(Icons.settings_outlined),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
     final theme = Theme.of(context);
+    final restaurantId = me?.ownedRestaurantId?.isNotEmpty == true
+        ? me!.ownedRestaurantId
+        : me?.pendingClaimRestaurantId;
+
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
@@ -97,6 +73,39 @@ class ProfileScreen extends ConsumerWidget {
                 ),
                 data: (profile) => Column(
                   children: [
+                    if (me?.isBusiness == true &&
+                        (restaurantId == null || restaurantId.isEmpty))
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                        child: Material(
+                          color: AppColors.accent,
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                          child: ListTile(
+                            title: const Text('Claim your restaurant'),
+                            subtitle: const Text(
+                              'Match your business to a Maps listing.',
+                            ),
+                            trailing: const Icon(Icons.chevron_right_rounded),
+                            onTap: () => context.push(Routes.businessSetup),
+                          ),
+                        ),
+                      ),
+                    if (restaurantId != null && restaurantId.isNotEmpty)
+                      ref
+                          .watch(restaurantControllerProvider(restaurantId))
+                          .when(
+                            loading: () => const Padding(
+                              padding: EdgeInsets.all(24),
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                ),
+                              ),
+                            ),
+                            error: (_, __) => const SizedBox.shrink(),
+                            data: (restaurant) =>
+                                OwnedRestaurantBanner(restaurant: restaurant),
+                          ),
                     ProfileHeader(
                       user: profile.user,
                       trailing: SizedBox(
@@ -111,6 +120,20 @@ class ProfileScreen extends ConsumerWidget {
                       ),
                     ),
                     const Divider(height: 1),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Latest',
+                          style: GoogleFonts.fraunces(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 18,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                      ),
+                    ),
                     Expanded(child: UserPostsGrid(uid: uid)),
                   ],
                 ),

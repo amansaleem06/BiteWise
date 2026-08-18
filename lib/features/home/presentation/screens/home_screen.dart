@@ -153,10 +153,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 title: Row(
                   children: [
                     Text(
-                      'Feed',
+                      'TasteWise',
                       style: GoogleFonts.fraunces(
                         fontWeight: FontWeight.w800,
-                        fontSize: 28,
+                        fontSize: 26,
                         letterSpacing: -1,
                         color: theme.colorScheme.onSurface,
                       ),
@@ -170,7 +170,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           borderRadius: BorderRadius.circular(AppRadius.pill),
                           child: Ink(
                             decoration: BoxDecoration(
-                              gradient: AppColors.brandGradient,
+                              color: AppColors.accent,
                               borderRadius:
                                   BorderRadius.circular(AppRadius.pill),
                             ),
@@ -185,14 +185,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   Text(
                                     modeLabel,
                                     style: GoogleFonts.sourceSans3(
-                                      color: Colors.white,
+                                      color: AppColors.onAccent,
                                       fontWeight: FontWeight.w800,
                                       fontSize: 13,
                                     ),
                                   ),
                                   const Icon(
                                     Icons.expand_more_rounded,
-                                    color: Colors.white,
+                                    color: AppColors.onAccent,
                                     size: 18,
                                   ),
                                 ],
@@ -328,7 +328,7 @@ class _Chip extends StatelessWidget {
     final theme = Theme.of(context);
     return Material(
       color: selected
-          ? AppColors.primary
+          ? AppColors.accent
           : theme.colorScheme.surface.withValues(alpha: 0.9),
       borderRadius: BorderRadius.circular(AppRadius.pill),
       child: InkWell(
@@ -342,7 +342,7 @@ class _Chip extends StatelessWidget {
               fontWeight: FontWeight.w700,
               fontSize: 13,
               color: selected
-                  ? Colors.white
+                  ? AppColors.onAccent
                   : emphasized
                       ? AppColors.primary
                       : theme.colorScheme.onSurface,
