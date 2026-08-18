@@ -30,6 +30,7 @@ abstract final class Routes {
   static const saved = '/saved';
   static const businessSetup = '/business/setup';
   static const stories = '/stories';
+  static const tastePassport = '/passport';
 
   // Shell tabs
   static const home = '/home';

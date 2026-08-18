@@ -12,6 +12,7 @@ import '../../../../core/widgets/async_error_view.dart';
 import '../../../feed/domain/entities/post.dart';
 import '../providers/explore_providers.dart';
 import '../widgets/nearby_map_tab.dart';
+import '../widgets/plate_roulette_sheet.dart';
 import '../widgets/result_tiles.dart';
 
 /// Explore: search entry + Trending / Top Rated / Map.
@@ -60,6 +61,14 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
             color: theme.colorScheme.onSurface,
           ),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.casino_outlined),
+            tooltip: 'Plate Roulette — let fate pick dinner',
+            onPressed: () => PlateRouletteSheet.show(context),
+          ),
+          const SizedBox(width: AppSpacing.xs),
+        ],
         bottom: PreferredSize(
           preferredSize: Size.fromHeight(mapActive ? 104 : 152),
           child: Column(

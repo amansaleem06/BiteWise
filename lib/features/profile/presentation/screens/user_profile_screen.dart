@@ -9,6 +9,7 @@ import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/async_error_view.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../messages/presentation/providers/chat_providers.dart';
+import '../../../taste/presentation/widgets/taste_match_card.dart';
 import '../providers/profile_providers.dart';
 import '../widgets/profile_widgets.dart';
 
@@ -99,6 +100,8 @@ class UserProfileScreen extends ConsumerWidget {
                       ],
                     ),
             ),
+            if (!isSelf)
+              TasteMatchCard(uid: uid, name: profile.user.displayName),
             const Divider(height: 1),
             Expanded(child: UserPostsGrid(uid: uid)),
           ],

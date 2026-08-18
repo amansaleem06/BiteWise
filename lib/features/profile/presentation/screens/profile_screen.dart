@@ -42,6 +42,11 @@ class ProfileScreen extends ConsumerWidget {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.auto_stories_outlined),
+            tooltip: 'Taste Passport',
+            onPressed: () => context.push(Routes.tastePassport),
+          ),
+          IconButton(
             icon: const Icon(Icons.bookmark_outline_rounded),
             tooltip: 'Saved',
             onPressed: () => context.push(Routes.saved),
