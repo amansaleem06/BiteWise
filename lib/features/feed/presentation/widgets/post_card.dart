@@ -78,8 +78,8 @@ class PostCard extends StatelessWidget {
                         : null,
                     child: post.authorPhotoUrl == null
                         ? Text(
-                            post.authorName.isNotEmpty
-                                ? post.authorName[0].toUpperCase()
+                            post.publicAuthorName.isNotEmpty
+                                ? post.publicAuthorName[0].toUpperCase()
                                 : '?',
                             style: TextStyle(
                               color: theme.colorScheme.onSurface,
@@ -97,7 +97,7 @@ class PostCard extends StatelessWidget {
                       GestureDetector(
                         onTap: onAuthorTap,
                         child: Text(
-                          post.authorName,
+                          post.publicAuthorName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.sourceSans3(

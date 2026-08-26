@@ -24,6 +24,7 @@ abstract interface class CreatePostRepository {
     double? rating,
     double? price,
     required List<String> tags,
+    bool asRestaurantPage = false,
     void Function(double progress)? onProgress,
   });
 }

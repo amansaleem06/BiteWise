@@ -142,7 +142,24 @@ class MediaUploadService {
     return ref.getDownloadURL();
   }
 
-  /// Story photo. Path: `stories/{uid}/{uuid}.jpg`
+  /// Page logo or cover. Path: `restaurants/{uid}/{kind}.jpg`
+  Future<String> uploadRestaurantImage({
+    required String uid,
+    required XFile file,
+    required String kind,
+  }) async {
+    final compressed = await _compress(file);
+    final ref = _storage.ref('restaurants/$uid/$kind.jpg');
+    try {
+      await ref.putData(
+        compressed,
+        SettableMetadata(contentType: 'image/jpeg'),
+      );
+    } on FirebaseException catch (e) {
+      throw AppException('Photo upload failed.', code: e.code);
+    }
+    return ref.getDownloadURL();
+  }
   Future<String> uploadStoryImage({
     required String uid,
     required XFile file,

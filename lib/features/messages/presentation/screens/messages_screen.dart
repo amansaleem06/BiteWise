@@ -28,6 +28,11 @@ class MessagesScreen extends ConsumerWidget {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
+        leading: IconButton(
+          tooltip: 'Back to Feed',
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => context.go(Routes.home),
+        ),
         title: Text(
           'Messages',
           style: GoogleFonts.fraunces(

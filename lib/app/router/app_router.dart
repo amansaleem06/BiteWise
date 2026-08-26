@@ -25,6 +25,7 @@ import '../../features/profile/presentation/screens/settings_screen.dart';
 import '../../features/profile/presentation/screens/user_profile_screen.dart';
 import '../../features/reservations/presentation/screens/my_reservations_screen.dart';
 import '../../features/restaurants/presentation/screens/business_setup_screen.dart';
+import '../../features/restaurants/presentation/screens/edit_restaurant_screen.dart';
 import '../../features/restaurants/presentation/screens/restaurant_screen.dart';
 import '../../features/shell/presentation/main_shell.dart';
 import '../../features/stories/presentation/screens/story_edit_screen.dart';
@@ -99,6 +100,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.verifyEmail,
         builder: (_, __) => const VerifyEmailScreen(),
+      ),
+      GoRoute(
+        path: Routes.restaurantEdit,
+        builder: (_, state) => EditRestaurantScreen(
+          restaurantId: state.pathParameters['id']!,
+        ),
       ),
       GoRoute(
         path: Routes.restaurant,

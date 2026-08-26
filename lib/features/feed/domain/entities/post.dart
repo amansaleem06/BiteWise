@@ -80,7 +80,22 @@ class Post extends Equatable {
   final String? asRestaurantId;
 
   bool get postedAsRestaurant =>
-      asRestaurantId != null && asRestaurantId!.isNotEmpty;
+      (asRestaurantId != null && asRestaurantId!.isNotEmpty) ||
+      restaurantVerified;
+
+  /// Restaurant page this plate belongs to when it was posted as the business.
+  String? get pageId {
+    if (asRestaurantId != null && asRestaurantId!.isNotEmpty) {
+      return asRestaurantId;
+    }
+    if (restaurantVerified && restaurantId.isNotEmpty) return restaurantId;
+    return null;
+  }
+
+  /// Name diners should see — restaurant name for official page posts.
+  String get publicAuthorName => postedAsRestaurant && restaurantName.trim().isNotEmpty
+      ? restaurantName
+      : authorName;
   final String? previewCommentAuthor;
   final String? previewCommentText;
 

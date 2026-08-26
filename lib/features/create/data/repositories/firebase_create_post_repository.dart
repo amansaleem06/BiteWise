@@ -6,6 +6,7 @@ import '../../../../core/errors/app_exception.dart';
 import '../../../../core/services/location_service.dart';
 import '../../../../core/services/media_upload_service.dart';
 import '../../../../core/services/places_search_service.dart';
+import '../../../../core/services/restaurant_page_voice.dart';
 import '../../../../core/utils/locale_currency.dart';
 import '../../../restaurants/domain/entities/restaurant_ref.dart';
 import '../../domain/repositories/create_post_repository.dart';
@@ -138,6 +139,7 @@ class FirebaseCreatePostRepository implements CreatePostRepository {
     double? rating,
     double? price,
     required List<String> tags,
+    bool asRestaurantPage = false,
     void Function(double progress)? onProgress,
   }) async {
     final user = _user;
@@ -152,10 +154,17 @@ class FirebaseCreatePostRepository implements CreatePostRepository {
     );
 
     final restaurantId = restaurant?.id;
-    var ownerVerified = false;
-    String? pageName;
-    String? pagePhotoUrl;
-    if (restaurantId != null && restaurantId.isNotEmpty) {
+    RestaurantPageVoice? page;
+    if (asRestaurantPage) {
+      page = await RestaurantPageVoice.load(
+        firestore: _firestore,
+        auth: _auth,
+      );
+    }
+    var ownerVerified = page != null;
+    String? pageName = page?.name;
+    String? pagePhotoUrl = page?.logoUrl;
+    if (!ownerVerified && restaurantId != null && restaurantId.isNotEmpty) {
       final restSnap =
           await _firestore.collection('restaurants').doc(restaurantId).get();
       final data = restSnap.data();
@@ -170,16 +179,20 @@ class FirebaseCreatePostRepository implements CreatePostRepository {
       }
     }
 
-    final postingAsPage = ownerVerified;
+    final postingAsPage = page != null || ownerVerified;
+    final taggedId = page?.id ?? restaurant?.id ?? '';
+    final taggedName = page?.name ?? restaurant?.name ?? '';
     await _firestore.collection('posts').add({
       'authorId': user.uid,
       'authorName': postingAsPage
-          ? (pageName?.isNotEmpty == true ? pageName : restaurant!.name)
+          ? (pageName?.isNotEmpty == true
+              ? pageName
+              : (taggedName.isNotEmpty ? taggedName : user.displayName ?? ''))
           : (user.displayName ?? ''),
       'authorPhotoUrl': postingAsPage ? pagePhotoUrl : user.photoURL,
-      'restaurantId': restaurant?.id ?? '',
-      'restaurantName': restaurant?.name ?? '',
-      if (postingAsPage) 'asRestaurantId': restaurantId,
+      'restaurantId': taggedId,
+      'restaurantName': taggedName,
+      if (postingAsPage && taggedId.isNotEmpty) 'asRestaurantId': taggedId,
       'dishId': null,
       'dishName': (dishName?.trim().isEmpty ?? true) ? null : dishName!.trim(),
       'caption': caption.trim(),
@@ -203,10 +216,10 @@ class FirebaseCreatePostRepository implements CreatePostRepository {
       'createdAt': FieldValue.serverTimestamp(),
     });
 
-    if (restaurantId == null || restaurantId.isEmpty) return;
+    if (taggedId.isEmpty) return;
 
     final restaurantRef =
-        _firestore.collection('restaurants').doc(restaurantId);
+        _firestore.collection('restaurants').doc(taggedId);
     await _firestore.runTransaction((tx) async {
       final snap = await tx.get(restaurantRef);
       if (!snap.exists) return;

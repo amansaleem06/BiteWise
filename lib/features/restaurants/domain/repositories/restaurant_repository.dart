@@ -25,4 +25,14 @@ abstract interface class RestaurantRepository {
 
   /// Converts a leftover pending claim into an immediate verified claim.
   Future<void> finalizePendingClaim();
+
+  Future<void> updatePage({
+    required String restaurantId,
+    String? description,
+    String? website,
+    String? phone,
+    String? menuNotes,
+    String? logoUrl,
+    String? coverUrl,
+  });
 }

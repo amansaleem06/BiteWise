@@ -10,6 +10,8 @@ abstract final class Routes {
   // Details
   static const restaurant = '/restaurant/:id';
   static String restaurantPath(String id) => '/restaurant/$id';
+  static const restaurantEdit = '/restaurant/:id/edit';
+  static String restaurantEditPath(String id) => '/restaurant/$id/edit';
   static const post = '/post/:id';
   static String postPath(String id) => '/post/$id';
   static const user = '/user/:uid';

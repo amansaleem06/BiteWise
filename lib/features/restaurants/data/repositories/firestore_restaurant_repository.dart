@@ -216,4 +216,31 @@ class FirestoreRestaurantRepository implements RestaurantRepository {
     if (pending == null || pending.isEmpty) return;
     await claimRestaurant(pending);
   }
+
+  @override
+  Future<void> updatePage({
+    required String restaurantId,
+    String? description,
+    String? website,
+    String? phone,
+    String? menuNotes,
+    String? logoUrl,
+    String? coverUrl,
+  }) async {
+    final uid = _uid;
+    final snap = await _restaurants.doc(restaurantId).get();
+    if (!snap.exists) throw const AppException('Restaurant not found.');
+    if (snap.data()?['ownerId'] != uid) {
+      throw const AppException('Only the page owner can edit this restaurant.');
+    }
+    await _restaurants.doc(restaurantId).update({
+      if (description != null) 'description': description.trim(),
+      if (website != null) 'website': website.trim(),
+      if (phone != null) 'phone': phone.trim(),
+      if (menuNotes != null) 'menuNotes': menuNotes.trim(),
+      if (logoUrl != null) 'logoUrl': logoUrl,
+      if (coverUrl != null) 'coverUrl': coverUrl,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
 }

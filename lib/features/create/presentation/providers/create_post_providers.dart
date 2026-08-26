@@ -10,6 +10,8 @@ import '../../../explore/presentation/providers/explore_providers.dart';
 import '../../../feed/presentation/providers/feed_providers.dart';
 import '../../../profile/presentation/providers/profile_providers.dart';
 import '../../../restaurants/domain/entities/restaurant_ref.dart';
+import '../../../restaurants/presentation/providers/page_identity_provider.dart';
+import '../../../restaurants/presentation/providers/restaurant_providers.dart';
 import '../../data/repositories/firebase_create_post_repository.dart';
 import '../../domain/repositories/create_post_repository.dart';
 
@@ -158,10 +160,16 @@ class CreatePostController extends AutoDisposeNotifier<CreatePostState> {
             rating: state.rating,
             price: price,
             tags: tags,
+            asRestaurantPage: ref.read(pageIdentityProvider).actingAsPage,
             onProgress: (p) => state = state.copyWith(progress: p),
           );
       ref.invalidate(feedControllerProvider(FeedTab.forYou));
       ref.invalidate(topRatedRestaurantsProvider);
+      final pageId = ref.read(pageIdentityProvider).ownedRestaurantId;
+      if (pageId != null) {
+        ref.invalidate(restaurantPostsProvider(pageId));
+        ref.invalidate(restaurantControllerProvider(pageId));
+      }
       final uid = ref.read(currentUserProvider)?.uid;
       if (uid != null) {
         ref.invalidate(userProfileProvider(uid));

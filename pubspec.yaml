@@ -1,7 +1,7 @@
 name: bitewise
 description: "BiteWise — Discover. Taste. Share. A premium food-focused social platform."
 publish_to: "none"
-version: 1.0.0+20
+version: 1.0.0+21
 
 environment:
   sdk: ">=3.4.0 <4.0.0"

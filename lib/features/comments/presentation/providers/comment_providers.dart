@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../feed/domain/entities/post.dart';
 import '../../../feed/presentation/providers/feed_providers.dart';
+import '../../../restaurants/presentation/providers/page_identity_provider.dart';
 import '../../data/repositories/firestore_comment_repository.dart';
 import '../../domain/entities/comment.dart';
 import '../../domain/repositories/comment_repository.dart';
@@ -155,6 +156,7 @@ class CommentsController
         postId: arg,
         text: text,
         replyToName: current.replyToName,
+        asRestaurantPage: ref.read(pageIdentityProvider).actingAsPage,
       );
       state = AsyncData(
         current.copyWith(

@@ -10,9 +10,10 @@ import '../../../../core/constants/cuisines.dart';
 import '../../../../core/utils/locale_currency.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_snackbar.dart';
-import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../restaurants/domain/entities/restaurant_ref.dart';
+import '../../../restaurants/presentation/providers/page_identity_provider.dart';
 import '../../../restaurants/presentation/providers/restaurant_providers.dart';
+import '../../../restaurants/presentation/widgets/page_identity_bar.dart';
 import '../providers/create_post_providers.dart';
 import '../widgets/media_picker_grid.dart';
 import '../widgets/restaurant_picker_sheet.dart';
@@ -32,6 +33,7 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
   final _price = TextEditingController();
   final _tags = TextEditingController();
   final _cuisines = <String>{};
+  var _pageKind = 'plate';
 
   @override
   void dispose() {
@@ -48,7 +50,16 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
         .map((t) => t.trim().toLowerCase())
         .where((t) => t.isNotEmpty);
     final cuisineTags = _cuisines.map((c) => c.toLowerCase());
-    return {...cuisineTags, ...freeform}.take(12).toList();
+    final kindTag = switch (_pageKind) {
+      'promo' => 'promo',
+      'menu' => 'menu',
+      _ => null,
+    };
+    return {
+      ...cuisineTags,
+      ...freeform,
+      if (kindTag != null) kindTag,
+    }.take(12).toList();
   }
 
   Future<void> _publish() async {
@@ -79,11 +90,10 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
     final theme = Theme.of(context);
     final state = ref.watch(createPostControllerProvider);
     final controller = ref.read(createPostControllerProvider.notifier);
-    final me = ref.watch(currentUserProvider);
-    final ownedId = me?.ownedRestaurantId;
-    if (me?.hasVerifiedBusiness == true &&
-        ownedId != null &&
-        state.restaurant == null) {
+    final identity = ref.watch(pageIdentityProvider);
+    final actingAsPage = identity.actingAsPage;
+    final ownedId = identity.ownedRestaurantId;
+    if (actingAsPage && ownedId != null && state.restaurant == null) {
       final owned =
           ref.watch(restaurantControllerProvider(ownedId)).valueOrNull;
       if (owned != null) {
@@ -99,12 +109,17 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
         });
       }
     }
-    final restaurantLocked = me?.hasVerifiedBusiness == true;
+    final restaurantLocked = actingAsPage;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
+        leading: IconButton(
+          tooltip: 'Back to Feed',
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => context.go(Routes.home),
+        ),
         title: Text(
           'Create',
           style: GoogleFonts.fraunces(
@@ -116,8 +131,39 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.only(bottom: 140),
+        padding: const EdgeInsets.only(bottom: 40),
         children: [
+          const SizedBox(height: AppSpacing.sm),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: PageIdentityBar(compact: true),
+          ),
+          if (actingAsPage) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+              child: Wrap(
+                spacing: 8,
+                children: [
+                  ChoiceChip(
+                    label: const Text('Plate'),
+                    selected: _pageKind == 'plate',
+                    onSelected: (_) => setState(() => _pageKind = 'plate'),
+                  ),
+                  ChoiceChip(
+                    label: const Text('Promo'),
+                    selected: _pageKind == 'promo',
+                    onSelected: (_) => setState(() => _pageKind = 'promo'),
+                  ),
+                  ChoiceChip(
+                    label: const Text('Menu update'),
+                    selected: _pageKind == 'menu',
+                    onSelected: (_) => setState(() => _pageKind = 'menu'),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: AppSpacing.sm),
           MediaPickerGrid(
             images: state.images,
@@ -134,7 +180,7 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
                 const _SectionLabel('Tag restaurant'),
                 Text(
                   restaurantLocked
-                      ? 'This plate publishes as ${state.restaurant?.name ?? 'your restaurant'} — diners see the page, not your personal name.'
+                      ? 'Publishes as ${state.restaurant?.name ?? 'the restaurant page'} — diners see the business, not your personal name.'
                       : state.rating != null
                           ? 'Required when you add a rating.'
                           : 'Optional — skip for a photo-only post.',

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 
 import '../../../../core/errors/app_exception.dart';
+import '../../../../core/services/restaurant_page_voice.dart';
 import '../../../../core/services/social_notification_writer.dart';
 import '../../domain/entities/comment.dart';
 import '../../domain/repositories/comment_repository.dart';
@@ -54,6 +55,7 @@ class FirestoreCommentRepository implements CommentRepository {
     required String postId,
     required String text,
     String? replyToName,
+    bool asRestaurantPage = false,
   }) async {
     final user = _user;
     final trimmed = text.trim();
@@ -67,24 +69,15 @@ class FirestoreCommentRepository implements CommentRepository {
     var authorName = user.displayName ?? '';
     String? authorPhotoUrl = user.photoURL;
     String? asRestaurantId;
-    final postRestaurantId = postData['restaurantId'] as String?;
-    if (postRestaurantId != null && postRestaurantId.isNotEmpty) {
-      final restSnap =
-          await _firestore.collection('restaurants').doc(postRestaurantId).get();
-      final rest = restSnap.data();
-      final ownerId = rest?['ownerId'] as String?;
-      final claimed = (rest?['claimed'] as bool?) ?? false;
-      final claimStatus = rest?['claimStatus'] as String?;
-      final isOwnerPage = ownerId == user.uid &&
-          (claimed ||
-              claimStatus == 'claimed' ||
-              claimStatus == 'pending');
-      if (isOwnerPage) {
-        final pageName = (rest?['name'] as String?)?.trim();
-        authorName =
-            pageName?.isNotEmpty == true ? pageName! : authorName;
-        authorPhotoUrl = rest?['logoUrl'] as String? ?? authorPhotoUrl;
-        asRestaurantId = postRestaurantId;
+    if (asRestaurantPage) {
+      final page = await RestaurantPageVoice.load(
+        firestore: _firestore,
+        auth: _auth,
+      );
+      if (page != null) {
+        authorName = page.name;
+        authorPhotoUrl = page.logoUrl ?? authorPhotoUrl;
+        asRestaurantId = page.id;
       }
     }
 

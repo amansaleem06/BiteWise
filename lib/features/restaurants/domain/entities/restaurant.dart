@@ -28,6 +28,7 @@ class Restaurant extends Equatable {
     this.ratingSum = 0,
     this.ratingCount = 0,
     this.openingHours = const {},
+    this.menuNotes,
     this.isFollowedByMe = false,
     this.latitude,
     this.longitude,
@@ -60,6 +61,7 @@ class Restaurant extends Equatable {
 
   /// e.g. {'mon': '11:00–22:00'} — keys: mon..sun. Empty = unknown.
   final Map<String, String> openingHours;
+  final String? menuNotes;
 
   final bool isFollowedByMe;
 
@@ -103,6 +105,7 @@ class Restaurant extends Equatable {
         ratingSum: ratingSum,
         ratingCount: ratingCount,
         openingHours: openingHours,
+        menuNotes: menuNotes,
         isFollowedByMe: isFollowedByMe ?? this.isFollowedByMe,
         latitude: latitude,
         longitude: longitude,

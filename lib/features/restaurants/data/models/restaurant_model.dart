@@ -54,6 +54,7 @@ abstract final class RestaurantModel {
           if (e.key is String && e.value is String)
             e.key as String: e.value as String,
       },
+      menuNotes: data['menuNotes'] as String?,
       isFollowedByMe: isFollowedByMe,
       latitude: location?.latitude,
       longitude: location?.longitude,

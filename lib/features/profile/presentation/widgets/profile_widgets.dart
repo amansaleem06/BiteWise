@@ -62,6 +62,13 @@ class ProfileHeader extends StatelessWidget {
             user.displayName,
             style: theme.textTheme.titleLarge,
           ),
+          if (user.isBusiness) ...[
+            const SizedBox(height: AppSpacing.xxs),
+            Text(
+              'Personal account — the public restaurant is a separate page',
+              style: theme.textTheme.bodySmall,
+            ),
+          ],
           const SizedBox(height: AppSpacing.xxs),
           Wrap(
             spacing: AppSpacing.xs,

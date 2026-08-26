@@ -20,6 +20,7 @@ abstract interface class CommentRepository {
     required String postId,
     required String text,
     String? replyToName,
+    bool asRestaurantPage = false,
   });
 
   /// Author-only; also decrements the post's comment counter.

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -12,7 +13,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../core/errors/error_text.dart';
 import '../../../../core/widgets/app_snackbar.dart';
-import '../../../auth/presentation/providers/auth_providers.dart';
+import '../../../restaurants/presentation/providers/page_identity_provider.dart';
 import '../../../restaurants/presentation/providers/restaurant_providers.dart';
 import '../providers/story_providers.dart';
 
@@ -22,7 +23,38 @@ class StoryEditArgs {
   final XFile image;
 }
 
-/// Crop / zoom a story photo before it goes live for 24 hours.
+class _StoryLook {
+  const _StoryLook(this.label, this.filter);
+  final String label;
+  final ColorFilter filter;
+}
+
+const _looks = <_StoryLook>[
+  _StoryLook('Original', ColorFilter.mode(Colors.transparent, BlendMode.dst)),
+  _StoryLook(
+    'Warm',
+    ColorFilter.mode(Color(0x55E8A050), BlendMode.overlay),
+  ),
+  _StoryLook(
+    'Cool',
+    ColorFilter.mode(Color(0x553080C0), BlendMode.overlay),
+  ),
+  _StoryLook(
+    'Vivid',
+    ColorFilter.mode(Color(0x40FF5A4A), BlendMode.softLight),
+  ),
+  _StoryLook(
+    'Mono',
+    ColorFilter.matrix(<double>[
+      0.2126, 0.7152, 0.0722, 0, 0,
+      0.2126, 0.7152, 0.0722, 0, 0,
+      0.2126, 0.7152, 0.0722, 0, 0,
+      0, 0, 0, 1, 0,
+    ]),
+  ),
+];
+
+/// Crop / zoom / filter a story photo before it goes live for 24 hours.
 class StoryEditScreen extends ConsumerStatefulWidget {
   const StoryEditScreen({super.key, required this.args});
 
@@ -36,7 +68,9 @@ class _StoryEditScreenState extends ConsumerState<StoryEditScreen> {
   final _cropKey = GlobalKey();
   final _transform = TransformationController();
   var _busy = false;
-  var _asRestaurant = true;
+  var _look = 0;
+  var _rotation = 0;
+  var _brightness = 0.0;
 
   @override
   void dispose() {
@@ -44,13 +78,22 @@ class _StoryEditScreenState extends ConsumerState<StoryEditScreen> {
     super.dispose();
   }
 
+  ColorFilter get _brightnessFilter {
+    final b = _brightness * 80;
+    return ColorFilter.matrix(<double>[
+      1, 0, 0, 0, b,
+      0, 1, 0, 0, b,
+      0, 0, 1, 0, b,
+      0, 0, 0, 1, 0,
+    ]);
+  }
+
   Future<void> _share() async {
     if (_busy) return;
     setState(() => _busy = true);
     try {
       final cropped = await _captureCrop();
-      final owned = ref.read(currentUserProvider)?.ownedRestaurantId;
-      final asPage = _asRestaurant && owned != null && owned.isNotEmpty;
+      final asPage = ref.read(pageIdentityProvider).actingAsPage;
       await ref.read(storyActionsProvider).publish(
             cropped,
             asRestaurant: asPage,
@@ -69,9 +112,7 @@ class _StoryEditScreenState extends ConsumerState<StoryEditScreen> {
     await WidgetsBinding.instance.endOfFrame;
     final boundary =
         _cropKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-    if (boundary == null) {
-      return widget.args.image;
-    }
+    if (boundary == null) return widget.args.image;
     final image = await boundary.toImage(pixelRatio: 2);
     final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
     image.dispose();
@@ -91,13 +132,12 @@ class _StoryEditScreenState extends ConsumerState<StoryEditScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final me = ref.watch(currentUserProvider);
-    final ownedId = me?.ownedRestaurantId;
-    final page = ownedId != null && ownedId.isNotEmpty
-        ? ref.watch(restaurantControllerProvider(ownedId)).valueOrNull
+    final identity = ref.watch(pageIdentityProvider);
+    final page = identity.ownedRestaurantId != null
+        ? ref
+            .watch(restaurantControllerProvider(identity.ownedRestaurantId!))
+            .valueOrNull
         : null;
-    final pageName = page?.name ?? me?.businessName;
-    final canPostAsPage = ownedId != null && ownedId.isNotEmpty;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -123,6 +163,20 @@ class _StoryEditScreenState extends ConsumerState<StoryEditScreen> {
                         fontWeight: FontWeight.w700,
                         fontSize: 20,
                       ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      _transform.value = Matrix4.identity();
+                      setState(() {
+                        _rotation = 0;
+                        _look = 0;
+                        _brightness = 0;
+                      });
+                    },
+                    child: Text(
+                      'Reset',
+                      style: GoogleFonts.sourceSans3(color: AppColors.cream),
                     ),
                   ),
                   TextButton(
@@ -160,16 +214,25 @@ class _StoryEditScreenState extends ConsumerState<StoryEditScreen> {
                         builder: (context, constraints) {
                           return RepaintBoundary(
                             key: _cropKey,
-                            child: InteractiveViewer(
-                              transformationController: _transform,
-                              minScale: 1,
-                              maxScale: 4,
-                              child: SizedBox(
-                                width: constraints.maxWidth,
-                                height: constraints.maxHeight,
-                                child: Image.file(
-                                  File(widget.args.image.path),
-                                  fit: BoxFit.cover,
+                            child: ColorFiltered(
+                              colorFilter: _brightnessFilter,
+                              child: ColorFiltered(
+                                colorFilter: _looks[_look].filter,
+                                child: InteractiveViewer(
+                                  transformationController: _transform,
+                                  minScale: 0.35,
+                                  maxScale: 5,
+                                  panEnabled: true,
+                                  scaleEnabled: true,
+                                  child: Transform.rotate(
+                                    angle: _rotation * math.pi / 2,
+                                    child: Image.file(
+                                      File(widget.args.image.path),
+                                      fit: BoxFit.contain,
+                                      width: constraints.maxWidth,
+                                      height: constraints.maxHeight,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
@@ -182,36 +245,62 @@ class _StoryEditScreenState extends ConsumerState<StoryEditScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
               child: Text(
-                'Pinch to zoom, drag to crop',
+                'Pinch to zoom in or out · drag to reposition',
                 style: GoogleFonts.sourceSans3(
                   color: AppColors.cream.withValues(alpha: 0.72),
                   fontSize: 13,
                 ),
               ),
             ),
-            if (canPostAsPage)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
-                child: SwitchListTile.adaptive(
-                  value: _asRestaurant,
-                  onChanged: _busy
-                      ? null
-                      : (v) => setState(() => _asRestaurant = v),
-                  title: Text(
-                    'Post as ${pageName ?? 'restaurant'}',
-                    style: GoogleFonts.sourceSans3(
-                      color: AppColors.cream,
-                      fontWeight: FontWeight.w700,
+            SizedBox(
+              height: 40,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                children: [
+                  for (var i = 0; i < _looks.length; i++)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(_looks[i].label),
+                        selected: _look == i,
+                        onSelected: (_) => setState(() => _look = i),
+                        selectedColor: AppColors.accent,
+                        labelStyle: GoogleFonts.sourceSans3(
+                          color: _look == i ? AppColors.primary : AppColors.cream,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        backgroundColor: Colors.white12,
+                      ),
                     ),
+                  ActionChip(
+                    label: const Text('Rotate'),
+                    avatar: const Icon(Icons.rotate_90_degrees_cw_outlined, size: 16),
+                    onPressed: () =>
+                        setState(() => _rotation = (_rotation + 1) % 4),
                   ),
-                  subtitle: Text(
-                    'Uses the restaurant name and logo, not your personal profile',
-                    style: GoogleFonts.sourceSans3(
-                      color: AppColors.cream.withValues(alpha: 0.65),
-                      fontSize: 12,
-                    ),
+                ],
+              ),
+            ),
+            Slider(
+              value: _brightness,
+              min: -1,
+              max: 1,
+              onChanged: (v) => setState(() => _brightness = v),
+              activeColor: AppColors.accent,
+              label: 'Brightness',
+            ),
+            if (identity.hasPage)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: Text(
+                  identity.actingAsPage
+                      ? 'Sharing as ${page?.name ?? 'the restaurant page'}'
+                      : 'Sharing as your personal story',
+                  style: GoogleFonts.sourceSans3(
+                    color: AppColors.cream.withValues(alpha: 0.8),
                   ),
                 ),
               ),

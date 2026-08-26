@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -14,9 +15,12 @@ import '../../../../core/widgets/app_snackbar.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../feed/presentation/widgets/feed_shimmer.dart';
 import '../../../reservations/presentation/widgets/booking_sheet.dart';
+import '../../../stories/presentation/screens/story_edit_screen.dart';
 import '../../domain/entities/restaurant.dart';
+import '../providers/page_identity_provider.dart';
 import '../providers/restaurant_providers.dart';
 import '../widgets/claim_status_badge.dart';
+import '../widgets/page_identity_bar.dart';
 import '../widgets/restaurant_posts_grid.dart';
 import '../widgets/restaurant_ratings_tab.dart';
 
@@ -241,13 +245,45 @@ class _IdentitySection extends ConsumerWidget {
           ],
           const SizedBox(height: AppSpacing.md),
           if (me != null && restaurant.ownerId == me.uid) ...[
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => context.go(Routes.create),
-                icon: const Icon(Icons.campaign_outlined),
-                label: Text('Post as ${restaurant.name}'),
-              ),
+            const PageIdentityBar(),
+            const SizedBox(height: AppSpacing.sm),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      ref
+                          .read(pageIdentityProvider.notifier)
+                          .setPreferPersonal(false);
+                      context.go(Routes.create);
+                    },
+                    icon: const Icon(Icons.campaign_outlined, size: 18),
+                    label: const Text('Post'),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                OutlinedButton(
+                  onPressed: () async {
+                    final image = await ImagePicker().pickImage(
+                      source: ImageSource.gallery,
+                      imageQuality: 90,
+                    );
+                    if (image == null || !context.mounted) return;
+                    await context.push(
+                      Routes.storyEdit,
+                      extra: StoryEditArgs(image),
+                    );
+                  },
+                  child: const Icon(Icons.auto_awesome_outlined),
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                OutlinedButton(
+                  onPressed: () => context.push(
+                    Routes.restaurantEditPath(restaurant.id),
+                  ),
+                  child: const Icon(Icons.edit_outlined),
+                ),
+              ],
             ),
             const SizedBox(height: AppSpacing.sm),
           ],
@@ -336,6 +372,7 @@ class _AboutTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final hasAnyInfo = restaurant.description != null ||
+        restaurant.menuNotes != null ||
         restaurant.address != null ||
         restaurant.phone != null ||
         restaurant.website != null ||
@@ -375,6 +412,13 @@ class _AboutTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.md),
       children: [
+        if (restaurant.menuNotes != null &&
+            restaurant.menuNotes!.trim().isNotEmpty) ...[
+          Text('Menu & specials', style: theme.textTheme.titleMedium),
+          const SizedBox(height: AppSpacing.xs),
+          Text(restaurant.menuNotes!, style: theme.textTheme.bodyMedium),
+          const SizedBox(height: AppSpacing.lg),
+        ],
         if (restaurant.description != null) ...[
           Text('About', style: theme.textTheme.titleMedium),
           const SizedBox(height: AppSpacing.xs),

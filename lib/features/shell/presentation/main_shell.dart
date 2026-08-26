@@ -101,11 +101,17 @@ class _MainShellState extends ConsumerState<MainShell>
     final index = navigationShell.currentIndex;
     final stageBottom = bottom > 0 ? bottom + 8 : 14.0;
 
+    if (index != 0 && _menuOpen) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_menuOpen) _toggleMenu();
+      });
+    }
+
     return Scaffold(
       body: Stack(
         children: [
           Positioned.fill(child: navigationShell),
-          if (_menuOpen)
+          if (index == 0 && _menuOpen)
             Positioned.fill(
               child: GestureDetector(
                 onTap: _toggleMenu,
@@ -118,7 +124,8 @@ class _MainShellState extends ConsumerState<MainShell>
                 ),
               ),
             ),
-          Positioned(
+          if (index == 0)
+            Positioned(
             left: 0,
             right: 0,
             bottom: stageBottom,

@@ -10,6 +10,7 @@ import '../../../../core/constants/app_strings.dart';
 import '../../../../core/widgets/async_error_view.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../restaurants/presentation/providers/restaurant_providers.dart';
+import '../../../restaurants/presentation/widgets/page_identity_bar.dart';
 import '../providers/profile_providers.dart';
 import '../widgets/owned_restaurant_banner.dart';
 import '../widgets/profile_widgets.dart';
@@ -31,6 +32,11 @@ class ProfileScreen extends ConsumerWidget {
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
+        leading: IconButton(
+          tooltip: 'Back to Feed',
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => context.go(Routes.home),
+        ),
         title: Text(
           'Profile',
           style: GoogleFonts.fraunces(
@@ -78,6 +84,10 @@ class ProfileScreen extends ConsumerWidget {
                 ),
                 data: (profile) => Column(
                   children: [
+                    const Padding(
+                      padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+                      child: PageIdentityBar(),
+                    ),
                     if (me?.isBusiness == true &&
                         (restaurantId == null || restaurantId.isEmpty))
                       Padding(

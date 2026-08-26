@@ -17,6 +17,26 @@ class RestaurantController
   @override
   Future<Restaurant> build(String restaurantId) => _repo.getById(restaurantId);
 
+  Future<void> updatePage({
+    required String description,
+    required String website,
+    required String phone,
+    required String menuNotes,
+    String? logoUrl,
+    String? coverUrl,
+  }) async {
+    await _repo.updatePage(
+      restaurantId: arg,
+      description: description,
+      website: website,
+      phone: phone,
+      menuNotes: menuNotes,
+      logoUrl: logoUrl,
+      coverUrl: coverUrl,
+    );
+    ref.invalidateSelf();
+  }
+
   Future<void> toggleFollow() async {
     final current = state.valueOrNull;
     if (current == null) return;
