@@ -37,7 +37,7 @@ class RestaurantPostsGrid extends ConsumerWidget {
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.xl),
               child: Text(
-                'No posts yet — be the first to share a bite here.',
+                'Official plates from this restaurant, plus guest photos tagged here.',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -106,7 +106,17 @@ class _GridTile extends StatelessWidget {
               ),
             ),
           ),
-        if (post.media.length > 1)
+        if (post.postedAsRestaurant)
+          const Positioned(
+            top: 6,
+            left: 6,
+            child: Icon(
+              Icons.storefront_rounded,
+              size: 14,
+              color: Colors.white,
+              shadows: [Shadow(color: Colors.black54, blurRadius: 6)],
+            ),
+          ),
           const Positioned(
             top: 6,
             right: 6,

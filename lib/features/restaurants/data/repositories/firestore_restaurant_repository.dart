@@ -186,37 +186,34 @@ class FirestoreRestaurantRepository implements RestaurantRepository {
         );
       }
 
-      final autoApprove = ClaimMatcher.isStrongMatch(
-        businessName: (user['businessName'] as String?) ?? '',
-        businessAddress: user['businessAddress'] as String?,
-        restaurantName: (data['name'] as String?) ?? '',
-        restaurantAddress: data['address'] as String?,
-      );
-      nextStatus = autoApprove ? ClaimStatus.claimed : ClaimStatus.pending;
+      nextStatus = ClaimStatus.claimed;
 
       tx.update(restaurantRef, {
         'ownerId': uid,
-        'claimed': autoApprove,
-        'claimStatus': nextStatus.name,
+        'claimed': true,
+        'claimStatus': ClaimStatus.claimed.name,
         'updatedAt': FieldValue.serverTimestamp(),
       });
     });
 
     final userUpdates = <String, dynamic>{
       'updatedAt': FieldValue.serverTimestamp(),
+      'ownedRestaurantId': restaurantId,
+      'pendingClaimRestaurantId': FieldValue.delete(),
+      'businessVerificationStatus':
+          BusinessVerificationStatus.verified.name,
     };
-    if (nextStatus == ClaimStatus.claimed) {
-      userUpdates['ownedRestaurantId'] = restaurantId;
-      userUpdates['pendingClaimRestaurantId'] = FieldValue.delete();
-      userUpdates['businessVerificationStatus'] =
-          BusinessVerificationStatus.verified.name;
-    } else {
-      userUpdates['pendingClaimRestaurantId'] = restaurantId;
-      userUpdates['businessVerificationStatus'] =
-          BusinessVerificationStatus.pending.name;
-    }
     await _firestore.collection('users').doc(uid).update(userUpdates);
 
     return ClaimResult(restaurantId: restaurantId, status: nextStatus);
+  }
+
+  @override
+  Future<void> finalizePendingClaim() async {
+    final uid = _uid;
+    final userSnap = await _firestore.collection('users').doc(uid).get();
+    final pending = userSnap.data()?['pendingClaimRestaurantId'] as String?;
+    if (pending == null || pending.isEmpty) return;
+    await claimRestaurant(pending);
   }
 }

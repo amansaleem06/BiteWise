@@ -57,7 +57,9 @@ class _NearbyMapTabState extends ConsumerState<NearbyMapTab> {
   String? _markerKey;
 
   Future<void> _syncMarkers(List<Restaurant> restaurants) async {
-    final key = restaurants.map((r) => '${r.id}:${r.averageRating}').join('|');
+    final key = restaurants
+        .map((r) => '${r.id}:${r.averageRating}:${r.isClaimed}')
+        .join('|');
     if (_markerKey == key) return;
     _markerKey = key;
     final next = <Marker>{};
@@ -157,6 +159,7 @@ class _NearbyMapTabState extends ConsumerState<NearbyMapTab> {
               myLocationEnabled: true,
               myLocationButtonEnabled: true,
               zoomControlsEnabled: false,
+              padding: const EdgeInsets.only(bottom: 108, right: 8),
               // Win the gesture arena against the parent TabBarView.
               gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
                 const Factory<EagerGestureRecognizer>(
@@ -191,7 +194,7 @@ class _NearbyMapTabState extends ConsumerState<NearbyMapTab> {
               Positioned(
                 left: AppSpacing.md,
                 right: AppSpacing.md,
-                bottom: AppSpacing.md,
+                bottom: 96,
                 child: _RestaurantPreviewCard(restaurant: _selected!),
               ),
           ],

@@ -14,7 +14,6 @@ import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../create/presentation/providers/create_post_providers.dart';
-import '../../domain/entities/claim_status.dart';
 import '../providers/restaurant_providers.dart';
 
 /// After Business signup: collect verifiable details, then claim a Maps listing.
@@ -84,22 +83,38 @@ class _BusinessSetupScreenState extends ConsumerState<BusinessSetupScreen> {
 
   Future<void> _claim(PlaceSuggestion place) async {
     if (_selectingPlaceId != null) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirm this is your restaurant'),
+        content: Text(
+          '${place.name}\n${place.address ?? ''}\n\n'
+          'This listing becomes your restaurant page immediately. '
+          'Ratings already on it stay with the page.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Claim this listing'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
     setState(() => _selectingPlaceId = place.placeId);
     try {
-      final result =
-          await ref.read(restaurantRepositoryProvider).claimFromPlace(place);
+      await ref.read(restaurantRepositoryProvider).claimFromPlace(place);
       ref.invalidate(authStateProvider);
       if (!mounted) return;
-      if (result.status == ClaimStatus.claimed) {
-        AppSnackbar.success(context, 'Restaurant claimed. Welcome to your table.');
-        context.go(Routes.home);
-      } else {
-        AppSnackbar.success(
-          context,
-          'Claim submitted for review — name or address didn’t fully match.',
-        );
-        context.go(Routes.profile);
-      }
+      AppSnackbar.success(
+        context,
+        'Restaurant page is yours. You post as ${place.name} from now on.',
+      );
+      context.go(Routes.home);
     } catch (e) {
       if (!mounted) return;
       setState(() => _selectingPlaceId = null);
@@ -124,8 +139,8 @@ class _BusinessSetupScreenState extends ConsumerState<BusinessSetupScreen> {
         children: [
           Text(
             _step == 0
-                ? 'Tell us how to reach the business. We’ll match this against the Maps listing you claim next.'
-                : 'Pick the Google Maps listing for your restaurant. Existing ratings stay with that page.',
+                ? 'These details are only used to match your Maps listing. They are not shown as the public identity of the restaurant page.'
+                : 'Pick the Google Maps listing. After you confirm, the page is yours immediately — no review queue.',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),

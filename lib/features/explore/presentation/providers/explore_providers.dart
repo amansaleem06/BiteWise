@@ -23,6 +23,13 @@ final topRatedRestaurantsProvider =
   (ref) => ref.read(exploreRepositoryProvider).fetchTopRatedRestaurants(),
 );
 
+final rankedRestaurantsProvider =
+    FutureProvider.autoDispose.family<List<Restaurant>, RankingPeriod>(
+  (ref, period) => ref
+      .read(exploreRepositoryProvider)
+      .fetchRankedRestaurants(period: period),
+);
+
 /// Combined results for one query.
 class SearchResults {
   const SearchResults({

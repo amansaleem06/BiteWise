@@ -27,6 +27,7 @@ import '../../features/reservations/presentation/screens/my_reservations_screen.
 import '../../features/restaurants/presentation/screens/business_setup_screen.dart';
 import '../../features/restaurants/presentation/screens/restaurant_screen.dart';
 import '../../features/shell/presentation/main_shell.dart';
+import '../../features/stories/presentation/screens/story_edit_screen.dart';
 import '../../features/stories/presentation/screens/story_viewer_screen.dart';
 import '../../features/taste/presentation/screens/taste_passport_screen.dart';
 import 'routes.dart';
@@ -179,6 +180,16 @@ final routerProvider = Provider<GoRouter>((ref) {
           final extra = state.extra;
           if (extra is StoryViewerArgs) {
             return StoryViewerScreen(args: extra);
+          }
+          return const SizedBox.shrink();
+        },
+      ),
+      GoRoute(
+        path: Routes.storyEdit,
+        builder: (_, state) {
+          final extra = state.extra;
+          if (extra is StoryEditArgs) {
+            return StoryEditScreen(args: extra);
           }
           return const SizedBox.shrink();
         },

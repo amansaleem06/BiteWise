@@ -2,6 +2,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:go_router/go_router.dart';
+
+import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/constants/app_strings.dart';
@@ -237,13 +240,24 @@ class _IdentitySection extends ConsumerWidget {
             ),
           ],
           const SizedBox(height: AppSpacing.md),
+          if (me != null && restaurant.ownerId == me.uid) ...[
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => context.go(Routes.create),
+                icon: const Icon(Icons.campaign_outlined),
+                label: Text('Post as ${restaurant.name}'),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
           if (canClaim) ...[
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
                 onPressed: () async {
                   try {
-                    final result = await ref
+                    await ref
                         .read(restaurantRepositoryProvider)
                         .claimRestaurant(restaurant.id);
                     ref.invalidate(authStateProvider);
@@ -253,9 +267,7 @@ class _IdentitySection extends ConsumerWidget {
                     if (!context.mounted) return;
                     AppSnackbar.success(
                       context,
-                      result.isApproved
-                          ? 'This is now your restaurant page.'
-                          : 'Claim submitted for review.',
+                      'This is now your restaurant page. You post as ${restaurant.name}.',
                     );
                   } catch (e) {
                     if (!context.mounted) return;
@@ -348,7 +360,7 @@ class _AboutTab extends StatelessWidget {
                 restaurant.isClaimed
                     ? 'This restaurant hasn\'t added details yet.'
                     : restaurant.isPendingClaim
-                        ? 'A claim is pending review. Ratings already on this listing stay here.'
+                        ? 'This listing is claimed. Ratings already on this page stay here.'
                         : 'Unclaimed Maps listing — ratings here are from TasteWise diners, with no verified owner. Are you the owner? Claim it from your business profile.',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium

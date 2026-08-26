@@ -58,6 +58,20 @@ class CommentTile extends StatelessWidget {
                         text: '${comment.authorName} ',
                         style: theme.textTheme.titleSmall,
                       ),
+                      if (comment.postedAsRestaurant)
+                        WidgetSpan(
+                          alignment: PlaceholderAlignment.middle,
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 4),
+                            child: Text(
+                              'Page ',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ),
                       if (comment.replyToName != null)
                         TextSpan(
                           text: '@${comment.replyToName} ',

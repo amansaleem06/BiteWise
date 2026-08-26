@@ -89,7 +89,12 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
       if (owned != null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           controller.setRestaurant(
-            RestaurantRef(id: owned.id, name: owned.name, city: owned.city),
+            RestaurantRef(
+              id: owned.id,
+              name: owned.name,
+              city: owned.city,
+              logoUrl: owned.logoUrl,
+            ),
           );
         });
       }
@@ -129,7 +134,7 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
                 const _SectionLabel('Tag restaurant'),
                 Text(
                   restaurantLocked
-                      ? 'Owner posts are published on your restaurant page.'
+                      ? 'This plate publishes as ${state.restaurant?.name ?? 'your restaurant'} — diners see the page, not your personal name.'
                       : state.rating != null
                           ? 'Required when you add a rating.'
                           : 'Optional — skip for a photo-only post.',

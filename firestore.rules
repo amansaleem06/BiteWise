@@ -180,9 +180,6 @@ service cloud.firestore {
         || (request.resource.data.diff(resource.data).affectedKeys()
                 .hasOnly(['shareCount'])
             && request.resource.data.shareCount == resource.data.get('shareCount', 0) + 1)
-        || (ownsRestaurant(resource.data.restaurantId)
-            && request.resource.data.diff(resource.data).affectedKeys()
-                .hasOnly(['restaurantVerified', 'verifiedAt', 'verifiedBy']))
       );
 
       allow delete: if isSignedIn()
@@ -364,10 +361,32 @@ service cloud.firestore {
         && request.resource.data.authorId == request.auth.uid
         && request.resource.data.mediaUrl is string
         && request.resource.data.authorName is string
-        && request.resource.data.expiresAt is timestamp;
+        && request.resource.data.expiresAt is timestamp
+        && request.resource.data.likeCount == 0
+        && request.resource.data.commentCount == 0;
       allow delete: if isSignedIn()
         && request.auth.uid == resource.data.authorId;
-      allow update: if false;
+      allow update: if isSignedIn()
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['likeCount', 'commentCount'])
+        && request.resource.data.authorId == resource.data.authorId;
+
+      match /likes/{uid} {
+        allow read: if isSignedIn();
+        allow create, delete: if isSelf(uid);
+      }
+
+      match /comments/{commentId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn()
+          && request.resource.data.authorId == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() >= 1
+          && request.resource.data.text.size() <= 280;
+        allow delete: if isSignedIn()
+          && request.auth.uid == resource.data.authorId;
+        allow update: if false;
+      }
     }
 
     // Future collections (dishes)

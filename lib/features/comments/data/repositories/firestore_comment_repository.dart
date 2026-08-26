@@ -61,28 +61,55 @@ class FirestoreCommentRepository implements CommentRepository {
 
     final commentRef = _comments(postId).doc();
     final postRef = _firestore.collection('posts').doc(postId);
+    final postSnap = await postRef.get();
+    final postData = postSnap.data() ?? const <String, dynamic>{};
+
+    var authorName = user.displayName ?? '';
+    String? authorPhotoUrl = user.photoURL;
+    String? asRestaurantId;
+    final postRestaurantId = postData['restaurantId'] as String?;
+    if (postRestaurantId != null && postRestaurantId.isNotEmpty) {
+      final restSnap =
+          await _firestore.collection('restaurants').doc(postRestaurantId).get();
+      final rest = restSnap.data();
+      final ownerId = rest?['ownerId'] as String?;
+      final claimed = (rest?['claimed'] as bool?) ?? false;
+      final claimStatus = rest?['claimStatus'] as String?;
+      final isOwnerPage = ownerId == user.uid &&
+          (claimed ||
+              claimStatus == 'claimed' ||
+              claimStatus == 'pending');
+      if (isOwnerPage) {
+        final pageName = (rest?['name'] as String?)?.trim();
+        authorName =
+            pageName?.isNotEmpty == true ? pageName! : authorName;
+        authorPhotoUrl = rest?['logoUrl'] as String? ?? authorPhotoUrl;
+        asRestaurantId = postRestaurantId;
+      }
+    }
+
     final preview = trimmed.length > 140
         ? '${trimmed.substring(0, 140)}…'
         : trimmed;
     final batch = _firestore.batch()
       ..set(commentRef, {
         'authorId': user.uid,
-        'authorName': user.displayName ?? '',
-        'authorPhotoUrl': user.photoURL,
+        'authorName': authorName,
+        'authorPhotoUrl': authorPhotoUrl,
         'text': trimmed,
         'replyToName': replyToName,
+        if (asRestaurantId != null) 'asRestaurantId': asRestaurantId,
         'createdAt': FieldValue.serverTimestamp(),
       })
       ..update(postRef, {
         'commentCount': FieldValue.increment(1),
-        'latestCommentAuthor': user.displayName ?? 'Someone',
+        'latestCommentAuthor': authorName.isEmpty ? 'Someone' : authorName,
         'latestCommentText': preview,
       });
     await batch.commit();
 
-    final post = await postRef.get();
-    final authorId = post.data()?['authorId'] as String?;
-    final media = post.data()?['media'];
+    final authorId = postData['authorId'] as String?;
+    final media = postData['media'];
     String? mediaUrl;
     if (media is List && media.isNotEmpty) {
       final first = media.first;
@@ -103,10 +130,11 @@ class FirestoreCommentRepository implements CommentRepository {
     return Comment(
       id: commentRef.id,
       authorId: user.uid,
-      authorName: user.displayName ?? '',
-      authorPhotoUrl: user.photoURL,
+      authorName: authorName,
+      authorPhotoUrl: authorPhotoUrl,
       text: trimmed,
       replyToName: replyToName,
+      asRestaurantId: asRestaurantId,
       createdAt: DateTime.now(),
     );
   }
@@ -133,6 +161,7 @@ class FirestoreCommentRepository implements CommentRepository {
       authorPhotoUrl: data['authorPhotoUrl'] as String?,
       text: (data['text'] as String?) ?? '',
       replyToName: data['replyToName'] as String?,
+      asRestaurantId: data['asRestaurantId'] as String?,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
     );
   }

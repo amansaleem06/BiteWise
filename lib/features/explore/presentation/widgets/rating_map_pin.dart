@@ -5,18 +5,22 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../../../app/theme/app_colors.dart';
 
-/// Custom map pin: maroon marker with the restaurant rating on top.
+/// Custom map pin: maroon for unclaimed listings, green once claimed.
 abstract final class RatingMapPin {
   static final _cache = <String, BitmapDescriptor>{};
+
+  static const _claimedGreen = Color(0xFF15803D);
 
   static Future<BitmapDescriptor> descriptor({
     required double? rating,
     required bool claimed,
   }) async {
     final label = rating == null ? '–' : rating.toStringAsFixed(1);
-    final key = '$label-${claimed ? 'c' : 'u'}';
+    final key = 'v2-$label-${claimed ? 'c' : 'u'}';
     final cached = _cache[key];
     if (cached != null) return cached;
+
+    final pinColor = claimed ? _claimedGreen : AppColors.primary;
 
     const width = 48.0;
     const height = 62.0;
@@ -36,7 +40,7 @@ abstract final class RatingMapPin {
 
     canvas.drawPath(
       pin,
-      Paint()..color = claimed ? AppColors.primary : const Color(0xFF6B5752),
+      Paint()..color = pinColor,
     );
     canvas.drawPath(
       pin,
@@ -62,7 +66,7 @@ abstract final class RatingMapPin {
       fontWeight: FontWeight.w800,
     );
     final builder = ui.ParagraphBuilder(paragraphStyle)
-      ..pushStyle(ui.TextStyle(color: AppColors.primary, fontSize: 9))
+      ..pushStyle(ui.TextStyle(color: pinColor, fontSize: 9))
       ..addText(label);
     final paragraph = builder.build()
       ..layout(const ui.ParagraphConstraints(width: 34));

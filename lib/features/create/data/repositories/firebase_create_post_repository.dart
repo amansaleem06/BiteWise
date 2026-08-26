@@ -153,22 +153,33 @@ class FirebaseCreatePostRepository implements CreatePostRepository {
 
     final restaurantId = restaurant?.id;
     var ownerVerified = false;
+    String? pageName;
+    String? pagePhotoUrl;
     if (restaurantId != null && restaurantId.isNotEmpty) {
       final restSnap =
           await _firestore.collection('restaurants').doc(restaurantId).get();
-      final ownerId = restSnap.data()?['ownerId'] as String?;
-      final claimed = (restSnap.data()?['claimed'] as bool?) ?? false;
-      final claimStatus = restSnap.data()?['claimStatus'] as String?;
+      final data = restSnap.data();
+      final ownerId = data?['ownerId'] as String?;
+      final claimed = (data?['claimed'] as bool?) ?? false;
+      final claimStatus = data?['claimStatus'] as String?;
       ownerVerified = ownerId == user.uid &&
-          (claimed || claimStatus == 'claimed');
+          (claimed || claimStatus == 'claimed' || claimStatus == 'pending');
+      if (ownerVerified) {
+        pageName = (data?['name'] as String?)?.trim();
+        pagePhotoUrl = data?['logoUrl'] as String? ?? restaurant?.logoUrl;
+      }
     }
 
+    final postingAsPage = ownerVerified;
     await _firestore.collection('posts').add({
       'authorId': user.uid,
-      'authorName': user.displayName ?? '',
-      'authorPhotoUrl': user.photoURL,
+      'authorName': postingAsPage
+          ? (pageName?.isNotEmpty == true ? pageName : restaurant!.name)
+          : (user.displayName ?? ''),
+      'authorPhotoUrl': postingAsPage ? pagePhotoUrl : user.photoURL,
       'restaurantId': restaurant?.id ?? '',
       'restaurantName': restaurant?.name ?? '',
+      if (postingAsPage) 'asRestaurantId': restaurantId,
       'dishId': null,
       'dishName': (dishName?.trim().isEmpty ?? true) ? null : dishName!.trim(),
       'caption': caption.trim(),

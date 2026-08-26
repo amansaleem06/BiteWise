@@ -70,7 +70,21 @@ class FirestoreExploreRepository implements ExploreRepository {
     return _topRatedFromPosts(limit: limit);
   }
 
-  Future<List<Restaurant>> _topRatedFromPosts({required int limit}) async {
+  @override
+  Future<List<Restaurant>> fetchRankedRestaurants({
+    required RankingPeriod period,
+    int limit = 15,
+  }) {
+    return _topRatedFromPosts(
+      limit: limit,
+      cutoff: DateTime.now().subtract(period.window),
+    );
+  }
+
+  Future<List<Restaurant>> _topRatedFromPosts({
+    required int limit,
+    DateTime? cutoff,
+  }) async {
     QuerySnapshot<Map<String, dynamic>> snap;
     try {
       snap = await _firestore
@@ -89,6 +103,10 @@ class FirestoreExploreRepository implements ExploreRepository {
 
     for (final doc in snap.docs) {
       final data = doc.data();
+      if (cutoff != null) {
+        final created = (data['createdAt'] as Timestamp?)?.toDate();
+        if (created == null || created.isBefore(cutoff)) continue;
+      }
       final restaurantId = (data['restaurantId'] as String?)?.trim() ?? '';
       final rating = (data['rating'] as num?)?.toDouble();
       if (restaurantId.isEmpty || rating == null || rating <= 0) continue;
@@ -102,12 +120,19 @@ class FirestoreExploreRepository implements ExploreRepository {
 
     if (counts.isEmpty) return const [];
 
+    // Bayesian average so a single 5★ cannot outrank a well-reviewed 4.7.
+    const priorWeight = 6.0;
+    const priorMean = 4.0;
+    double score(String id) {
+      final sum = sums[id] ?? 0;
+      final count = counts[id] ?? 0;
+      return (sum + priorWeight * priorMean) / (count + priorWeight);
+    }
+
     final rankedIds = counts.keys.toList()
       ..sort((a, b) {
-        final ar = (sums[a] ?? 0) / (counts[a] ?? 1);
-        final br = (sums[b] ?? 0) / (counts[b] ?? 1);
-        final byAvg = br.compareTo(ar);
-        if (byAvg != 0) return byAvg;
+        final byScore = score(b).compareTo(score(a));
+        if (byScore != 0) return byScore;
         return (counts[b] ?? 0).compareTo(counts[a] ?? 0);
       });
 

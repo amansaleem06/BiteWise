@@ -10,6 +10,7 @@ class Comment extends Equatable {
     this.authorPhotoUrl,
     required this.text,
     this.replyToName,
+    this.asRestaurantId,
     this.createdAt,
   });
 
@@ -19,7 +20,11 @@ class Comment extends Equatable {
   final String? authorPhotoUrl;
   final String text;
   final String? replyToName;
+  final String? asRestaurantId;
   final DateTime? createdAt;
+
+  bool get postedAsRestaurant =>
+      asRestaurantId != null && asRestaurantId!.isNotEmpty;
 
   @override
   List<Object?> get props => [id];

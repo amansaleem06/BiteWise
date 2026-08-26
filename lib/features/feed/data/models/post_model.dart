@@ -44,6 +44,7 @@ abstract final class PostModel {
       isBookmarkedByMe: isBookmarkedByMe,
       isRepostedByMe: isRepostedByMe,
       restaurantVerified: data['restaurantVerified'] == true,
+      asRestaurantId: data['asRestaurantId'] as String?,
       previewCommentAuthor: data['latestCommentAuthor'] as String?,
       previewCommentText: data['latestCommentText'] as String?,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),

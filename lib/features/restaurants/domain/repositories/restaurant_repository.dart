@@ -22,4 +22,7 @@ abstract interface class RestaurantRepository {
   Future<ClaimResult> claimFromPlace(PlaceSuggestion place);
 
   Future<ClaimResult> claimRestaurant(String restaurantId);
+
+  /// Converts a leftover pending claim into an immediate verified claim.
+  Future<void> finalizePendingClaim();
 }

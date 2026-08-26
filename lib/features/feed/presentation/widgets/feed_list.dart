@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/router/author_nav.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
@@ -202,8 +203,7 @@ class _FeedListState extends ConsumerState<FeedList> {
                   post.restaurantName,
                   post.caption,
                 ),
-                onAuthorTap: () =>
-                    context.push(Routes.userPath(post.authorId)),
+                onAuthorTap: () => openPostAuthor(context, post),
                 onRestaurantTap: () => context.push(
                   Routes.restaurantPath(post.restaurantId),
                 ),

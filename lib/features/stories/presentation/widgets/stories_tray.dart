@@ -8,10 +8,9 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
-import '../../../../core/errors/error_text.dart';
-import '../../../../core/widgets/app_snackbar.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../providers/story_providers.dart';
+import '../screens/story_edit_screen.dart';
 import '../screens/story_viewer_screen.dart';
 
 class StoriesTray extends ConsumerWidget {
@@ -47,14 +46,8 @@ class StoriesTray extends ConsumerWidget {
       maxWidth: 1440,
     );
     if (image == null) return;
-    try {
-      await ref.read(storyActionsProvider).publish(image);
-      if (context.mounted) {
-        AppSnackbar.success(context, 'Story is live for 24 hours');
-      }
-    } catch (e) {
-      if (context.mounted) AppSnackbar.error(context, userMessageFrom(e));
-    }
+    if (!context.mounted) return;
+    await context.push(Routes.storyEdit, extra: StoryEditArgs(image));
   }
 
   @override
@@ -63,9 +56,14 @@ class StoriesTray extends ConsumerWidget {
     final rings = ref.watch(storyRingsProvider).valueOrNull ?? const [];
     if (me == null) return const SizedBox.shrink();
 
-    final mine = rings.where((r) => r.authorId == me.uid).toList();
+    final mine = rings
+        .where((r) => r.authorId == me.uid && !r.postedAsRestaurant)
+        .toList();
+    final myPage = rings
+        .where((r) => r.authorId == me.uid && r.postedAsRestaurant)
+        .toList();
     final others = rings.where((r) => r.authorId != me.uid).toList();
-    final ordered = [...mine, ...others];
+    final ordered = [...mine, ...myPage, ...others];
 
     return SizedBox(
       height: 104,
@@ -90,6 +88,21 @@ class StoriesTray extends ConsumerWidget {
             },
             onAdd: () => _addStory(context, ref),
           ),
+          for (var i = 0; i < myPage.length; i++) ...[
+            const SizedBox(width: 12),
+            _RingAvatar(
+              label: myPage[i].authorName,
+              photoUrl: myPage[i].authorPhotoUrl,
+              hasStory: true,
+              onTap: () => context.push(
+                Routes.stories,
+                extra: StoryViewerArgs(
+                  rings: ordered,
+                  startIndex: (mine.isEmpty ? 0 : 1) + i,
+                ),
+              ),
+            ),
+          ],
           for (var i = 0; i < others.length; i++) ...[
             const SizedBox(width: 12),
             _RingAvatar(
@@ -100,7 +113,8 @@ class StoriesTray extends ConsumerWidget {
                 Routes.stories,
                 extra: StoryViewerArgs(
                   rings: ordered,
-                  startIndex: mine.isEmpty ? i : i + 1,
+                  startIndex:
+                      (mine.isEmpty ? 0 : 1) + myPage.length + i,
                 ),
               ),
             ),

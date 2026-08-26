@@ -107,7 +107,7 @@ class PostCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                      if (post.hasRestaurant)
+          if (post.hasRestaurant && !post.postedAsRestaurant)
                         GestureDetector(
                           onTap: onRestaurantTap,
                           child: Text(
@@ -124,6 +124,28 @@ class PostCard extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (post.postedAsRestaurant)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                      child: Text(
+                        'Page',
+                        style: GoogleFonts.sourceSans3(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ),
                 if (post.restaurantVerified)
                   const Padding(
                     padding: EdgeInsets.only(right: 4),

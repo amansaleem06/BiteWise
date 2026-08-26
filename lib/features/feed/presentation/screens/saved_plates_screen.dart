@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../app/router/author_nav.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../feed/domain/entities/post.dart';
@@ -62,8 +63,7 @@ class SavedPlatesScreen extends ConsumerWidget {
                   ref.invalidate(savedPlatesProvider);
                 },
                 onComment: () => context.push(Routes.postPath(post.id)),
-                onAuthorTap: () =>
-                    context.push(Routes.userPath(post.authorId)),
+                onAuthorTap: () => openPostAuthor(context, post),
                 onRestaurantTap: () =>
                     context.push(Routes.restaurantPath(post.restaurantId)),
               );

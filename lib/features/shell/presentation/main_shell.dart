@@ -6,7 +6,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_spacing.dart';
 import '../../../app/theme/theme_mode_provider.dart';
+import '../../auth/presentation/providers/auth_providers.dart';
 import '../../notifications/presentation/providers/notification_providers.dart';
+import '../../restaurants/presentation/providers/restaurant_providers.dart';
 
 /// Floating menu seal that opens a horizontal course row.
 class MainShell extends ConsumerStatefulWidget {
@@ -51,6 +53,14 @@ class _MainShellState extends ConsumerState<MainShell>
             .read(pushNotificationServiceProvider)
             .register()
             .timeout(const Duration(seconds: 8));
+      } catch (_) {}
+      try {
+        final pending =
+            ref.read(currentUserProvider)?.pendingClaimRestaurantId;
+        if (pending != null && pending.isNotEmpty) {
+          await ref.read(restaurantRepositoryProvider).finalizePendingClaim();
+          ref.invalidate(authStateProvider);
+        }
       } catch (_) {}
     });
   }
@@ -116,7 +126,9 @@ class _MainShellState extends ConsumerState<MainShell>
               animation: Listenable.merge([_fan, _pulse]),
               builder: (context, _) {
                 final t = Curves.easeOutCubic.transform(_fan.value);
-                final pulse = 0.96 + (_pulse.value * 0.08);
+                final pulse = (!_menuOpen && index == 0)
+                    ? 0.96 + (_pulse.value * 0.08)
+                    : 1.0;
                 return Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [

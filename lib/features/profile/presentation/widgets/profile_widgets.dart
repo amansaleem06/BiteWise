@@ -59,24 +59,9 @@ class ProfileHeader extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            user.isBusiness
-                ? (user.businessName?.isNotEmpty == true
-                    ? user.businessName!
-                    : user.displayName)
-                : user.displayName,
+            user.displayName,
             style: theme.textTheme.titleLarge,
           ),
-          if (user.isBusiness &&
-              user.businessName != null &&
-              user.businessName != user.displayName) ...[
-            const SizedBox(height: AppSpacing.xxs),
-            Text(
-              user.displayName,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
           const SizedBox(height: AppSpacing.xxs),
           Wrap(
             spacing: AppSpacing.xs,
@@ -204,13 +189,15 @@ class UserPostsGrid extends ConsumerWidget {
           child: const Text('Retry'),
         ),
       ),
-      data: (feed) {
-        if (feed.posts.isEmpty) {
+        data: (feed) {
+        final personal = feed.posts.where((p) => !p.postedAsRestaurant).toList();
+        if (personal.isEmpty) {
           return Center(
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.xl),
               child: Text(
-                'No posts yet.',
+                'Personal plates live here. Official restaurant posts appear on the restaurant page.',
+                textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
@@ -232,8 +219,8 @@ class UserPostsGrid extends ConsumerWidget {
               mainAxisSpacing: 2,
               crossAxisSpacing: 2,
             ),
-            itemCount: feed.posts.length,
-            itemBuilder: (context, i) => _GridTile(post: feed.posts[i]),
+            itemCount: personal.length,
+            itemBuilder: (context, i) => _GridTile(post: personal[i]),
           ),
         );
       },

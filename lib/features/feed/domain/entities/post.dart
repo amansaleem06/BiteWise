@@ -48,6 +48,7 @@ class Post extends Equatable {
     this.isBookmarkedByMe = false,
     this.isRepostedByMe = false,
     this.restaurantVerified = false,
+    this.asRestaurantId,
     this.previewCommentAuthor,
     this.previewCommentText,
     this.createdAt,
@@ -75,7 +76,11 @@ class Post extends Equatable {
   final bool isRepostedByMe;
   final bool restaurantVerified;
 
-  /// Latest comment teaser for the feed card.
+  /// When set, this plate was published as the restaurant page, not a person.
+  final String? asRestaurantId;
+
+  bool get postedAsRestaurant =>
+      asRestaurantId != null && asRestaurantId!.isNotEmpty;
   final String? previewCommentAuthor;
   final String? previewCommentText;
 
@@ -121,6 +126,7 @@ class Post extends Equatable {
         isBookmarkedByMe: isBookmarkedByMe ?? this.isBookmarkedByMe,
         isRepostedByMe: isRepostedByMe ?? this.isRepostedByMe,
         restaurantVerified: restaurantVerified ?? this.restaurantVerified,
+        asRestaurantId: asRestaurantId,
         previewCommentAuthor:
             previewCommentAuthor ?? this.previewCommentAuthor,
         previewCommentText: previewCommentText ?? this.previewCommentText,
@@ -137,6 +143,7 @@ class Post extends Equatable {
         isBookmarkedByMe,
         isRepostedByMe,
         restaurantVerified,
+        asRestaurantId,
         previewCommentAuthor,
         previewCommentText,
       ];
