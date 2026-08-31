@@ -21,6 +21,7 @@ secrets needed.
 |---|---|
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Folder structure, layering rules, data model, how to add a feature |
 | [docs/SECURITY.md](docs/SECURITY.md) | Threat model, secrets policy, rules, pre-launch checklist |
+| [docs/KEY_SETUP_GUIDE.md](docs/KEY_SETUP_GUIDE.md) | Click-by-click guide: rotate/restrict Google keys, Codemagic variable, App Check |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Conventions and the PR quality bar |
 | [SETUP.md](SETUP.md) | Firebase / Google Cloud console setup, milestone history |
 | [NO_MAC_RELEASE.md](NO_MAC_RELEASE.md) | Ship to the App Store without a Mac (Codemagic + TestFlight) |
