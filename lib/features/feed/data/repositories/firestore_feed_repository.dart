@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
+import 'package:firebase_storage/firebase_storage.dart';
 
 import '../../../../core/errors/app_exception.dart';
 import '../../../../core/services/social_notification_writer.dart';
@@ -259,6 +260,73 @@ class FirestoreFeedRepository implements FeedRepository {
     } else {
       await ref.delete();
     }
+  }
+
+  @override
+  Future<void> deletePost(String postId) async {
+    final uid = _uid;
+    final postRef = _posts.doc(postId);
+    final snap = await postRef.get();
+    if (!snap.exists) throw const AppException('Post not found');
+    final data = snap.data() ?? {};
+    if (data['authorId'] != uid) {
+      throw const AppException('You can only delete your own posts.');
+    }
+
+    final restaurantId = data['restaurantId'] as String?;
+    final rating = (data['rating'] as num?)?.toDouble();
+    final media = data['media'] as List?;
+
+    await postRef.delete();
+
+    if (restaurantId != null && restaurantId.isNotEmpty) {
+      final restaurantRef =
+          _firestore.collection('restaurants').doc(restaurantId);
+      await _firestore.runTransaction((tx) async {
+        final r = await tx.get(restaurantRef);
+        if (!r.exists) return;
+        final d = r.data() ?? {};
+        final postCount = ((d['postCount'] as num?)?.toInt() ?? 1) - 1;
+        final updates = <String, dynamic>{
+          'postCount': postCount < 0 ? 0 : postCount,
+          'updatedAt': FieldValue.serverTimestamp(),
+        };
+        if (rating != null) {
+          final ratingSum =
+              ((d['ratingSum'] as num?)?.toDouble() ?? 0) - rating;
+          final ratingCount = ((d['ratingCount'] as num?)?.toInt() ?? 1) - 1;
+          final nextCount = ratingCount < 0 ? 0 : ratingCount;
+          final nextSum = ratingSum < 0 ? 0.0 : ratingSum;
+          updates['ratingSum'] = nextSum;
+          updates['ratingCount'] = nextCount;
+          updates['ratingAvg'] = nextCount == 0 ? 0 : nextSum / nextCount;
+        }
+        tx.update(restaurantRef, updates);
+      });
+    }
+
+    if (media != null) {
+      for (final item in media) {
+        if (item is! Map) continue;
+        final url = item['url'];
+        if (url is! String || url.isEmpty) continue;
+        try {
+          await FirebaseStorage.instance.refFromURL(url).delete();
+        } catch (_) {}
+      }
+    }
+  }
+
+  @override
+  Future<void> moderateMention(
+    String postId, {
+    required bool approved,
+    required bool hidden,
+  }) async {
+    await _posts.doc(postId).update({
+      'mentionApproved': approved,
+      'mentionHidden': hidden,
+    });
   }
 
   @override

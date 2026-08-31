@@ -136,6 +136,19 @@ class FeedController extends FamilyAsyncNotifier<FeedState, FeedTab> {
     }
   }
 
+  Future<void> deletePost(String postId) async {
+    final current = state.valueOrNull;
+    if (current == null) return;
+    final remaining = current.posts.where((p) => p.id != postId).toList();
+    state = AsyncData(current.copyWith(posts: remaining));
+    try {
+      await _repo.deletePost(postId);
+    } catch (_) {
+      await refresh();
+      rethrow;
+    }
+  }
+
   Future<void> _toggle(
     String postId, {
     required Post Function(Post) apply,

@@ -37,7 +37,32 @@ class RestaurantPostsGrid extends ConsumerWidget {
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.xl),
               child: Text(
-                'Official plates from this restaurant, plus guest photos tagged here.',
+                'Official posts from this restaurant appear here.',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+            ),
+          );
+        }
+
+        final official =
+            feed.posts.where((p) => p.postedAsRestaurant).toList();
+        if (official.isEmpty) {
+          if (feed.hasMore) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              controller.loadMore();
+            });
+            return const Center(
+              child: CircularProgressIndicator(strokeWidth: 2.5),
+            );
+          }
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.xl),
+              child: Text(
+                'No official posts yet. Diner photos tagged here show up in Mentions.',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -61,9 +86,9 @@ class RestaurantPostsGrid extends ConsumerWidget {
               mainAxisSpacing: 2,
               crossAxisSpacing: 2,
             ),
-            itemCount: feed.posts.length,
+            itemCount: official.length,
             itemBuilder: (context, index) =>
-                _GridTile(post: feed.posts[index]),
+                _GridTile(post: official[index]),
           ),
         );
       },
@@ -117,6 +142,7 @@ class _GridTile extends StatelessWidget {
               shadows: [Shadow(color: Colors.black54, blurRadius: 6)],
             ),
           ),
+        if (post.media.length > 1)
           const Positioned(
             top: 6,
             right: 6,

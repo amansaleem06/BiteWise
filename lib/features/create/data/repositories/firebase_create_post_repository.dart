@@ -8,6 +8,7 @@ import '../../../../core/services/media_upload_service.dart';
 import '../../../../core/services/places_search_service.dart';
 import '../../../../core/services/restaurant_page_voice.dart';
 import '../../../../core/utils/locale_currency.dart';
+import '../../../feed/domain/entities/post.dart';
 import '../../../restaurants/domain/entities/restaurant_ref.dart';
 import '../../domain/repositories/create_post_repository.dart';
 
@@ -140,6 +141,7 @@ class FirebaseCreatePostRepository implements CreatePostRepository {
     double? price,
     required List<String> tags,
     bool asRestaurantPage = false,
+    PagePostKind pageKind = PagePostKind.plate,
     void Function(double progress)? onProgress,
   }) async {
     final user = _user;
@@ -155,44 +157,50 @@ class FirebaseCreatePostRepository implements CreatePostRepository {
 
     final restaurantId = restaurant?.id;
     RestaurantPageVoice? page;
+    var postingAsPage = false;
     if (asRestaurantPage) {
       page = await RestaurantPageVoice.load(
         firestore: _firestore,
         auth: _auth,
       );
-    }
-    var ownerVerified = page != null;
-    String? pageName = page?.name;
-    String? pagePhotoUrl = page?.logoUrl;
-    if (!ownerVerified && restaurantId != null && restaurantId.isNotEmpty) {
-      final restSnap =
-          await _firestore.collection('restaurants').doc(restaurantId).get();
-      final data = restSnap.data();
-      final ownerId = data?['ownerId'] as String?;
-      final claimed = (data?['claimed'] as bool?) ?? false;
-      final claimStatus = data?['claimStatus'] as String?;
-      ownerVerified = ownerId == user.uid &&
-          (claimed || claimStatus == 'claimed' || claimStatus == 'pending');
-      if (ownerVerified) {
-        pageName = (data?['name'] as String?)?.trim();
-        pagePhotoUrl = data?['logoUrl'] as String? ?? restaurant?.logoUrl;
+      postingAsPage = page != null;
+      if (!postingAsPage && restaurantId != null && restaurantId.isNotEmpty) {
+        final restSnap =
+            await _firestore.collection('restaurants').doc(restaurantId).get();
+        final data = restSnap.data();
+        final ownerId = data?['ownerId'] as String?;
+        final claimed = (data?['claimed'] as bool?) ?? false;
+        final claimStatus = data?['claimStatus'] as String?;
+        postingAsPage = ownerId == user.uid &&
+            (claimed || claimStatus == 'claimed' || claimStatus == 'pending');
+        if (postingAsPage) {
+          page = RestaurantPageVoice(
+            id: restaurantId,
+            name: (data?['name'] as String?)?.trim() ?? restaurant?.name ?? '',
+            logoUrl: data?['logoUrl'] as String? ?? restaurant?.logoUrl,
+          );
+        }
       }
     }
 
-    final postingAsPage = page != null || ownerVerified;
     final taggedId = page?.id ?? restaurant?.id ?? '';
     final taggedName = page?.name ?? restaurant?.name ?? '';
     await _firestore.collection('posts').add({
       'authorId': user.uid,
       'authorName': postingAsPage
-          ? (pageName?.isNotEmpty == true
-              ? pageName
+          ? (page?.name.isNotEmpty == true
+              ? page!.name
               : (taggedName.isNotEmpty ? taggedName : user.displayName ?? ''))
           : (user.displayName ?? ''),
-      'authorPhotoUrl': postingAsPage ? pagePhotoUrl : user.photoURL,
+      'authorPhotoUrl': postingAsPage ? page?.logoUrl : user.photoURL,
       'restaurantId': taggedId,
       'restaurantName': taggedName,
       if (postingAsPage && taggedId.isNotEmpty) 'asRestaurantId': taggedId,
+      if (postingAsPage) 'pageKind': pageKind.key,
+      if (!postingAsPage && taggedId.isNotEmpty) ...{
+        'mentionApproved': false,
+        'mentionHidden': false,
+      },
       'dishId': null,
       'dishName': (dishName?.trim().isEmpty ?? true) ? null : dishName!.trim(),
       'caption': caption.trim(),
@@ -212,7 +220,7 @@ class FirebaseCreatePostRepository implements CreatePostRepository {
       'commentCount': 0,
       'shareCount': 0,
       'trendingScore': 0,
-      'restaurantVerified': ownerVerified,
+      'restaurantVerified': postingAsPage,
       'createdAt': FieldValue.serverTimestamp(),
     });
 

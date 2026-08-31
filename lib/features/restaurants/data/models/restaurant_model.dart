@@ -58,6 +58,7 @@ abstract final class RestaurantModel {
       isFollowedByMe: isFollowedByMe,
       latitude: location?.latitude,
       longitude: location?.longitude,
+      guestFeedMode: GuestFeedMode.fromKey(data['guestFeedMode'] as String?),
     );
   }
 }

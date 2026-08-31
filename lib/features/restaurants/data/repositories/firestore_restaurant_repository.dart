@@ -243,4 +243,18 @@ class FirestoreRestaurantRepository implements RestaurantRepository {
       'updatedAt': FieldValue.serverTimestamp(),
     });
   }
+
+  @override
+  Future<void> setGuestFeedMode(String restaurantId, GuestFeedMode mode) async {
+    final uid = _uid;
+    final snap = await _restaurants.doc(restaurantId).get();
+    if (!snap.exists) throw const AppException('Restaurant not found.');
+    if (snap.data()?['ownerId'] != uid) {
+      throw const AppException('Only the page owner can change this setting.');
+    }
+    await _restaurants.doc(restaurantId).update({
+      'guestFeedMode': mode.name,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
 }

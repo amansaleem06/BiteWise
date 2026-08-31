@@ -25,5 +25,14 @@ abstract interface class FeedRepository {
 
   Future<void> setReposted(String postId, {required bool reposted});
 
+  Future<void> deletePost(String postId);
+
   Future<void> setRestaurantVerified(String postId, {required bool verified});
+
+  /// Owner moderation for diner tags on a restaurant page.
+  Future<void> moderateMention(
+    String postId, {
+    required bool approved,
+    required bool hidden,
+  });
 }

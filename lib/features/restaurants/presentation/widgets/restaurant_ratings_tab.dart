@@ -110,7 +110,7 @@ class RestaurantRatingsTab extends ConsumerWidget {
                     title: Row(
                       children: [
                         Expanded(child: Text(p.authorName)),
-                        if (p.restaurantVerified)
+                        if (p.postedAsRestaurant)
                           const Icon(
                             Icons.verified_rounded,
                             size: 16,

@@ -1,5 +1,6 @@
 import 'package:image_picker/image_picker.dart';
 
+import '../../../feed/domain/entities/post.dart';
 import '../../../restaurants/domain/entities/restaurant_ref.dart';
 import '../../../../core/services/places_search_service.dart';
 
@@ -25,6 +26,7 @@ abstract interface class CreatePostRepository {
     double? price,
     required List<String> tags,
     bool asRestaurantPage = false,
+    PagePostKind pageKind = PagePostKind.plate,
     void Function(double progress)? onProgress,
   });
 }

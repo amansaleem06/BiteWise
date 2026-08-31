@@ -8,6 +8,37 @@ enum MediaType {
       key == 'video' ? MediaType.video : MediaType.image;
 }
 
+/// Official restaurant-page post kind. Diners tagging a restaurant never
+/// set this — those land in Mentions instead.
+enum PagePostKind {
+  plate,
+  promo,
+  menu;
+
+  static PagePostKind fromKey(String? key) => switch (key) {
+        'promo' => PagePostKind.promo,
+        'menu' => PagePostKind.menu,
+        _ => PagePostKind.plate,
+      };
+
+  String get key => name;
+
+  String get label => switch (this) {
+        PagePostKind.plate => 'Plate',
+        PagePostKind.promo => 'Promo',
+        PagePostKind.menu => 'Menu update',
+      };
+
+  String get createHint => switch (this) {
+        PagePostKind.plate =>
+          'A dish from your kitchen. Diners see it as an official post on your page.',
+        PagePostKind.promo =>
+          'A limited offer or special. The post shows a “Get yours here” button.',
+        PagePostKind.menu =>
+          'A new item or menu change. Use the dish field for the item name.',
+      };
+}
+
 class PostMedia extends Equatable {
   const PostMedia({
     required this.url,
@@ -49,6 +80,9 @@ class Post extends Equatable {
     this.isRepostedByMe = false,
     this.restaurantVerified = false,
     this.asRestaurantId,
+    this.pageKind = PagePostKind.plate,
+    this.mentionApproved = false,
+    this.mentionHidden = false,
     this.previewCommentAuthor,
     this.previewCommentText,
     this.createdAt,
@@ -79,16 +113,40 @@ class Post extends Equatable {
   /// When set, this plate was published as the restaurant page, not a person.
   final String? asRestaurantId;
 
+  /// Official page post type (plate / promo / menu). Ignored for diner tags.
+  final PagePostKind pageKind;
+
+  /// Owner featured this diner tag on the Mentions tab (approval mode).
+  final bool mentionApproved;
+
+  /// Owner hid this diner tag from the public Mentions tab.
+  final bool mentionHidden;
+
+  /// True only when the restaurant published as the business page.
+  /// Diner tags must never use this — they keep the diner's identity.
   bool get postedAsRestaurant =>
-      (asRestaurantId != null && asRestaurantId!.isNotEmpty) ||
-      restaurantVerified;
+      asRestaurantId != null && asRestaurantId!.isNotEmpty;
+
+  /// Diner tagged this restaurant but did not post as the page.
+  bool get isMention => hasRestaurant && !postedAsRestaurant;
+
+  /// Whether this diner tag should appear on the restaurant Mentions tab.
+  bool visibleOnMentions({
+    required bool approvalRequired,
+    required bool viewerIsOwner,
+  }) {
+    if (!isMention) return false;
+    if (viewerIsOwner) return true;
+    if (mentionHidden) return false;
+    if (approvalRequired) return mentionApproved;
+    return true;
+  }
 
   /// Restaurant page this plate belongs to when it was posted as the business.
   String? get pageId {
     if (asRestaurantId != null && asRestaurantId!.isNotEmpty) {
       return asRestaurantId;
     }
-    if (restaurantVerified && restaurantId.isNotEmpty) return restaurantId;
     return null;
   }
 
@@ -116,6 +174,8 @@ class Post extends Equatable {
     bool? isBookmarkedByMe,
     bool? isRepostedByMe,
     bool? restaurantVerified,
+    bool? mentionApproved,
+    bool? mentionHidden,
     String? previewCommentAuthor,
     String? previewCommentText,
   }) =>
@@ -142,6 +202,9 @@ class Post extends Equatable {
         isRepostedByMe: isRepostedByMe ?? this.isRepostedByMe,
         restaurantVerified: restaurantVerified ?? this.restaurantVerified,
         asRestaurantId: asRestaurantId,
+        pageKind: pageKind,
+        mentionApproved: mentionApproved ?? this.mentionApproved,
+        mentionHidden: mentionHidden ?? this.mentionHidden,
         previewCommentAuthor:
             previewCommentAuthor ?? this.previewCommentAuthor,
         previewCommentText: previewCommentText ?? this.previewCommentText,
@@ -159,6 +222,9 @@ class Post extends Equatable {
         isRepostedByMe,
         restaurantVerified,
         asRestaurantId,
+        pageKind,
+        mentionApproved,
+        mentionHidden,
         previewCommentAuthor,
         previewCommentText,
       ];

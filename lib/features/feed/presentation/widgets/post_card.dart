@@ -137,7 +137,9 @@ class PostCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(99),
                       ),
                       child: Text(
-                        'Page',
+                        post.pageKind == PagePostKind.plate
+                            ? 'Page'
+                            : post.pageKind.label,
                         style: GoogleFonts.sourceSans3(
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
@@ -146,7 +148,7 @@ class PostCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                if (post.restaurantVerified)
+                if (post.postedAsRestaurant)
                   const Padding(
                     padding: EdgeInsets.only(right: 4),
                     child: Icon(
@@ -171,6 +173,46 @@ class PostCard extends StatelessWidget {
                 media: post.media,
                 onDoubleTap: post.isLikedByMe ? null : onLike,
               ),
+              if (post.postedAsRestaurant &&
+                  post.pageKind == PagePostKind.promo &&
+                  post.hasRestaurant)
+                Positioned(
+                  left: 12,
+                  bottom: 12,
+                  child: Material(
+                    color: AppColors.primary.withValues(alpha: 0.92),
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    child: InkWell(
+                      onTap: onRestaurantTap,
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.link_rounded,
+                              color: AppColors.cream,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Get yours here',
+                              style: GoogleFonts.sourceSans3(
+                                color: AppColors.cream,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               if (post.rating != null)
                 Positioned(
                   right: 12,
@@ -283,7 +325,7 @@ class PostCard extends StatelessWidget {
                     TextSpan(
                       children: [
                         TextSpan(
-                          text: '${post.authorName} ',
+                          text: '${post.publicAuthorName} ',
                           style: GoogleFonts.sourceSans3(
                             fontWeight: FontWeight.w800,
                             color: theme.colorScheme.onSurface,

@@ -7,6 +7,7 @@ import '../../../../core/errors/app_exception.dart';
 import '../../../../core/services/places_search_service.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../explore/presentation/providers/explore_providers.dart';
+import '../../../feed/domain/entities/post.dart';
 import '../../../feed/presentation/providers/feed_providers.dart';
 import '../../../profile/presentation/providers/profile_providers.dart';
 import '../../../restaurants/domain/entities/restaurant_ref.dart';
@@ -142,6 +143,7 @@ class CreatePostController extends AutoDisposeNotifier<CreatePostState> {
     required String caption,
     double? price,
     required List<String> tags,
+    PagePostKind pageKind = PagePostKind.plate,
   }) async {
     if (!state.canSubmit) {
       return state.submitBlockedReason ??
@@ -161,6 +163,7 @@ class CreatePostController extends AutoDisposeNotifier<CreatePostState> {
             price: price,
             tags: tags,
             asRestaurantPage: ref.read(pageIdentityProvider).actingAsPage,
+            pageKind: pageKind,
             onProgress: (p) => state = state.copyWith(progress: p),
           );
       ref.invalidate(feedControllerProvider(FeedTab.forYou));

@@ -12,6 +12,7 @@ import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../feed/presentation/providers/feed_providers.dart';
 import '../../../feed/presentation/widgets/feed_shimmer.dart';
 import '../../../feed/presentation/widgets/post_card.dart';
+import '../../../feed/presentation/widgets/post_actions_sheet.dart';
 import '../../../feed/presentation/widgets/share_post_sheet.dart';
 import '../providers/comment_providers.dart';
 import '../widgets/comment_tile.dart';
@@ -116,6 +117,13 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                       onAuthorTap: () => openPostAuthor(context, post),
                       onRestaurantTap: () => context.push(
                         Routes.restaurantPath(post.restaurantId),
+                      ),
+                      onOpenActions: () => PostActionsSheet.show(
+                        context,
+                        post: post,
+                        onDeleted: () {
+                          if (context.mounted) context.pop();
+                        },
                       ),
                     ),
                     const Divider(),

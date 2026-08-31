@@ -69,6 +69,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   autofillHints: const [AutofillHints.email],
+                  autocorrect: false,
+                  enableSuggestions: false,
                 ),
                 const SizedBox(height: AppSpacing.md),
                 AppTextField(

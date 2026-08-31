@@ -12,6 +12,7 @@ import '../../../../core/services/media_upload_service.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
+import '../../domain/entities/restaurant.dart';
 import '../providers/restaurant_providers.dart';
 
 /// Owner-only editor for the public restaurant page (logo, cover, about, menu).
@@ -211,6 +212,47 @@ class _EditRestaurantScreenState extends ConsumerState<EditRestaurantScreen> {
               ),
               keyboardType: TextInputType.phone,
             ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              'Diner tags on your page',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'When someone tags this restaurant, the post stays on their profile and in Mentions — not as an official page post. Choose whether every tag is public, or only ones you approve.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            if (restaurant != null)
+              SegmentedButton<GuestFeedMode>(
+                segments: const [
+                  ButtonSegment(
+                    value: GuestFeedMode.all,
+                    label: Text('Show all'),
+                  ),
+                  ButtonSegment(
+                    value: GuestFeedMode.approved,
+                    label: Text('Only approved'),
+                  ),
+                ],
+                selected: {restaurant.guestFeedMode},
+                onSelectionChanged: (value) async {
+                  try {
+                    await ref
+                        .read(
+                          restaurantControllerProvider(widget.restaurantId)
+                              .notifier,
+                        )
+                        .setGuestFeedMode(value.first);
+                  } catch (e) {
+                    if (context.mounted) {
+                      AppSnackbar.error(context, userMessageFrom(e));
+                    }
+                  }
+                },
+              ),
             const SizedBox(height: AppSpacing.xl),
             AppButton(
               label: 'Save page',

@@ -52,6 +52,19 @@ class RestaurantController
       state = AsyncData(current); // roll back
     }
   }
+
+  Future<void> setGuestFeedMode(GuestFeedMode mode) async {
+    final current = state.valueOrNull;
+    if (current != null) {
+      state = AsyncData(current.copyWith(guestFeedMode: mode));
+    }
+    try {
+      await _repo.setGuestFeedMode(arg, mode);
+    } catch (_) {
+      if (current != null) state = AsyncData(current);
+      rethrow;
+    }
+  }
 }
 
 final restaurantControllerProvider = AsyncNotifierProvider.autoDispose

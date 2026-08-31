@@ -10,6 +10,7 @@ import '../../../../core/constants/cuisines.dart';
 import '../../../../core/utils/locale_currency.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_snackbar.dart';
+import '../../../feed/domain/entities/post.dart';
 import '../../../restaurants/domain/entities/restaurant_ref.dart';
 import '../../../restaurants/presentation/providers/page_identity_provider.dart';
 import '../../../restaurants/presentation/providers/restaurant_providers.dart';
@@ -70,6 +71,7 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
               caption: _caption.text,
               price: double.tryParse(_price.text.replaceAll(',', '.')),
               tags: _parseTags(),
+              pageKind: PagePostKind.fromKey(_pageKind),
             );
     if (!mounted) return;
     if (error != null) {
@@ -142,23 +144,37 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
             const SizedBox(height: AppSpacing.sm),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: Wrap(
-                spacing: 8,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ChoiceChip(
-                    label: const Text('Plate'),
-                    selected: _pageKind == 'plate',
-                    onSelected: (_) => setState(() => _pageKind = 'plate'),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      ChoiceChip(
+                        label: const Text('Plate'),
+                        selected: _pageKind == 'plate',
+                        onSelected: (_) =>
+                            setState(() => _pageKind = 'plate'),
+                      ),
+                      ChoiceChip(
+                        label: const Text('Promo'),
+                        selected: _pageKind == 'promo',
+                        onSelected: (_) =>
+                            setState(() => _pageKind = 'promo'),
+                      ),
+                      ChoiceChip(
+                        label: const Text('Menu update'),
+                        selected: _pageKind == 'menu',
+                        onSelected: (_) => setState(() => _pageKind = 'menu'),
+                      ),
+                    ],
                   ),
-                  ChoiceChip(
-                    label: const Text('Promo'),
-                    selected: _pageKind == 'promo',
-                    onSelected: (_) => setState(() => _pageKind = 'promo'),
-                  ),
-                  ChoiceChip(
-                    label: const Text('Menu update'),
-                    selected: _pageKind == 'menu',
-                    onSelected: (_) => setState(() => _pageKind = 'menu'),
+                  const SizedBox(height: 6),
+                  Text(
+                    PagePostKind.fromKey(_pageKind).createHint,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -182,8 +198,8 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
                   restaurantLocked
                       ? 'Publishes as ${state.restaurant?.name ?? 'the restaurant page'} — diners see the business, not your personal name.'
                       : state.rating != null
-                          ? 'Required when you add a rating.'
-                          : 'Optional — skip for a photo-only post.',
+                          ? 'Required when you add a rating. Your name stays on the post; the restaurant can show it in Mentions.'
+                          : 'Optional. Tagging a restaurant keeps your name on the post and lists it in their Mentions — not as a page post.',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -228,8 +244,12 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
                 const _SectionLabel('Dish'),
                 TextField(
                   controller: _dish,
-                  decoration: const InputDecoration(
-                    hintText: 'Optional — e.g. Truffle mushroom pizza',
+                  decoration: InputDecoration(
+                    hintText: _pageKind == 'menu'
+                        ? 'What changed — e.g. New summer truffle pizza'
+                        : _pageKind == 'promo'
+                            ? 'Optional — e.g. 2-for-1 Margherita'
+                            : 'Optional — e.g. Truffle mushroom pizza',
                   ),
                   textCapitalization: TextCapitalization.sentences,
                 ),
@@ -237,8 +257,12 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
                 const _SectionLabel('Caption'),
                 TextField(
                   controller: _caption,
-                  decoration: const InputDecoration(
-                    hintText: 'Explain the feeling — or leave blank',
+                  decoration: InputDecoration(
+                    hintText: _pageKind == 'promo'
+                        ? 'What’s the offer — or leave blank'
+                        : _pageKind == 'menu'
+                            ? 'Tell diners what is new on the menu'
+                            : 'Explain the feeling — or leave blank',
                   ),
                   maxLines: 4,
                   maxLength: 2200,

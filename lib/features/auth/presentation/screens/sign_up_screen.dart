@@ -96,61 +96,71 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         const SizedBox(height: AppSpacing.lg),
         Form(
           key: _formKey,
-          child: AutofillGroup(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                AppTextField(
-                  label: isBusiness ? 'Owner / contact name' : AppStrings.displayName,
-                  controller: _name,
-                  validator: Validators.displayName,
-                  textInputAction: TextInputAction.next,
-                  autofillHints: const [AutofillHints.name],
-                ),
-                if (isBusiness) ...[
-                  const SizedBox(height: AppSpacing.md),
-                  AppTextField(
-                    label: 'Restaurant / business name',
-                    controller: _business,
-                    validator: (v) {
-                      final t = v?.trim() ?? '';
-                      if (t.length < 2) return 'Enter your business name';
-                      if (t.length > 80) return 'Name is too long';
-                      return null;
-                    },
-                    textInputAction: TextInputAction.next,
-                  ),
-                ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AppTextField(
+                label: isBusiness
+                    ? 'Owner / contact name'
+                    : AppStrings.displayName,
+                controller: _name,
+                validator: Validators.displayName,
+                textInputAction: TextInputAction.next,
+                autofillHints: const [AutofillHints.name],
+              ),
+              if (isBusiness) ...[
                 const SizedBox(height: AppSpacing.md),
                 AppTextField(
-                  label: AppStrings.email,
-                  controller: _email,
-                  validator: Validators.email,
-                  keyboardType: TextInputType.emailAddress,
+                  label: 'Restaurant / business name',
+                  controller: _business,
+                  validator: (v) {
+                    final t = v?.trim() ?? '';
+                    if (t.length < 2) return 'Enter your business name';
+                    if (t.length > 80) return 'Name is too long';
+                    return null;
+                  },
                   textInputAction: TextInputAction.next,
-                  autofillHints: const [AutofillHints.email],
-                ),
-                const SizedBox(height: AppSpacing.md),
-                AppTextField(
-                  label: AppStrings.password,
-                  controller: _password,
-                  validator: Validators.password,
-                  obscure: true,
-                  textInputAction: TextInputAction.next,
-                  autofillHints: const [AutofillHints.newPassword],
-                ),
-                const SizedBox(height: AppSpacing.md),
-                AppTextField(
-                  label: AppStrings.confirmPassword,
-                  controller: _confirm,
-                  validator: (v) =>
-                      Validators.confirmPassword(v, _password.text),
-                  obscure: true,
-                  textInputAction: TextInputAction.done,
-                  onSubmitted: (_) => _submit(),
                 ),
               ],
-            ),
+              const SizedBox(height: AppSpacing.md),
+              AppTextField(
+                label: AppStrings.email,
+                controller: _email,
+                validator: Validators.email,
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
+                autofillHints: const [AutofillHints.email],
+                autocorrect: false,
+                enableSuggestions: false,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AutofillGroup(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    AppTextField(
+                      label: AppStrings.password,
+                      controller: _password,
+                      validator: Validators.password,
+                      obscure: true,
+                      textInputAction: TextInputAction.next,
+                      autofillHints: const [AutofillHints.newPassword],
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    AppTextField(
+                      label: AppStrings.confirmPassword,
+                      controller: _confirm,
+                      validator: (v) =>
+                          Validators.confirmPassword(v, _password.text),
+                      obscure: true,
+                      textInputAction: TextInputAction.done,
+                      autofillHints: const [AutofillHints.newPassword],
+                      onSubmitted: (_) => _submit(),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: AppSpacing.lg),

@@ -180,6 +180,13 @@ service cloud.firestore {
         || (request.resource.data.diff(resource.data).affectedKeys()
                 .hasOnly(['shareCount'])
             && request.resource.data.shareCount == resource.data.get('shareCount', 0) + 1)
+        || (resource.data.restaurantId is string
+            && resource.data.restaurantId.size() > 0
+            && resource.data.get('asRestaurantId', '') == ''
+            && ownsRestaurant(resource.data.restaurantId)
+            && request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(['mentionApproved', 'mentionHidden'])
+            && request.resource.data.authorId == resource.data.authorId)
       );
 
       allow delete: if isSignedIn()

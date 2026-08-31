@@ -12,6 +12,7 @@ import '../../../../core/errors/error_text.dart';
 import '../providers/feed_providers.dart';
 import 'feed_shimmer.dart';
 import 'post_card.dart';
+import 'post_actions_sheet.dart';
 import 'share_post_sheet.dart';
 
 class FeedList extends ConsumerStatefulWidget {
@@ -54,49 +55,6 @@ class _FeedListState extends ConsumerState<FeedList> {
       postId: postId,
       restaurantName: restaurant,
       caption: caption,
-    );
-  }
-
-  void _openTray({
-    required String postId,
-    required bool bookmarked,
-    required bool reposted,
-  }) {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: Icon(
-                bookmarked ? Icons.bookmark_rounded : Icons.bookmark_border,
-              ),
-              title: Text(bookmarked ? 'Remove save' : 'Save plate'),
-              onTap: () {
-                Navigator.pop(ctx);
-                ref
-                    .read(feedControllerProvider(widget.tab).notifier)
-                    .toggleBookmark(postId);
-              },
-            ),
-            ListTile(
-              leading: Icon(
-                reposted ? Icons.repeat_on_rounded : Icons.repeat_rounded,
-              ),
-              title: Text(reposted ? 'Undo repost' : 'Repost to Plate'),
-              onTap: () {
-                Navigator.pop(ctx);
-                ref
-                    .read(feedControllerProvider(widget.tab).notifier)
-                    .toggleRepost(postId);
-              },
-            ),
-            const SizedBox(height: AppSpacing.sm),
-          ],
-        ),
-      ),
     );
   }
 
@@ -207,10 +165,10 @@ class _FeedListState extends ConsumerState<FeedList> {
                 onRestaurantTap: () => context.push(
                   Routes.restaurantPath(post.restaurantId),
                 ),
-                onOpenActions: () => _openTray(
-                  postId: post.id,
-                  bookmarked: post.isBookmarkedByMe,
-                  reposted: post.isRepostedByMe,
+                onOpenActions: () => PostActionsSheet.show(
+                  context,
+                  post: post,
+                  feedTab: widget.tab,
                 ),
               );
             },

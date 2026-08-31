@@ -12,6 +12,8 @@ class AppTextField extends StatefulWidget {
     this.textInputAction,
     this.autofillHints,
     this.onSubmitted,
+    this.autocorrect,
+    this.enableSuggestions,
   });
 
   final String label;
@@ -22,6 +24,8 @@ class AppTextField extends StatefulWidget {
   final TextInputAction? textInputAction;
   final Iterable<String>? autofillHints;
   final ValueChanged<String>? onSubmitted;
+  final bool? autocorrect;
+  final bool? enableSuggestions;
 
   @override
   State<AppTextField> createState() => _AppTextFieldState();
@@ -32,17 +36,37 @@ class _AppTextFieldState extends State<AppTextField> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isEmail = widget.keyboardType == TextInputType.emailAddress;
     return TextFormField(
       controller: widget.controller,
       validator: widget.validator,
       keyboardType: widget.keyboardType,
-      obscureText: _obscured,
+      obscureText: widget.obscure && _obscured,
+      autocorrect: widget.autocorrect ?? !widget.obscure && !isEmail,
+      enableSuggestions:
+          widget.enableSuggestions ?? !widget.obscure && !isEmail,
+      enableInteractiveSelection: true,
+      smartDashesType:
+          isEmail ? SmartDashesType.disabled : SmartDashesType.enabled,
+      smartQuotesType:
+          isEmail ? SmartQuotesType.disabled : SmartQuotesType.enabled,
+      textCapitalization: (isEmail || widget.obscure)
+          ? TextCapitalization.none
+          : TextCapitalization.sentences,
+      style: theme.textTheme.bodyLarge?.copyWith(
+        color: theme.colorScheme.onSurface,
+      ),
+      cursorColor: theme.colorScheme.primary,
       textInputAction: widget.textInputAction,
       autofillHints: widget.autofillHints,
       onFieldSubmitted: widget.onSubmitted,
       autovalidateMode: AutovalidateMode.onUserInteraction,
       decoration: InputDecoration(
         labelText: widget.label,
+        floatingLabelStyle: theme.textTheme.bodyMedium?.copyWith(
+          color: theme.colorScheme.primary,
+        ),
         suffixIcon: widget.obscure
             ? IconButton(
                 icon: Icon(

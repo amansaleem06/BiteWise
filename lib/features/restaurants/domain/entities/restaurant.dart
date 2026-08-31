@@ -2,6 +2,18 @@ import 'package:equatable/equatable.dart';
 
 import 'claim_status.dart';
 
+/// How diner-tagged posts appear on a restaurant page.
+enum GuestFeedMode {
+  /// Every diner tag is public unless the owner hides it.
+  all,
+
+  /// Only diner tags the owner approved are public.
+  approved;
+
+  static GuestFeedMode fromKey(String? key) =>
+      key == 'approved' ? GuestFeedMode.approved : GuestFeedMode.all;
+}
+
 /// Full restaurant profile.
 ///
 /// Stub restaurants (created while posting) have most fields empty until
@@ -32,6 +44,7 @@ class Restaurant extends Equatable {
     this.isFollowedByMe = false,
     this.latitude,
     this.longitude,
+    this.guestFeedMode = GuestFeedMode.all,
   });
 
   final String id;
@@ -70,6 +83,9 @@ class Restaurant extends Equatable {
   final double? latitude;
   final double? longitude;
 
+  /// Whether diner tags appear automatically or only after owner approval.
+  final GuestFeedMode guestFeedMode;
+
   bool get isClaimed => claimStatus == ClaimStatus.claimed || claimed;
   bool get isPendingClaim => claimStatus == ClaimStatus.pending;
   bool get isUnclaimed =>
@@ -83,7 +99,11 @@ class Restaurant extends Equatable {
   String? get priceLevelDisplay =>
       priceLevel != null ? r'$' * priceLevel!.clamp(1, 4) : null;
 
-  Restaurant copyWith({int? followerCount, bool? isFollowedByMe}) =>
+  Restaurant copyWith({
+    int? followerCount,
+    bool? isFollowedByMe,
+    GuestFeedMode? guestFeedMode,
+  }) =>
       Restaurant(
         id: id,
         name: name,
@@ -109,6 +129,7 @@ class Restaurant extends Equatable {
         isFollowedByMe: isFollowedByMe ?? this.isFollowedByMe,
         latitude: latitude,
         longitude: longitude,
+        guestFeedMode: guestFeedMode ?? this.guestFeedMode,
       );
 
   @override
@@ -120,5 +141,6 @@ class Restaurant extends Equatable {
         ownerId,
         followerCount,
         isFollowedByMe,
+        guestFeedMode,
       ];
 }

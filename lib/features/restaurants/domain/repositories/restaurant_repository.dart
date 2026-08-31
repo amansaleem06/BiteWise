@@ -26,6 +26,8 @@ abstract interface class RestaurantRepository {
   /// Converts a leftover pending claim into an immediate verified claim.
   Future<void> finalizePendingClaim();
 
+  Future<void> setGuestFeedMode(String restaurantId, GuestFeedMode mode);
+
   Future<void> updatePage({
     required String restaurantId,
     String? description,

@@ -21,6 +21,7 @@ import '../providers/page_identity_provider.dart';
 import '../providers/restaurant_providers.dart';
 import '../widgets/claim_status_badge.dart';
 import '../widgets/page_identity_bar.dart';
+import '../widgets/restaurant_mentions_tab.dart';
 import '../widgets/restaurant_posts_grid.dart';
 import '../widgets/restaurant_ratings_tab.dart';
 
@@ -65,7 +66,7 @@ class _RestaurantBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: NestedScrollView(
         headerSliverBuilder: (context, _) => [
           _CoverAppBar(restaurant: restaurant),
@@ -81,8 +82,11 @@ class _RestaurantBody extends StatelessWidget {
               TabBar(
                 labelStyle: Theme.of(context).textTheme.titleSmall,
                 indicatorSize: TabBarIndicatorSize.label,
+                isScrollable: true,
+                tabAlignment: TabAlignment.start,
                 tabs: const [
                   Tab(text: 'Posts'),
+                  Tab(text: 'Mentions'),
                   Tab(text: 'Ratings'),
                   Tab(text: 'About'),
                 ],
@@ -94,6 +98,7 @@ class _RestaurantBody extends StatelessWidget {
         body: TabBarView(
           children: [
             RestaurantPostsGrid(restaurantId: restaurant.id),
+            RestaurantMentionsTab(restaurant: restaurant),
             RestaurantRatingsTab(restaurantId: restaurant.id),
             _AboutTab(restaurant: restaurant),
           ],

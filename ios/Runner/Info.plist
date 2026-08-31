@@ -16,6 +16,10 @@
 	<string>TasteWise uses the microphone for voice notes in messages.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>BiteWise uses your location to show restaurants near you.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>BiteWise uses your location to show restaurants near you.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>BiteWise uses your location to show restaurants near you.</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
