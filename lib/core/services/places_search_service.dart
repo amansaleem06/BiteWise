@@ -45,6 +45,14 @@ class PlacesSearchService {
 
     final position = await _location.currentPosition();
     final keys = MapsConfig.placesApiKeys;
+    if (keys.isEmpty) {
+      throw const AppException(
+        'Maps search is not configured in this build. '
+        'Build with --dart-define=PLACES_API_KEY=... to enable it, '
+        'or add the restaurant manually.',
+        code: 'PLACES_KEY_MISSING',
+      );
+    }
     PlacesApiException? last;
 
     for (final apiKey in keys) {

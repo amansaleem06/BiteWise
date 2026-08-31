@@ -1,29 +1,24 @@
-import '../../firebase_options.dart';
-
-/// Google Maps / Places API keys used by the app.
+/// Compile-time configuration for Google Maps / Places.
 ///
-/// Maps SDK keys stay in AndroidManifest / AppDelegate.
-/// Restaurant search uses a dedicated Places REST key (Application
-/// restrictions = None, API = Places only).
+/// SECURITY: no API keys live in source control. The Places REST key is
+/// injected at build time:
+///
+///   flutter run --dart-define=PLACES_API_KEY=AIza...
+///   flutter build ipa --dart-define=PLACES_API_KEY=AIza...
+///
+/// CI (Codemagic) injects it from a secure environment variable — see
+/// codemagic.yaml. The native Maps SDK keys stay in AndroidManifest.xml /
+/// AppDelegate.swift and MUST be restricted in Google Cloud to this app's
+/// package + SHA-1 (Android) and bundle id (iOS), so they are useless to
+/// anyone who extracts them.
 abstract final class MapsConfig {
-  /// Dedicated Places REST key (Places API / Places API New).
-  static const String placesRestKey =
-      'AIzaSyBW-IvsG49beXJM153SR211R1jBJAe2xEs';
+  /// Places REST key from --dart-define. Empty when not provided.
+  static const String placesApiKey = String.fromEnvironment('PLACES_API_KEY');
 
-  /// Optional override: `flutter run --dart-define=PLACES_API_KEY=AIza...`
-  static const String _dartDefinePlacesKey = String.fromEnvironment(
-    'PLACES_API_KEY',
-  );
+  /// Whether restaurant search via Google Places is available in this build.
+  static bool get hasPlacesKey => placesApiKey.isNotEmpty;
 
-  /// Ordered keys to try for Places HTTP.
-  static List<String> get placesApiKeys {
-    final keys = <String>[
-      if (_dartDefinePlacesKey.isNotEmpty) _dartDefinePlacesKey,
-      placesRestKey,
-      DefaultFirebaseOptions.web.apiKey,
-      DefaultFirebaseOptions.currentPlatform.apiKey,
-    ];
-    final seen = <String>{};
-    return [for (final k in keys) if (seen.add(k)) k];
-  }
+  /// Ordered keys to try for Places HTTP calls.
+  static List<String> get placesApiKeys =>
+      [if (hasPlacesKey) placesApiKey];
 }

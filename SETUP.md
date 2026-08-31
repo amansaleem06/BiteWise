@@ -198,6 +198,12 @@ Counters, denormalization, and trending are now server-side.
      monthly usage tiers apply; typical dev usage costs nothing).
    - Create separate restricted keys: Android package
      `com.bitewise.bitewise`, and iOS bundle `com.amansaleem06.bitewise`.
+3. **Places REST key (restaurant search)** — never committed to the repo:
+   - Enable **Places API (New)**; create a key restricted to that API only.
+   - Local runs: `flutter run --dart-define=PLACES_API_KEY=AIza...`
+   - CI: add `PLACES_API_KEY` as a **secure** variable in Codemagic;
+     `codemagic.yaml` passes it into the build automatically.
+   - Full policy: `docs/SECURITY.md`.
 3. **Configure separate restricted keys**:
    - Android key in `android/app/src/main/AndroidManifest.xml`
    - iOS key in `ios/Runner/AppDelegate.swift`

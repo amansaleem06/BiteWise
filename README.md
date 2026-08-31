@@ -1,25 +1,46 @@
 # BiteWise
 
-Discover. Taste. Share. — a food-focused social app built with Flutter + Firebase.
+Discover. Taste. Share. — a food-focused social app built with Flutter +
+Firebase. Diners share plates, rate dishes, and book tables; restaurant owners
+claim a page, post as the business, and moderate diner mentions.
 
-## Run locally (Android / Windows)
+## Quick start
 
 ```bash
 flutter pub get
-flutter run
+flutter run --dart-define=PLACES_API_KEY=<optional-places-key>
 ```
 
-On Windows, use the Android emulator or `dev_setup/RUN_BITEWISE.bat`.
+Without the key the app still runs; Google-Maps restaurant search falls back
+to manual restaurant entry. Firebase client configs are committed — no local
+secrets needed.
 
-## Setup
+## Documentation
 
-See [SETUP.md](SETUP.md) for Firebase, Maps, and milestone checklists.
+| Doc | What's in it |
+|---|---|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Folder structure, layering rules, data model, how to add a feature |
+| [docs/SECURITY.md](docs/SECURITY.md) | Threat model, secrets policy, rules, pre-launch checklist |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Conventions and the PR quality bar |
+| [SETUP.md](SETUP.md) | Firebase / Google Cloud console setup, milestone history |
+| [NO_MAC_RELEASE.md](NO_MAC_RELEASE.md) | Ship to the App Store without a Mac (Codemagic + TestFlight) |
+| [docs/APP_STORE_LISTING.md](docs/APP_STORE_LISTING.md) | Store listing copy |
 
-## Ship to the App Store without a Mac
+## Stack
 
-You do **not** need a MacBook. Use Codemagic (cloud Mac) + TestFlight:
+Flutter (Material 3) · Riverpod · go_router · Firebase (Auth, Firestore,
+Storage, Messaging, Cloud Functions in TypeScript) · Google Maps + Places API.
 
-→ **[NO_MAC_RELEASE.md](NO_MAC_RELEASE.md)**
+## Repository map
+
+```
+lib/app/        router + theme
+lib/core/       shared config, services, utils, widgets
+lib/features/   feature modules (domain / data / presentation)
+functions/      Cloud Functions (counters, push, trending, deletion cascade)
+firestore.rules, storage.rules   backend authorization — deploy on change:
+                firebase deploy --only firestore:rules,storage
+```
 
 ## Legal
 
