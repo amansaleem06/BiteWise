@@ -16,6 +16,7 @@ import '../../../restaurants/presentation/providers/page_identity_provider.dart'
 import '../../../restaurants/presentation/providers/restaurant_providers.dart';
 import '../../../restaurants/presentation/widgets/page_identity_bar.dart';
 import '../providers/create_post_providers.dart';
+import '../widgets/currency_picker_sheet.dart';
 import '../widgets/media_picker_grid.dart';
 import '../widgets/restaurant_picker_sheet.dart';
 import '../widgets/star_rating_input.dart';
@@ -35,6 +36,7 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
   final _tags = TextEditingController();
   final _cuisines = <String>{};
   var _pageKind = 'plate';
+  var _currency = LocaleCurrency.deviceDefault;
 
   @override
   void dispose() {
@@ -70,6 +72,7 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
               dishName: _dish.text,
               caption: _caption.text,
               price: double.tryParse(_price.text.replaceAll(',', '.')),
+              currencyCode: _currency.code,
               tags: _parseTags(),
               pageKind: PagePostKind.fromKey(_pageKind),
             );
@@ -282,27 +285,64 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
                   onChanged: controller.setRating,
                 ),
                 const SizedBox(height: AppSpacing.md),
+                const _SectionLabel('Price paid'),
+                Text(
+                  'Optional. Pick the currency you paid in.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xxs),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _SectionLabel(
-                            'Price paid (${LocaleCurrency.code})',
+                      flex: 3,
+                      child: TextField(
+                        controller: _price,
+                        decoration: InputDecoration(
+                          hintText: '0',
+                          prefixText: '${_currency.symbol} ',
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      flex: 2,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                        onTap: () async {
+                          final picked = await CurrencyPickerSheet.show(
+                            context,
+                            selected: _currency,
+                          );
+                          if (picked != null) {
+                            setState(() => _currency = picked);
+                          }
+                        },
+                        child: InputDecorator(
+                          decoration: const InputDecoration(
+                            labelText: 'Currency',
                           ),
-                          TextField(
-                            controller: _price,
-                            decoration: InputDecoration(
-                              hintText: '0',
-                              prefixText: LocaleCurrency.inputPrefix,
-                            ),
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  _currency.menuLabel,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              Icon(
+                                Icons.expand_more_rounded,
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   ],

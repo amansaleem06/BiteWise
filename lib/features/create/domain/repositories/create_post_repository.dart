@@ -24,6 +24,7 @@ abstract interface class CreatePostRepository {
     required String caption,
     double? rating,
     double? price,
+    String? currencyCode,
     required List<String> tags,
     bool asRestaurantPage = false,
     PagePostKind pageKind = PagePostKind.plate,

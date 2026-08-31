@@ -190,7 +190,15 @@ service cloud.firestore {
       );
 
       allow delete: if isSignedIn()
-        && (request.auth.uid == resource.data.authorId || isAdmin());
+        && (
+          request.auth.uid == resource.data.authorId
+          || isAdmin()
+          || (
+            resource.data.get('asRestaurantId', '') is string
+            && resource.data.get('asRestaurantId', '') != ''
+            && ownsRestaurant(resource.data.asRestaurantId)
+          )
+        );
 
       match /likes/{uid} {
         allow read: if isSignedIn();

@@ -139,6 +139,7 @@ class FirebaseCreatePostRepository implements CreatePostRepository {
     required String caption,
     double? rating,
     double? price,
+    String? currencyCode,
     required List<String> tags,
     bool asRestaurantPage = false,
     PagePostKind pageKind = PagePostKind.plate,
@@ -214,7 +215,9 @@ class FirebaseCreatePostRepository implements CreatePostRepository {
       ],
       'rating': rating,
       'price': price,
-      'currencyCode': LocaleCurrency.code,
+      'currencyCode': (currencyCode != null && currencyCode.trim().isNotEmpty)
+          ? currencyCode.trim().toUpperCase()
+          : LocaleCurrency.code,
       'tags': tags,
       'likeCount': 0,
       'commentCount': 0,

@@ -320,6 +320,18 @@ class PostCard extends StatelessWidget {
                       ),
                     ),
                   ),
+                if (post.price != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Text(
+                      Formatters.price(post.price!, post.currencyCode),
+                      style: GoogleFonts.sourceSans3(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
                 if (post.caption.isNotEmpty)
                   Text.rich(
                     TextSpan(

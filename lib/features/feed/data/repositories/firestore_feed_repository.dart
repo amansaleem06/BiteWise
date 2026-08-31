@@ -269,7 +269,12 @@ class FirestoreFeedRepository implements FeedRepository {
     final snap = await postRef.get();
     if (!snap.exists) throw const AppException('Post not found');
     final data = snap.data() ?? {};
-    if (data['authorId'] != uid) {
+    final authorId = data['authorId'] as String?;
+    final asRestaurantId = data['asRestaurantId'] as String?;
+    final ownsOfficialPage = asRestaurantId != null &&
+        asRestaurantId.isNotEmpty &&
+        await _ownsRestaurant(asRestaurantId);
+    if (authorId != uid && !ownsOfficialPage) {
       throw const AppException('You can only delete your own posts.');
     }
 
@@ -280,29 +285,12 @@ class FirestoreFeedRepository implements FeedRepository {
     await postRef.delete();
 
     if (restaurantId != null && restaurantId.isNotEmpty) {
-      final restaurantRef =
-          _firestore.collection('restaurants').doc(restaurantId);
-      await _firestore.runTransaction((tx) async {
-        final r = await tx.get(restaurantRef);
-        if (!r.exists) return;
-        final d = r.data() ?? {};
-        final postCount = ((d['postCount'] as num?)?.toInt() ?? 1) - 1;
-        final updates = <String, dynamic>{
-          'postCount': postCount < 0 ? 0 : postCount,
-          'updatedAt': FieldValue.serverTimestamp(),
-        };
-        if (rating != null) {
-          final ratingSum =
-              ((d['ratingSum'] as num?)?.toDouble() ?? 0) - rating;
-          final ratingCount = ((d['ratingCount'] as num?)?.toInt() ?? 1) - 1;
-          final nextCount = ratingCount < 0 ? 0 : ratingCount;
-          final nextSum = ratingSum < 0 ? 0.0 : ratingSum;
-          updates['ratingSum'] = nextSum;
-          updates['ratingCount'] = nextCount;
-          updates['ratingAvg'] = nextCount == 0 ? 0 : nextSum / nextCount;
-        }
-        tx.update(restaurantRef, updates);
-      });
+      try {
+        await _decrementRestaurantStats(
+          restaurantId: restaurantId,
+          rating: rating,
+        );
+      } catch (_) {}
     }
 
     if (media != null) {
@@ -315,6 +303,40 @@ class FirestoreFeedRepository implements FeedRepository {
         } catch (_) {}
       }
     }
+  }
+
+  Future<bool> _ownsRestaurant(String restaurantId) async {
+    final snap =
+        await _firestore.collection('restaurants').doc(restaurantId).get();
+    return snap.data()?['ownerId'] == _uid;
+  }
+
+  Future<void> _decrementRestaurantStats({
+    required String restaurantId,
+    required double? rating,
+  }) async {
+    final restaurantRef =
+        _firestore.collection('restaurants').doc(restaurantId);
+    await _firestore.runTransaction((tx) async {
+      final r = await tx.get(restaurantRef);
+      if (!r.exists) return;
+      final d = r.data() ?? {};
+      final postCount = ((d['postCount'] as num?)?.toInt() ?? 1) - 1;
+      final updates = <String, dynamic>{
+        'postCount': postCount < 0 ? 0 : postCount,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+      if (rating != null) {
+        final ratingSum = ((d['ratingSum'] as num?)?.toDouble() ?? 0) - rating;
+        final ratingCount = ((d['ratingCount'] as num?)?.toInt() ?? 1) - 1;
+        final nextCount = ratingCount < 0 ? 0 : ratingCount;
+        final nextSum = ratingSum < 0 ? 0.0 : ratingSum;
+        updates['ratingSum'] = nextSum;
+        updates['ratingCount'] = nextCount;
+        updates['ratingAvg'] = nextCount == 0 ? 0 : nextSum / nextCount;
+      }
+      tx.update(restaurantRef, updates);
+    });
   }
 
   @override

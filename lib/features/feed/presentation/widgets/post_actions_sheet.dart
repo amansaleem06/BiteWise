@@ -15,11 +15,15 @@ class PostActionsSheet extends ConsumerWidget {
   const PostActionsSheet({
     super.key,
     required this.post,
+    required this.pageContext,
     this.feedTab,
     this.onDeleted,
   });
 
   final Post post;
+
+  /// Page under the sheet — used for snackbars after the sheet closes.
+  final BuildContext pageContext;
   final FeedTab? feedTab;
   final VoidCallback? onDeleted;
 
@@ -34,6 +38,7 @@ class PostActionsSheet extends ConsumerWidget {
       showDragHandle: true,
       builder: (_) => PostActionsSheet(
         post: post,
+        pageContext: context,
         feedTab: feedTab,
         onDeleted: onDeleted,
       ),
@@ -44,6 +49,11 @@ class PostActionsSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final me = ref.watch(currentUserProvider);
     final isAuthor = me != null && me.uid == post.authorId;
+    final ownsPage = me != null &&
+        post.postedAsRestaurant &&
+        post.asRestaurantId != null &&
+        me.ownedRestaurantId == post.asRestaurantId;
+    final canDelete = isAuthor || ownsPage;
     final ownsTaggedRestaurant = me != null &&
         post.isMention &&
         post.restaurantId.isNotEmpty &&
@@ -104,7 +114,7 @@ class PostActionsSheet extends ConsumerWidget {
                 onTap: () async {
                   Navigator.pop(context);
                   await _moderate(
-                    context,
+                    pageContext,
                     ref,
                     approved: true,
                     hidden: false,
@@ -118,7 +128,7 @@ class PostActionsSheet extends ConsumerWidget {
                 onTap: () async {
                   Navigator.pop(context);
                   await _moderate(
-                    context,
+                    pageContext,
                     ref,
                     approved: false,
                     hidden: true,
@@ -126,7 +136,7 @@ class PostActionsSheet extends ConsumerWidget {
                 },
               ),
           ],
-          if (isAuthor)
+          if (canDelete)
             ListTile(
               leading: Icon(
                 Icons.delete_outline_rounded,
@@ -136,60 +146,62 @@ class PostActionsSheet extends ConsumerWidget {
                 'Delete post',
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
-              onTap: () async {
-                Navigator.pop(context);
-                final confirmed = await showDialog<bool>(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: const Text('Delete this post?'),
-                    content: const Text(
-                      'This removes the post from the feed and profiles. This cannot be undone.',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx, false),
-                        child: const Text('Cancel'),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx, true),
-                        child: const Text('Delete'),
-                      ),
-                    ],
-                  ),
-                );
-                if (confirmed != true || !context.mounted) return;
-                try {
-                  if (feedTab != null) {
-                    await ref
-                        .read(feedControllerProvider(feedTab!).notifier)
-                        .deletePost(post.id);
-                  } else {
-                    await ref.read(feedRepositoryProvider).deletePost(post.id);
-                  }
-                  ref.invalidate(feedControllerProvider(FeedTab.forYou));
-                  ref.invalidate(feedControllerProvider(FeedTab.following));
-                  ref.invalidate(userPostsProvider(post.authorId));
-                  if (post.restaurantId.isNotEmpty) {
-                    ref.invalidate(restaurantPostsProvider(post.restaurantId));
-                    ref.invalidate(
-                      restaurantControllerProvider(post.restaurantId),
-                    );
-                  }
-                  if (context.mounted) {
-                    AppSnackbar.success(context, 'Post deleted');
-                  }
-                  onDeleted?.call();
-                } catch (e) {
-                  if (context.mounted) {
-                    AppSnackbar.error(context, userMessageFrom(e));
-                  }
-                }
-              },
+              onTap: () => _delete(context, ref),
             ),
           const SizedBox(height: AppSpacing.sm),
         ],
       ),
     );
+  }
+
+  Future<void> _delete(BuildContext sheetContext, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: sheetContext,
+      useRootNavigator: true,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete this post?'),
+        content: const Text(
+          'This removes the post from the feed and profiles. This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !sheetContext.mounted) return;
+
+    try {
+      if (feedTab != null) {
+        await ref
+            .read(feedControllerProvider(feedTab!).notifier)
+            .deletePost(post.id);
+      } else {
+        await ref.read(feedRepositoryProvider).deletePost(post.id);
+      }
+      ref.invalidate(feedControllerProvider(FeedTab.forYou));
+      ref.invalidate(feedControllerProvider(FeedTab.following));
+      ref.invalidate(userPostsProvider(post.authorId));
+      if (post.restaurantId.isNotEmpty) {
+        ref.invalidate(restaurantPostsProvider(post.restaurantId));
+        ref.invalidate(restaurantControllerProvider(post.restaurantId));
+      }
+      if (sheetContext.mounted) Navigator.pop(sheetContext);
+      if (pageContext.mounted) {
+        AppSnackbar.success(pageContext, 'Post deleted');
+      }
+      onDeleted?.call();
+    } catch (e) {
+      if (pageContext.mounted) {
+        AppSnackbar.error(pageContext, userMessageFrom(e));
+      }
+    }
   }
 
   Future<void> _moderate(

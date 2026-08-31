@@ -142,6 +142,7 @@ class CreatePostController extends AutoDisposeNotifier<CreatePostState> {
     String? dishName,
     required String caption,
     double? price,
+    String? currencyCode,
     required List<String> tags,
     PagePostKind pageKind = PagePostKind.plate,
   }) async {
@@ -161,6 +162,7 @@ class CreatePostController extends AutoDisposeNotifier<CreatePostState> {
             caption: caption,
             rating: state.rating,
             price: price,
+            currencyCode: currencyCode,
             tags: tags,
             asRestaurantPage: ref.read(pageIdentityProvider).actingAsPage,
             pageKind: pageKind,
