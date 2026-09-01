@@ -6,11 +6,13 @@ launch. Everything happens in [Google Cloud Console](https://console.cloud.googl
 
 Your three keys, and what each is for:
 
-| Key | Lives where | Used for |
-|---|---|---|
-| Places REST key | Codemagic secure variable + your own machine (never in git) | Restaurant search in Create / business claim |
-| Maps SDK Android key (`AIzaSyC-qlh...`) | `AndroidManifest.xml` (committed — fine when restricted) | Nearby map on Android |
-| Maps SDK iOS key (`AIzaSyCzQ_...`) | `AppDelegate.swift` (committed — fine when restricted) | Nearby map on iOS |
+
+| Key                                     | Lives where                                                 | Used for                                     |
+| --------------------------------------- | ----------------------------------------------------------- | -------------------------------------------- |
+| Places REST key                         | Codemagic secure variable + your own machine (never in git) | Restaurant search in Create / business claim |
+| Maps SDK Android key (`AIzaSyC-qlh...`) | `AndroidManifest.xml` (committed — fine when restricted)    | Nearby map on Android                        |
+| Maps SDK iOS key (`AIzaSyCzQ_...`)      | `AppDelegate.swift` (committed — fine when restricted)      | Nearby map on iOS                            |
+
 
 ---
 
@@ -20,20 +22,20 @@ The old key `AIzaSyBW-...` is in the public git history with no restrictions.
 Anyone can use it and bill you. Deleting it from code is not enough — the key
 itself must die.
 
-1. Open <https://console.cloud.google.com/apis/credentials> and make sure the
-   project selector (top bar) says **bitewise-1d266**.
+1. Open [https://console.cloud.google.com/apis/credentials](https://console.cloud.google.com/apis/credentials) and make sure the
+  project selector (top bar) says **bitewise-1d266**.
 2. In the **API keys** list, find the key whose value starts `AIzaSyBW-`
-   (click **Show key** on each to compare).
+  (click **Show key** on each to compare).
 3. Click the three-dot menu on that row → **Delete API key**. Confirm.
-   *The leak is now dead — anything a stranger copied stops working.*
+  *The leak is now dead — anything a stranger copied stops working.*
 4. Click **+ Create credentials → API key**. Copy the new value immediately
-   into a password manager.
+  into a password manager.
 5. The "API key created" dialog → **Edit API key** (or click its name in the
-   list), then set:
-   - **Name:** `BiteWise Places REST`
-   - **Application restrictions:** `None` (REST calls from a phone can't be
-     app-restricted; the API restriction below is the fence)
-   - **API restrictions:** `Restrict key` → tick **Places API (New)** only
+  list), then set:
+  - **Name:** `BiteWise Places REST`
+  - **Application restrictions:** `None` (REST calls from a phone can't be
+  app-restricted; the API restriction below is the fence)
+  - **API restrictions:** `Restrict key` → tick **Places API (New)** only
 6. **Save**.
 
 > When: immediately. The old key is exposed right now, launch or not.
@@ -44,15 +46,15 @@ itself must die.
 
 **Codemagic (TestFlight / App Store / Play builds):**
 
-1. <https://codemagic.io> → your **BiteWise** app → **Settings** (⚙) →
-   **Environment variables** tab.
+1. [https://codemagic.io](https://codemagic.io) → your **BiteWise** app → **Settings** (⚙) →
+  **Environment variables** tab.
 2. Add a variable:
-   - Name: `PLACES_API_KEY` (exactly this — `codemagic.yaml` reads it)
-   - Value: the new key from Task 1
-   - **Secure: checked** ✔ (encrypts it, hides it from logs)
-   - Group: `bitewise_secrets` (the YAML workflows import this exact group)
+  - Name: `PLACES_API_KEY` (exactly this — `codemagic.yaml` reads it)
+  - Value: the new key from Task 1
+  - **Secure: checked** ✔ (encrypts it, hides it from logs)
+  - Group: `bitewise_secrets` (the YAML workflows import this exact group)
 3. Save. Nothing else — `codemagic.yaml` already passes it into both the iOS
-   and Android build commands.
+  and Android build commands.
 
 **Your own machine (day-to-day development):**
 
@@ -72,18 +74,18 @@ don't retype it (that folder is gitignored).
 
 These keys are in the repo, which is normal **only if** they're locked to your
 app identities. Verify both at
-<https://console.cloud.google.com/apis/credentials>:
+[https://console.cloud.google.com/apis/credentials](https://console.cloud.google.com/apis/credentials):
 
 **Android key (value starts `AIzaSyC-qlh`):**
 
 1. Click its name → **Application restrictions:** `Android apps`.
 2. **Add** an item:
-   - Package name: `com.bitewise.bitewise`
-   - SHA-1: your signing certificate fingerprint. Get it:
-     - Debug/dev: `cd android; ./gradlew signingReport` → `SHA1:` line.
-     - Play releases: Play Console → your app → **Test and release → Setup →
-       App signing** → *App signing key certificate* SHA-1.
-   - Add **both** debug and release SHA-1s (two entries, same package).
+  - Package name: `com.bitewise.bitewise`
+  - SHA-1: your signing certificate fingerprint. Get it:
+    - Debug/dev: `cd android; ./gradlew signingReport` → `SHA1:` line.
+    - Play releases: Play Console → your app → **Test and release → Setup →
+    App signing** → *App signing key certificate* SHA-1.
+  - Add **both** debug and release SHA-1s (two entries, same package).
 3. **API restrictions:** `Restrict key` → **Maps SDK for Android** only.
 4. Save.
 
@@ -100,36 +102,37 @@ app identities. Verify both at
 
 ---
 
-## Task 4 — After launch: Firebase App Check + billing alarm
+## Task 4 — Before launch: register App Check; enforce after verification
 
 **App Check** makes Firebase reject requests that don't come from your genuine
 app binaries — the single biggest security upgrade available:
 
 1. [Firebase Console](https://console.firebase.google.com/project/bitewise-1d266)
-   → **Build → App Check**.
-2. Register the Android app with **Play Integrity** and the iOS app with
-   **App Attest**.
+  → **Build → App Check**.
+2. Register the Android app with **Play Integrity** and the current iOS app
+   (`com.amansaleem06.bitewise`) with **App Attest**. BiteWise requires iOS
+   14+, so DeviceCheck fallback and its extra private key are unnecessary.
 3. Add the `firebase_app_check` package to the app, activate it at startup.
 4. Run in **monitor mode** first; only click **Enforce** on Firestore /
-   Storage after the metrics show your real traffic passing.
+   Storage after a fresh TestFlight/Play build shows verified traffic.
 
 **Billing alert** (5 min, catches key abuse early): Cloud Console →
 **Billing → Budgets & alerts → Create budget** → e.g. $25/month with email
 alerts at 50/90/100%.
 
-> When: App Check in the first weeks after launch (enforcing during review
-> risks blocking Apple's test devices if misconfigured). The billing alert —
-> today, it's free insurance.
+> When: register App Check and ship the SDK before launch. Do not enforce it
+> until a fresh release build shows verified requests in the metrics; premature
+> enforcement can block Apple review devices. Create the billing alert today.
 
 ---
 
 ## Sanity checklist when done
 
-- [ ] Old `AIzaSyBW-` key deleted in Google Cloud
-- [ ] New Places key restricted to Places API (New) only
-- [ ] `PLACES_API_KEY` secure variable set in Codemagic
-- [ ] Fresh Codemagic build → restaurant search in Create works
-- [ ] Android Maps key: package + both SHA-1s, Maps SDK for Android only
-- [ ] iOS Maps key: bundle id, Maps SDK for iOS only
+- [x] Old `AIzaSyBW-` key deleted in Google Cloud
+- [x] New Places key restricted to Places API (New) only
+- [x] `PLACES_API_KEY` secure variable set in Codemagic
+- [x] Fresh Codemagic build → restaurant search in Create works
+- [x] Android Maps key: package + both SHA-1s, Maps SDK for Android only
+- [x] iOS Maps key: bundle id, Maps SDK for iOS only
 - [ ] Nearby map still renders on a real build of each platform
 - [ ] Billing budget alert created

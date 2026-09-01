@@ -1,4 +1,6 @@
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -25,6 +27,7 @@ Future<bool> _initFirebase() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    await _activateAppCheck();
     return true;
   } catch (e, st) {
     debugPrintStack(
@@ -32,6 +35,26 @@ Future<bool> _initFirebase() async {
       label: 'Firebase init failed — run `flutterfire configure`. $e',
     );
     return false;
+  }
+}
+
+/// Requests Firebase App Check tokens without enforcing them client-side.
+///
+/// Enforcement is controlled in Firebase Console and must remain off until
+/// App Check metrics confirm that release builds are receiving valid tokens.
+Future<void> _activateAppCheck() async {
+  try {
+    await FirebaseAppCheck.instance.activate(
+      androidProvider:
+          kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
+      appleProvider: kDebugMode
+          ? AppleProvider.debug
+          : AppleProvider.appAttest,
+    );
+  } catch (e, st) {
+    // Do not prevent startup while App Check is in monitor mode. Once console
+    // enforcement is enabled, unverified Firebase requests will fail closed.
+    debugPrintStack(stackTrace: st, label: 'App Check activation failed: $e');
   }
 }
 
