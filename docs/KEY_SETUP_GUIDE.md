@@ -50,7 +50,7 @@ itself must die.
    - Name: `PLACES_API_KEY` (exactly this — `codemagic.yaml` reads it)
    - Value: the new key from Task 1
    - **Secure: checked** ✔ (encrypts it, hides it from logs)
-   - Group: default / none is fine
+   - Group: `bitewise_secrets` (the YAML workflows import this exact group)
 3. Save. Nothing else — `codemagic.yaml` already passes it into both the iOS
    and Android build commands.
 

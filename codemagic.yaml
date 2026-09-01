@@ -21,6 +21,8 @@ workflows:
     integrations:
       app_store_connect: bitewise_asc
     environment:
+      groups:
+        - bitewise_secrets
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.amansaleem06.bitewise
@@ -89,6 +91,8 @@ workflows:
     name: Android Play Store build
     max_build_duration: 60
     environment:
+      groups:
+        - bitewise_secrets
       android_signing:
         - bitewise_keystore
       flutter: stable
