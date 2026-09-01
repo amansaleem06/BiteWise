@@ -1,4 +1,4 @@
-# BiteWise Architecture
+# TasteWise Architecture
 
 This document explains how the codebase is organized so a new contributor can
 find things, add a feature, and not break the conventions that keep the app

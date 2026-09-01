@@ -12,6 +12,7 @@ import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/async_error_view.dart';
 import '../../../explore/presentation/providers/explore_providers.dart';
+import '../../../safety/presentation/providers/safety_providers.dart';
 import '../../domain/entities/chat.dart';
 import '../providers/chat_providers.dart';
 
@@ -61,7 +62,12 @@ class MessagesScreen extends ConsumerWidget {
           onRetry: () => ref.invalidate(chatsProvider),
         ),
         data: (chats) {
-          if (chats.isEmpty) {
+          final blocked =
+              ref.watch(blockedUserIdsProvider).valueOrNull ?? {};
+          final visible = chats
+              .where((chat) => !blocked.contains(chat.peer.uid))
+              .toList();
+          if (visible.isEmpty) {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.xl),
@@ -96,8 +102,8 @@ class MessagesScreen extends ConsumerWidget {
           }
           return ListView.builder(
             padding: const EdgeInsets.only(bottom: 160),
-            itemCount: chats.length,
-            itemBuilder: (context, i) => _ChatTile(chat: chats[i]),
+            itemCount: visible.length,
+            itemBuilder: (context, i) => _ChatTile(chat: visible[i]),
           );
         },
       ),

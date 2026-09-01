@@ -32,7 +32,7 @@ class PageIdentityBar extends ConsumerWidget {
           children: [
             Icon(
               asPage ? Icons.storefront_rounded : Icons.person_outline_rounded,
-              color: AppColors.primary,
+              color: Theme.of(context).colorScheme.primary,
               size: 20,
             ),
             const SizedBox(width: 8),

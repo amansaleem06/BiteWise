@@ -100,12 +100,12 @@ class OwnedRestaurantBanner extends StatelessWidget {
                         Text(
                           'Open table',
                           style: theme.textTheme.labelLarge?.copyWith(
-                            color: AppColors.primary,
+                            color: theme.colorScheme.primary,
                           ),
                         ),
-                        const Icon(
+                        Icon(
                           Icons.chevron_right_rounded,
-                          color: AppColors.primary,
+                          color: theme.colorScheme.primary,
                         ),
                       ],
                     ),

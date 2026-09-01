@@ -9,7 +9,7 @@
 
 ## Name
 
-`BiteWise: Discover & Share`
+`TasteWise: Discover & Share`
 
 ## Subtitle (30 characters max)
 
@@ -22,9 +22,9 @@
 ## Description
 
 ```
-BiteWise is a food-focused social app for discovering restaurants and sharing what you love to eat.
+TasteWise is a food-focused social app for discovering restaurants and sharing what you love to eat.
 
-With BiteWise you can:
+With TasteWise you can:
 • Share dishes with photos, captions, ratings, and tags
 • Explore a For You and Following feed
 • Discover restaurants near you on the map
@@ -33,7 +33,7 @@ With BiteWise you can:
 • Book restaurant reservations
 • Get notifications about likes, comments, follows, and chats
 
-Whether you’re hunting for your next favorite spot or posting tonight’s plate, BiteWise helps every dish find its story.
+Whether you’re hunting for your next favorite spot or posting tonight’s plate, TasteWise helps every dish find its story.
 
 Delete your account anytime in Profile → Settings → Delete account.
 ```

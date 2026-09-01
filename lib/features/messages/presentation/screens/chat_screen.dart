@@ -14,6 +14,8 @@ import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/errors/error_text.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
+import '../../../safety/domain/repositories/safety_repository.dart';
+import '../../../safety/presentation/widgets/safety_actions.dart';
 import '../providers/chat_providers.dart';
 import '../widgets/message_bubble.dart';
 
@@ -244,6 +246,40 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   ],
                 ),
               ),
+        actions: chat == null
+            ? null
+            : [
+                PopupMenuButton<String>(
+                  onSelected: (value) {
+                    if (value == 'report') {
+                      SafetyActions.report(
+                        context,
+                        ref,
+                        type: ReportTargetType.message,
+                        targetId: widget.chatId,
+                        targetUserId: chat.peer.uid,
+                      );
+                    } else if (value == 'block') {
+                      SafetyActions.blockUser(
+                        context,
+                        ref,
+                        uid: chat.peer.uid,
+                        name: chat.peer.name,
+                      );
+                    }
+                  },
+                  itemBuilder: (ctx) => const [
+                    PopupMenuItem(
+                      value: 'report',
+                      child: Text('Report conversation'),
+                    ),
+                    PopupMenuItem(
+                      value: 'block',
+                      child: Text('Block user'),
+                    ),
+                  ],
+                ),
+              ],
       ),
       body: Column(
         children: [
@@ -324,16 +360,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           child: Text(
                             'Recording  ${_clock(_elapsed)}',
                             style: theme.textTheme.titleSmall?.copyWith(
-                              color: AppColors.primary,
+                              color: theme.colorScheme.primary,
                             ),
                           ),
                         ),
                         IconButton(
                           tooltip: 'Send voice note',
                           onPressed: _stopAndSend,
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.send_rounded,
-                            color: AppColors.primary,
+                            color: theme.colorScheme.primary,
                           ),
                         ),
                       ],

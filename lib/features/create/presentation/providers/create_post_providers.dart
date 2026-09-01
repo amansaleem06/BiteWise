@@ -193,7 +193,7 @@ class CreatePostController extends AutoDisposeNotifier<CreatePostState> {
       if (code != null) {
         final mapped = switch (code) {
           'permission-denied' =>
-            'Permission denied. Sign in again, or publish Firestore/Storage rules for bitewise-1d266.',
+            'Permission denied. Sign in again, or publish the latest Firestore and Storage rules.',
           'unauthorized' =>
             'Upload blocked. Enable Firebase Storage and publish storage.rules.',
           'object-not-found' =>

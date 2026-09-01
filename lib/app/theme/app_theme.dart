@@ -12,11 +12,14 @@ abstract final class AppTheme {
 
   static ThemeData _build(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
+    final interactiveColor = isDark ? AppColors.accent : AppColors.primary;
+    final onInteractiveColor =
+        isDark ? AppColors.onAccent : AppColors.cream;
 
     final colorScheme = ColorScheme(
       brightness: brightness,
-      primary: AppColors.primary,
-      onPrimary: AppColors.cream,
+      primary: interactiveColor,
+      onPrimary: onInteractiveColor,
       primaryContainer:
           isDark ? AppColors.primaryDark : AppColors.primaryLight,
       onPrimaryContainer: isDark ? Colors.white : AppColors.secondary,
@@ -43,7 +46,7 @@ abstract final class AppTheme {
       scrim: Colors.black54,
       inverseSurface: isDark ? AppColors.cream : AppColors.charcoal,
       onInverseSurface: isDark ? AppColors.charcoal : AppColors.cream,
-      inversePrimary: AppColors.primaryLight,
+      inversePrimary: isDark ? AppColors.primary : AppColors.primaryLight,
       surfaceContainerHighest:
           isDark ? const Color(0xFF2E353D) : AppColors.cream,
     );
@@ -89,20 +92,23 @@ abstract final class AppTheme {
         style: FilledButton.styleFrom(
           minimumSize: const Size.fromHeight(54),
           elevation: 0,
-          backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.cream,
-          disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.4),
-          disabledForegroundColor: AppColors.cream.withValues(alpha: 0.5),
+          backgroundColor: colorScheme.primary,
+          foregroundColor: colorScheme.onPrimary,
+          disabledBackgroundColor:
+              colorScheme.primary.withValues(alpha: 0.4),
+          disabledForegroundColor:
+              colorScheme.onPrimary.withValues(alpha: 0.5),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.pill),
           ),
-          textStyle: textTheme.labelLarge?.copyWith(color: AppColors.cream),
+          textStyle:
+              textTheme.labelLarge?.copyWith(color: colorScheme.onPrimary),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           minimumSize: const Size.fromHeight(54),
-          foregroundColor: AppColors.primary,
+          foregroundColor: colorScheme.primary,
           side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.9)),
           backgroundColor: colorScheme.surface.withValues(alpha: 0.7),
           shape: RoundedRectangleBorder(
@@ -113,7 +119,7 @@ abstract final class AppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.primary,
+          foregroundColor: colorScheme.primary,
           textStyle: textTheme.labelLarge,
         ),
       ),
@@ -128,6 +134,10 @@ abstract final class AppTheme {
         ),
         hintStyle: textTheme.bodyMedium
             ?.copyWith(color: colorScheme.onSurfaceVariant),
+        labelStyle: textTheme.bodyMedium
+            ?.copyWith(color: colorScheme.onSurfaceVariant),
+        prefixIconColor: colorScheme.onSurfaceVariant,
+        suffixIconColor: colorScheme.onSurfaceVariant,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
           borderSide: BorderSide(color: colorScheme.outline),
@@ -140,7 +150,7 @@ abstract final class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.6),
+          borderSide: BorderSide(color: colorScheme.primary, width: 1.6),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -161,7 +171,7 @@ abstract final class AppTheme {
           (states) => IconThemeData(
             size: 26,
             color: states.contains(WidgetState.selected)
-                ? AppColors.primary
+                ? colorScheme.primary
                 : colorScheme.onSurfaceVariant,
           ),
         ),
@@ -169,13 +179,13 @@ abstract final class AppTheme {
           (states) => textTheme.labelMedium!.copyWith(
             fontWeight: FontWeight.w700,
             color: states.contains(WidgetState.selected)
-                ? AppColors.primaryDark
+                ? colorScheme.primary
                 : colorScheme.onSurfaceVariant,
           ),
         ),
       ),
       tabBarTheme: TabBarThemeData(
-        labelColor: AppColors.primary,
+        labelColor: colorScheme.primary,
         unselectedLabelColor: colorScheme.onSurfaceVariant,
         indicatorColor: AppColors.accent,
         dividerColor: colorScheme.outline.withValues(alpha: 0.4),
@@ -187,6 +197,7 @@ abstract final class AppTheme {
         selectedColor: AppColors.accent,
         secondarySelectedColor: AppColors.accent,
         backgroundColor: colorScheme.surface,
+        checkmarkColor: AppColors.onAccent,
         labelStyle: textTheme.labelMedium?.copyWith(
           color: colorScheme.onSurface,
           fontWeight: FontWeight.w700,
@@ -198,6 +209,27 @@ abstract final class AppTheme {
         shape: const StadiumBorder(),
         side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.7)),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: colorScheme.surface,
+        surfaceTintColor: Colors.transparent,
+        titleTextStyle: textTheme.titleLarge,
+        contentTextStyle: textTheme.bodyMedium,
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: colorScheme.surface,
+        surfaceTintColor: Colors.transparent,
+        modalBackgroundColor: colorScheme.surface,
+      ),
+      listTileTheme: ListTileThemeData(
+        iconColor: colorScheme.onSurfaceVariant,
+        textColor: colorScheme.onSurface,
+        subtitleTextStyle: textTheme.bodySmall,
+      ),
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: colorScheme.primary,
+        selectionColor: colorScheme.primary.withValues(alpha: 0.28),
+        selectionHandleColor: colorScheme.primary,
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,

@@ -22,6 +22,7 @@ import '../../features/profile/presentation/screens/follow_list_screen.dart';
 import '../../features/profile/presentation/screens/legal_document_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/profile/presentation/screens/settings_screen.dart';
+import '../../features/profile/presentation/screens/support_screen.dart';
 import '../../features/profile/presentation/screens/user_profile_screen.dart';
 import '../../features/reservations/presentation/screens/my_reservations_screen.dart';
 import '../../features/restaurants/presentation/screens/business_setup_screen.dart';
@@ -57,7 +58,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           loc == Routes.signUp ||
           loc == Routes.forgotPassword;
       final onLegalScreen =
-          loc == Routes.privacyPolicy || loc == Routes.termsOfService;
+          loc == Routes.privacyPolicy ||
+          loc == Routes.termsOfService ||
+          loc == Routes.support;
 
       // Unknown session: keep users on auth/legal only (no Feed/Explore).
       if (authState.isLoading) {
@@ -151,6 +154,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.termsOfService,
         builder: (_, __) => const LegalDocumentScreen.terms(),
+      ),
+      GoRoute(
+        path: Routes.support,
+        builder: (_, __) => const SupportScreen(),
       ),
       GoRoute(
         path: Routes.search,

@@ -109,7 +109,7 @@ export const onNotificationPush = onDocumentCreated(
     if (tokensSnap.empty) return;
     const tokens = tokensSnap.docs.map((d) => d.id);
 
-    const title = "BiteWise";
+    const title = "TasteWise";
     const body =
       n.type === "like"
         ? `${n.actorName} liked your post`

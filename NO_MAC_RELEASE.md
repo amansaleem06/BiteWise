@@ -90,8 +90,8 @@ git push -u origin main
 
 Your public URLs are:
 
-- `https://amansaleem06.github.io/bitewise/privacy.html`
-- `https://amansaleem06.github.io/bitewise/terms.html`
+- `https://amansaleem06.github.io/BiteWise/privacy.html`
+- `https://amansaleem06.github.io/BiteWise/terms.html`
 
 These are already set in `lib/core/constants/app_legal.dart`.
 

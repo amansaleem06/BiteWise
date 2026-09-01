@@ -8,6 +8,9 @@ abstract final class AppLegal {
   static const privacyPolicyUrl = '$_pagesBase/privacy.html';
   static const termsOfServiceUrl = '$_pagesBase/terms.html';
   static const supportUrl = '$_pagesBase/support.html';
+  static const supportEmail = 'tastewise2026@gmail.com';
+  static const supportMailto =
+      'mailto:tastewise2026@gmail.com?subject=TasteWise%20support';
 
   static const privacyPolicyMarkdown = '''
 # Privacy Policy
@@ -36,7 +39,7 @@ We use trusted processors such as Google Firebase (Auth, Firestore, Storage, Mes
 - **Delete your account** anytime under Profile → Settings → Delete account. This removes your Auth account and personal profile data; shared posts are anonymized.
 
 ## Contact
-Questions about privacy: privacy@tastewise.app
+Questions about privacy or support: tastewise2026@gmail.com
 ''';
 
   static const termsOfServiceMarkdown = '''
@@ -53,7 +56,7 @@ You must be able to form a binding contract in your country. If you are under 13
 You are responsible for your login and for content you post. Do not share your password. You may delete your account at any time in Settings.
 
 ## Acceptable use
-Do not post illegal, hateful, harassing, or infringing content. Do not spam, scrape, or attempt to disrupt TasteWise.
+Do not post illegal, hateful, harassing, or infringing content. Do not spam, scrape, or attempt to disrupt TasteWise. You can report content or block another user from a post, profile, or chat. We review reports and may remove content or suspend accounts that violate these terms.
 
 ## Content license
 You keep ownership of your content. You grant TasteWise a non-exclusive license to host and display it so the service can function. You can remove content or delete your account to stop ongoing display of personal profile data.
@@ -68,6 +71,6 @@ TasteWise is provided “as is.” We do not guarantee uninterrupted service or 
 We may suspend accounts that violate these terms. You may stop using TasteWise and delete your account at any time.
 
 ## Contact
-legal@tastewise.app
+Support and legal: tastewise2026@gmail.com
 ''';
 }

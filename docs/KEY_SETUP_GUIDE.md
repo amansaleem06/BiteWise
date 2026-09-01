@@ -110,11 +110,11 @@ app binaries — the single biggest security upgrade available:
 1. [Firebase Console](https://console.firebase.google.com/project/bitewise-1d266)
   → **Build → App Check**.
 2. Register the Android app with **Play Integrity** and the current iOS app
-   (`com.amansaleem06.bitewise`) with **App Attest**. BiteWise requires iOS
+  (`com.amansaleem06.bitewise`) with **App Attest**. TasteWise requires iOS
    14+, so DeviceCheck fallback and its extra private key are unnecessary.
 3. Add the `firebase_app_check` package to the app, activate it at startup.
 4. Run in **monitor mode** first; only click **Enforce** on Firestore /
-   Storage after a fresh TestFlight/Play build shows verified traffic.
+  Storage after a fresh TestFlight/Play build shows verified traffic.
 
 **Billing alert** (5 min, catches key abuse early): Cloud Console →
 **Billing → Budgets & alerts → Create budget** → e.g. $25/month with email
@@ -134,5 +134,5 @@ alerts at 50/90/100%.
 - [x] Fresh Codemagic build → restaurant search in Create works
 - [x] Android Maps key: package + both SHA-1s, Maps SDK for Android only
 - [x] iOS Maps key: bundle id, Maps SDK for iOS only
-- [ ] Nearby map still renders on a real build of each platform
-- [ ] Billing budget alert created
+- [x] Nearby map still renders on a real build of each platform
+- [x] Billing budget alert created

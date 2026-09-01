@@ -6,6 +6,7 @@ import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/theme_mode_provider.dart';
+import '../../../../core/constants/app_legal.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/errors/error_text.dart';
 import '../../../../core/widgets/app_snackbar.dart';
@@ -90,6 +91,12 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const Divider(height: 32),
           const _SectionHeader(AppStrings.legal),
+          ListTile(
+            leading: const Icon(Icons.support_agent_outlined),
+            title: const Text(AppStrings.support),
+            subtitle: const Text(AppLegal.supportEmail),
+            onTap: () => context.push(Routes.support),
+          ),
           ListTile(
             leading: const Icon(Icons.privacy_tip_outlined),
             title: const Text(AppStrings.privacyPolicy),
@@ -189,7 +196,10 @@ class SettingsScreen extends ConsumerWidget {
               ListTile(
                 title: Text(_appearanceLabel(mode)),
                 trailing: mode == current
-                    ? const Icon(Icons.check_rounded, color: AppColors.primary)
+                    ? Icon(
+                        Icons.check_rounded,
+                        color: Theme.of(ctx).colorScheme.primary,
+                      )
                     : null,
                 onTap: () => Navigator.pop(ctx, mode),
               ),
@@ -218,7 +228,10 @@ class SettingsScreen extends ConsumerWidget {
                 title: Text(privacy.label),
                 subtitle: Text(privacy.subtitle),
                 trailing: privacy == current
-                    ? const Icon(Icons.check_rounded, color: AppColors.primary)
+                    ? Icon(
+                        Icons.check_rounded,
+                        color: Theme.of(ctx).colorScheme.primary,
+                      )
                     : null,
                 onTap: () => Navigator.pop(ctx, privacy),
               ),

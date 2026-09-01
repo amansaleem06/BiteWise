@@ -12,12 +12,14 @@ class CommentTile extends StatelessWidget {
     required this.isMine,
     required this.onReply,
     required this.onDelete,
+    this.onReport,
   });
 
   final Comment comment;
   final bool isMine;
   final VoidCallback onReply;
   final VoidCallback onDelete;
+  final VoidCallback? onReport;
 
   @override
   Widget build(BuildContext context) {
@@ -66,7 +68,7 @@ class CommentTile extends StatelessWidget {
                             child: Text(
                               'Page ',
                               style: theme.textTheme.labelSmall?.copyWith(
-                                color: AppColors.primary,
+                                color: theme.colorScheme.primary,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
@@ -76,7 +78,7 @@ class CommentTile extends StatelessWidget {
                         TextSpan(
                           text: '@${comment.replyToName} ',
                           style: theme.textTheme.bodyMedium
-                              ?.copyWith(color: AppColors.primaryDark),
+                              ?.copyWith(color: theme.colorScheme.primary),
                         ),
                       TextSpan(
                         text: comment.text,
@@ -101,6 +103,17 @@ class CommentTile extends StatelessWidget {
                             ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                     ),
+                    if (!isMine && onReport != null) ...[
+                      const SizedBox(width: AppSpacing.md),
+                      GestureDetector(
+                        onTap: onReport,
+                        child: Text(
+                          'Report',
+                          style: theme.textTheme.bodySmall
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
                     if (isMine) ...[
                       const SizedBox(width: AppSpacing.md),
                       GestureDetector(

@@ -100,10 +100,10 @@ class RestaurantRatingsTab extends ConsumerWidget {
                           AppColors.primary.withValues(alpha: 0.15),
                       child: Text(
                         (p.rating ?? 0).toStringAsFixed(1),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w800,
                           fontSize: 12,
-                          color: AppColors.primary,
+                          color: theme.colorScheme.primary,
                         ),
                       ),
                     ),
@@ -111,10 +111,10 @@ class RestaurantRatingsTab extends ConsumerWidget {
                       children: [
                         Expanded(child: Text(p.authorName)),
                         if (p.postedAsRestaurant)
-                          const Icon(
+                          Icon(
                             Icons.verified_rounded,
                             size: 16,
-                            color: AppColors.primary,
+                            color: theme.colorScheme.primary,
                           ),
                       ],
                     ),

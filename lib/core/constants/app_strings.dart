@@ -39,6 +39,7 @@ abstract final class AppStrings {
   static const legal = 'Legal';
   static const privacyPolicy = 'Privacy Policy';
   static const termsOfService = 'Terms of Service';
+  static const support = 'Help & support';
   static const deleteAccount = 'Delete account';
   static const deleteAccountTitle = 'Delete your account?';
   static const deleteAccountBody =

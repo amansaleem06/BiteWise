@@ -117,7 +117,7 @@ class PostCard extends StatelessWidget {
                             style: GoogleFonts.sourceSans3(
                               fontWeight: FontWeight.w700,
                               fontSize: 13,
-                              color: AppColors.primary,
+                              color: theme.colorScheme.primary,
                             ),
                           ),
                         ),
@@ -143,17 +143,17 @@ class PostCard extends StatelessWidget {
                         style: GoogleFonts.sourceSans3(
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
-                          color: AppColors.primary,
+                          color: theme.colorScheme.primary,
                         ),
                       ),
                     ),
                   ),
                 if (post.postedAsRestaurant)
-                  const Padding(
-                    padding: EdgeInsets.only(right: 4),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4),
                     child: Icon(
                       Icons.verified_rounded,
-                      color: AppColors.primary,
+                      color: theme.colorScheme.primary,
                       size: 20,
                     ),
                   ),
@@ -328,7 +328,7 @@ class PostCard extends StatelessWidget {
                       style: GoogleFonts.sourceSans3(
                         fontWeight: FontWeight.w800,
                         fontSize: 14,
-                        color: AppColors.primary,
+                        color: theme.colorScheme.primary,
                       ),
                     ),
                   ),
@@ -395,7 +395,7 @@ class PostCard extends StatelessWidget {
                                 style: GoogleFonts.sourceSans3(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
-                                  color: AppColors.primary,
+                                  color: theme.colorScheme.primary,
                                 ),
                               ),
                           ],
@@ -414,7 +414,7 @@ class PostCard extends StatelessWidget {
                       style: GoogleFonts.sourceSans3(
                         fontWeight: FontWeight.w700,
                         fontSize: 13,
-                        color: AppColors.primary,
+                        color: theme.colorScheme.primary,
                       ),
                     ),
                   ),
@@ -426,7 +426,7 @@ class PostCard extends StatelessWidget {
                     runSpacing: 6,
                     children: [
                       for (var i = 0; i < post.tags.length && i < 4; i++)
-                        _TagPill(label: post.tags[i], index: i),
+                        _TagPill(label: post.tags[i]),
                     ],
                   ),
                 ],
@@ -447,22 +447,19 @@ class PostCard extends StatelessWidget {
 }
 
 class _TagPill extends StatelessWidget {
-  const _TagPill({required this.label, required this.index});
+  const _TagPill({required this.label});
 
   final String label;
-  final int index;
 
   @override
   Widget build(BuildContext context) {
-    const styles = [
-      (AppColors.primaryLight, AppColors.primary),
-      (AppColors.cream, AppColors.primary),
-    ];
-    final style = styles[index % styles.length];
+    final theme = Theme.of(context);
+    final bg = theme.colorScheme.primaryContainer;
+    final fg = theme.colorScheme.onPrimaryContainer;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: style.$1,
+        color: bg,
         borderRadius: BorderRadius.circular(AppRadius.pill),
       ),
       child: Text(
@@ -470,7 +467,7 @@ class _TagPill extends StatelessWidget {
         style: GoogleFonts.sourceSans3(
           fontWeight: FontWeight.w800,
           fontSize: 11,
-          color: style.$2,
+          color: fg,
         ),
       ),
     );

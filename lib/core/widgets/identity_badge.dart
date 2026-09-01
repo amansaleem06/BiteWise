@@ -43,7 +43,7 @@ class IdentityBadge extends StatelessWidget {
         ? AppColors.primary.withValues(alpha: 0.14)
         : theme.colorScheme.surfaceContainerHighest;
     final fg = emphasized
-        ? AppColors.primary
+        ? theme.colorScheme.primary
         : theme.colorScheme.onSurfaceVariant;
 
     return Container(

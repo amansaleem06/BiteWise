@@ -8,9 +8,9 @@ void main() {
       MaterialApp(
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
-        home: const Scaffold(body: Center(child: Text('BiteWise'))),
+        home: const Scaffold(body: Center(child: Text('TasteWise'))),
       ),
     );
-    expect(find.text('BiteWise'), findsOneWidget);
+    expect(find.text('TasteWise'), findsOneWidget);
   });
 }

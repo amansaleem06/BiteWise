@@ -106,7 +106,7 @@ class _CurrencyPickerSheetState extends State<CurrencyPickerSheet> {
                       child: Text(
                         'Suggested',
                         style: theme.textTheme.labelLarge?.copyWith(
-                          color: AppColors.primary,
+                          color: theme.colorScheme.primary,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -165,7 +165,10 @@ class _CurrencyPickerSheetState extends State<CurrencyPickerSheet> {
       title: Text(c.name),
       subtitle: Text(c.code),
       trailing: selected
-          ? const Icon(Icons.check_rounded, color: AppColors.primary)
+          ? Icon(
+              Icons.check_rounded,
+              color: Theme.of(context).colorScheme.primary,
+            )
           : null,
       onTap: () => Navigator.pop(context, c),
     );

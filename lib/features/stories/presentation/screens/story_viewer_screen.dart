@@ -5,10 +5,13 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_theme.dart';
 import '../../../../core/errors/error_text.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
+import '../../../safety/domain/repositories/safety_repository.dart';
+import '../../../safety/presentation/widgets/safety_actions.dart';
 import '../../domain/entities/story.dart';
 import '../providers/story_providers.dart';
 
@@ -168,8 +171,10 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.cream,
-      builder: (ctx) => _StoryCommentsSheet(storyId: _story.id),
+      builder: (ctx) => Theme(
+        data: AppTheme.light,
+        child: _StoryCommentsSheet(storyId: _story.id),
+      ),
     );
     if (mounted) _resume();
   }
@@ -308,6 +313,44 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
                                 Icons.delete_outline_rounded,
                                 color: AppColors.cream,
                               ),
+                            )
+                          else
+                            PopupMenuButton<String>(
+                              icon: const Icon(
+                                Icons.more_horiz_rounded,
+                                color: AppColors.cream,
+                              ),
+                              onOpened: _pause,
+                              onCanceled: _resume,
+                              onSelected: (value) async {
+                                if (value == 'report') {
+                                  await SafetyActions.report(
+                                    context,
+                                    ref,
+                                    type: ReportTargetType.story,
+                                    targetId: story.id,
+                                    targetUserId: story.authorId,
+                                  );
+                                } else if (value == 'block') {
+                                  await SafetyActions.blockUser(
+                                    context,
+                                    ref,
+                                    uid: story.authorId,
+                                    name: ring.authorName,
+                                  );
+                                }
+                                if (mounted) _resume();
+                              },
+                              itemBuilder: (ctx) => const [
+                                PopupMenuItem(
+                                  value: 'report',
+                                  child: Text('Report story'),
+                                ),
+                                PopupMenuItem(
+                                  value: 'block',
+                                  child: Text('Block user'),
+                                ),
+                              ],
                             ),
                         ],
                       ),

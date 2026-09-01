@@ -1,4 +1,4 @@
-# BiteWise Security
+# TasteWise Security
 
 How the app protects user data, what is intentionally public, and what every
 contributor must never do.

@@ -24,6 +24,7 @@ abstract final class Routes {
   static const settings = '/settings';
   static const privacyPolicy = '/privacy';
   static const termsOfService = '/terms';
+  static const support = '/support';
   static const search = '/search';
   static const notifications = '/notifications';
   static const chat = '/chat/:id';

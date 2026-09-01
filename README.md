@@ -1,4 +1,4 @@
-# BiteWise
+# TasteWise
 
 Discover. Taste. Share. — a food-focused social app built with Flutter +
 Firebase. Diners share plates, rate dishes, and book tables; restaurant owners
@@ -26,6 +26,7 @@ secrets needed.
 | [SETUP.md](SETUP.md) | Firebase / Google Cloud console setup, milestone history |
 | [NO_MAC_RELEASE.md](NO_MAC_RELEASE.md) | Ship to the App Store without a Mac (Codemagic + TestFlight) |
 | [docs/APP_STORE_LISTING.md](docs/APP_STORE_LISTING.md) | Store listing copy |
+| [docs/APP_REVIEW_CHECKLIST.md](docs/APP_REVIEW_CHECKLIST.md) | Release testing, App Store Connect, privacy, and review checklist |
 
 ## Stack
 

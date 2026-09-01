@@ -14,6 +14,8 @@ import '../../../feed/presentation/widgets/feed_shimmer.dart';
 import '../../../feed/presentation/widgets/post_card.dart';
 import '../../../feed/presentation/widgets/post_actions_sheet.dart';
 import '../../../feed/presentation/widgets/share_post_sheet.dart';
+import '../../../safety/domain/repositories/safety_repository.dart';
+import '../../../safety/presentation/widgets/safety_actions.dart';
 import '../providers/comment_providers.dart';
 import '../widgets/comment_tile.dart';
 
@@ -171,6 +173,15 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                               },
                               onDelete: () =>
                                   commentsController.delete(comment.id),
+                              onReport: comment.authorId == me?.uid
+                                  ? null
+                                  : () => SafetyActions.report(
+                                        context,
+                                        ref,
+                                        type: ReportTargetType.comment,
+                                        targetId: comment.id,
+                                        targetUserId: comment.authorId,
+                                      ),
                             ),
                           if (comments.isLoadingMore)
                             const Padding(

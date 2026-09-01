@@ -7,6 +7,8 @@ import '../../../../core/widgets/app_snackbar.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../profile/presentation/providers/profile_providers.dart';
 import '../../../restaurants/presentation/providers/restaurant_providers.dart';
+import '../../../safety/domain/repositories/safety_repository.dart';
+import '../../../safety/presentation/widgets/safety_actions.dart';
 import '../../domain/entities/post.dart';
 import '../providers/feed_providers.dart';
 
@@ -135,6 +137,35 @@ class PostActionsSheet extends ConsumerWidget {
                   );
                 },
               ),
+          ],
+          if (!isAuthor && post.authorId.isNotEmpty) ...[
+            ListTile(
+              leading: const Icon(Icons.flag_outlined),
+              title: const Text('Report post'),
+              onTap: () {
+                Navigator.pop(context);
+                SafetyActions.report(
+                  pageContext,
+                  ref,
+                  type: ReportTargetType.post,
+                  targetId: post.id,
+                  targetUserId: post.authorId,
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.block_rounded),
+              title: const Text('Block user'),
+              onTap: () {
+                Navigator.pop(context);
+                SafetyActions.blockUser(
+                  pageContext,
+                  ref,
+                  uid: post.authorId,
+                  name: post.publicAuthorName,
+                );
+              },
+            ),
           ],
           if (canDelete)
             ListTile(

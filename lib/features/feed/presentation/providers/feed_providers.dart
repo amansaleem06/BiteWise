@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../safety/presentation/providers/safety_providers.dart';
 import '../../data/repositories/firestore_feed_repository.dart';
 import '../../domain/entities/post.dart';
 import '../../domain/repositories/feed_repository.dart';
@@ -47,12 +48,19 @@ class FeedController extends FamilyAsyncNotifier<FeedState, FeedTab> {
 
   @override
   Future<FeedState> build(FeedTab tab) async {
+    final blocked = await ref.watch(blockedUserIdsProvider.future);
     final page = await _fetch(null);
     return FeedState(
-      posts: page.posts,
+      posts: _withoutBlocked(page.posts, blocked),
       cursor: page.cursor,
       hasMore: page.hasMore,
     );
+  }
+
+  List<Post> _withoutBlocked(List<Post> posts, [Set<String>? blocked]) {
+    final ids = blocked ?? ref.read(blockedUserIdsProvider).valueOrNull ?? {};
+    if (ids.isEmpty) return posts;
+    return posts.where((p) => !ids.contains(p.authorId)).toList();
   }
 
   Future<FeedPage> _fetch(Object? cursor) => switch (arg) {
@@ -64,7 +72,7 @@ class FeedController extends FamilyAsyncNotifier<FeedState, FeedTab> {
     state = await AsyncValue.guard(() async {
       final page = await _fetch(null);
       return FeedState(
-        posts: page.posts,
+        posts: _withoutBlocked(page.posts),
         cursor: page.cursor,
         hasMore: page.hasMore,
       );
@@ -80,7 +88,7 @@ class FeedController extends FamilyAsyncNotifier<FeedState, FeedTab> {
       final page = await _fetch(current.cursor);
       state = AsyncData(
         current.copyWith(
-          posts: [...current.posts, ...page.posts],
+          posts: [...current.posts, ..._withoutBlocked(page.posts)],
           cursor: page.cursor,
           hasMore: page.hasMore,
           isLoadingMore: false,

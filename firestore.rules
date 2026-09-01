@@ -406,6 +406,29 @@ service cloud.firestore {
 
     // Future collections (dishes)
     // are added per-milestone with their own rules. Default deny:
+
+    // Content reports — signed-in users may file; only admins read.
+    match /reports/{reportId} {
+      allow read: if isAdmin();
+      allow create: if isSignedIn()
+        && request.resource.data.reporterId == request.auth.uid
+        && request.resource.data.targetType in
+          ['post', 'user', 'message', 'story', 'comment']
+        && request.resource.data.targetId is string
+        && request.resource.data.targetId.size() > 0
+        && request.resource.data.targetUserId is string
+        && request.resource.data.reason is string
+        && request.resource.data.reason.size() >= 2
+        && request.resource.data.reason.size() <= 80
+        && request.resource.data.status == 'open';
+      allow update, delete: if isAdmin();
+    }
+
+    match /users/{uid}/blocked/{targetUid} {
+      allow read: if isSelf(uid);
+      allow create, delete: if isSelf(uid) && uid != targetUid;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

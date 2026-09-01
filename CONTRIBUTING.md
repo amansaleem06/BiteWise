@@ -1,4 +1,4 @@
-# Contributing to BiteWise
+# Contributing to TasteWise
 
 ## Getting set up
 

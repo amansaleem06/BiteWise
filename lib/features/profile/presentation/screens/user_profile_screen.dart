@@ -9,6 +9,9 @@ import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/async_error_view.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../messages/presentation/providers/chat_providers.dart';
+import '../../../safety/domain/repositories/safety_repository.dart';
+import '../../../safety/presentation/providers/safety_providers.dart';
+import '../../../safety/presentation/widgets/safety_actions.dart';
 import '../../../taste/presentation/widgets/taste_match_card.dart';
 import '../providers/profile_providers.dart';
 import '../widgets/profile_widgets.dart';
@@ -46,10 +49,55 @@ class UserProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(userProfileProvider(uid));
     final isSelf = ref.watch(currentUserProvider)?.uid == uid;
+    final blocked = ref.watch(blockedUserIdsProvider).valueOrNull ?? {};
+    final isBlocked = blocked.contains(uid);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(profileAsync.valueOrNull?.user.displayName ?? ''),
+        actions: [
+          if (!isSelf)
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                final name =
+                    profileAsync.valueOrNull?.user.displayName ?? 'this user';
+                if (value == 'report') {
+                  SafetyActions.report(
+                    context,
+                    ref,
+                    type: ReportTargetType.user,
+                    targetId: uid,
+                    targetUserId: uid,
+                  );
+                } else if (value == 'block') {
+                  SafetyActions.blockUser(
+                    context,
+                    ref,
+                    uid: uid,
+                    name: name,
+                  );
+                } else if (value == 'unblock') {
+                  SafetyActions.unblockUser(context, ref, uid: uid);
+                }
+              },
+              itemBuilder: (ctx) => [
+                const PopupMenuItem(
+                  value: 'report',
+                  child: Text('Report user'),
+                ),
+                if (isBlocked)
+                  const PopupMenuItem(
+                    value: 'unblock',
+                    child: Text('Unblock'),
+                  )
+                else
+                  const PopupMenuItem(
+                    value: 'block',
+                    child: Text('Block user'),
+                  ),
+              ],
+            ),
+        ],
       ),
       body: profileAsync.when(
         loading: () =>
@@ -100,6 +148,19 @@ class UserProfileScreen extends ConsumerWidget {
                       ],
                     ),
             ),
+            if (!isSelf && isBlocked)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  0,
+                  AppSpacing.md,
+                  AppSpacing.sm,
+                ),
+                child: Text(
+                  'You blocked this user. Their posts are hidden from your feed.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
             if (!isSelf)
               TasteMatchCard(uid: uid, name: profile.user.displayName),
             const Divider(height: 1),
