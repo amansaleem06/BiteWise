@@ -29,8 +29,9 @@ workflows:
       vars:
         # Replace in Codemagic UI (Application variables) — do not commit secrets.
         APP_STORE_APPLE_ID: "6800049991"
-        # PLACES_API_KEY: set in Codemagic UI as a SECURE variable.
-        # Never write the key into this file.
+        # PLACES_API_KEY and GEMINI_API_KEY: set in Codemagic UI as
+        # SECURE variables in the bitewise_secrets group.
+        # Never write keys into this file.
       flutter: stable
       xcode: latest
       cocoapods: default
@@ -75,6 +76,7 @@ workflows:
             --build-name=1.0.0 \
             --build-number="${NEXT_BUILD_NUMBER}" \
             --dart-define=PLACES_API_KEY="${PLACES_API_KEY:-}" \
+            --dart-define=GEMINI_API_KEY="${GEMINI_API_KEY:-}" \
             --export-options-plist=/Users/builder/export_options.plist
     artifacts:
       - build/ios/ipa/*.ipa
@@ -106,6 +108,7 @@ workflows:
       - name: Build app bundle
         script: |
           flutter build appbundle --release \
-            --dart-define=PLACES_API_KEY="${PLACES_API_KEY:-}"
+            --dart-define=PLACES_API_KEY="${PLACES_API_KEY:-}" \
+            --dart-define=GEMINI_API_KEY="${GEMINI_API_KEY:-}"
     artifacts:
       - build/app/outputs/bundle/release/*.aab

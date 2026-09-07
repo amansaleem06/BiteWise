@@ -39,6 +39,8 @@ abstract final class UserModel {
       pendingClaimCode: data['pendingClaimCode'] as String?,
       phone: data['phone'] as String?,
       messagePrivacy: MessagePrivacy.fromKey(data['messagePrivacy'] as String?),
+      dietaryPreferences:
+          DietaryPreference.listFrom(data['dietaryPreferences']),
       emailVerified: (data['emailVerified'] as bool?) ?? false,
       followerCount: (data['followerCount'] as num?)?.toInt() ?? 0,
       followingCount: (data['followingCount'] as num?)?.toInt() ?? 0,

@@ -9,6 +9,7 @@ import '../../../../core/utils/validators.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/app_text_field.dart';
+import '../../../auth/domain/entities/app_user.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../providers/profile_providers.dart';
 
@@ -24,6 +25,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   late final TextEditingController _name;
   late final TextEditingController _bio;
   late final TextEditingController _phone;
+  final _dietary = <DietaryPreference>{};
 
   @override
   void initState() {
@@ -32,6 +34,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _name = TextEditingController(text: user?.displayName ?? '');
     _bio = TextEditingController(text: user?.bio ?? '');
     _phone = TextEditingController(text: user?.phone ?? '');
+    _dietary.addAll(user?.dietaryPreferences ?? const []);
   }
 
   @override
@@ -48,6 +51,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           displayName: _name.text,
           bio: _bio.text,
           phone: _phone.text,
+          dietaryPreferences: _dietary.toList(),
         );
     if (!mounted) return;
     if (ok) {
@@ -154,6 +158,45 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       ),
                     ],
                   ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Dietary preferences',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xxs),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'TasteWise boosts matching plates and restaurants in your feed.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Wrap(
+                  spacing: AppSpacing.xs,
+                  runSpacing: AppSpacing.xs,
+                  children: [
+                    for (final preference in DietaryPreference.values)
+                      FilterChip(
+                        label: Text(preference.label),
+                        tooltip: preference.description,
+                        selected: _dietary.contains(preference),
+                        onSelected: (selected) => setState(() {
+                          if (selected) {
+                            _dietary.add(preference);
+                          } else {
+                            _dietary.remove(preference);
+                          }
+                        }),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 AppButton(

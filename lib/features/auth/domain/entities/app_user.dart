@@ -26,6 +26,43 @@ enum MessagePrivacy {
       };
 }
 
+/// Dietary lifestyle modes a diner can set on their profile.
+///
+/// Multi-select. Used to boost matching plates and restaurants in For You /
+/// Explore, and fed into AI diet-plan generation as hard restrictions.
+enum DietaryPreference {
+  vegan,
+  vegetarian,
+  healthy,
+  fitness;
+
+  static DietaryPreference? fromKey(String? key) => DietaryPreference.values
+      .where((preference) => preference.name == key)
+      .firstOrNull;
+
+  static List<DietaryPreference> listFrom(dynamic raw) => raw is List
+      ? raw
+          .whereType<String>()
+          .map(fromKey)
+          .whereType<DietaryPreference>()
+          .toList()
+      : const [];
+
+  String get label => switch (this) {
+        DietaryPreference.vegan => 'Vegan',
+        DietaryPreference.vegetarian => 'Vegetarian',
+        DietaryPreference.healthy => 'Health-conscious',
+        DietaryPreference.fitness => 'Fitness-focused',
+      };
+
+  String get description => switch (this) {
+        DietaryPreference.vegan => 'No animal products',
+        DietaryPreference.vegetarian => 'No meat or fish',
+        DietaryPreference.healthy => 'Fresh, balanced plates first',
+        DietaryPreference.fitness => 'High-protein, goal-friendly picks',
+      };
+}
+
 /// Role determines permissions throughout the app and in Security Rules.
 enum UserRole {
   user,
@@ -58,6 +95,7 @@ class AppUser extends Equatable {
     this.pendingClaimCode,
     this.phone,
     this.messagePrivacy = MessagePrivacy.everyone,
+    this.dietaryPreferences = const [],
     this.emailVerified = false,
     this.followerCount = 0,
     this.followingCount = 0,
@@ -84,6 +122,7 @@ class AppUser extends Equatable {
   final String? pendingClaimCode;
   final String? phone;
   final MessagePrivacy messagePrivacy;
+  final List<DietaryPreference> dietaryPreferences;
   final bool emailVerified;
   final int followerCount;
   final int followingCount;
@@ -124,6 +163,7 @@ class AppUser extends Equatable {
     bool clearPendingClaim = false,
     String? phone,
     MessagePrivacy? messagePrivacy,
+    List<DietaryPreference>? dietaryPreferences,
     bool? emailVerified,
   }) =>
       AppUser(
@@ -149,6 +189,7 @@ class AppUser extends Equatable {
             : (pendingClaimCode ?? this.pendingClaimCode),
         phone: phone ?? this.phone,
         messagePrivacy: messagePrivacy ?? this.messagePrivacy,
+        dietaryPreferences: dietaryPreferences ?? this.dietaryPreferences,
         emailVerified: emailVerified ?? this.emailVerified,
         followerCount: followerCount,
         followingCount: followingCount,
@@ -180,6 +221,7 @@ class AppUser extends Equatable {
         pendingClaimCode: pendingClaimCode,
         phone: phone,
         messagePrivacy: messagePrivacy,
+        dietaryPreferences: dietaryPreferences,
         emailVerified: emailVerified,
         followerCount: followerCount ?? this.followerCount,
         followingCount: followingCount ?? this.followingCount,
@@ -206,6 +248,7 @@ class AppUser extends Equatable {
         pendingClaimCode,
         phone,
         messagePrivacy,
+        dietaryPreferences,
         emailVerified,
         followerCount,
         followingCount,

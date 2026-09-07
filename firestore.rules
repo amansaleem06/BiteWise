@@ -111,6 +111,16 @@ service cloud.firestore {
       allow read, write: if isSelf(uid);
     }
 
+    // AI diet plans — private to their owner.
+    match /users/{uid}/aiPlans/{planId} {
+      allow read, write: if isSelf(uid);
+    }
+
+    // Height / weight / goal — never on the public profile doc.
+    match /users/{uid}/private/{docId} {
+      allow read, write: if isSelf(uid);
+    }
+
     // Notifications — actor may create for someone else; owner reads/marks.
     match /users/{uid}/notifications/{notificationId} {
       allow read, delete: if isSelf(uid);

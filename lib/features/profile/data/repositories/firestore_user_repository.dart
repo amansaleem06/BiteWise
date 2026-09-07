@@ -304,6 +304,7 @@ class FirestoreUserRepository implements UserRepository {
     String? bio,
     String? phone,
     MessagePrivacy? messagePrivacy,
+    List<DietaryPreference>? dietaryPreferences,
   }) async {
     final user = _auth.currentUser;
     if (user == null) throw const AppException('Not signed in');
@@ -320,6 +321,10 @@ class FirestoreUserRepository implements UserRepository {
     if (phone != null) updates['phone'] = phone.trim();
     if (messagePrivacy != null) {
       updates['messagePrivacy'] = messagePrivacy.name;
+    }
+    if (dietaryPreferences != null) {
+      updates['dietaryPreferences'] =
+          dietaryPreferences.map((preference) => preference.name).toList();
     }
 
     await _users.doc(user.uid).update(updates);

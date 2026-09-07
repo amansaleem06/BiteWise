@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/utils/dietary_ranking.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../safety/presentation/providers/safety_providers.dart';
 import '../../data/repositories/firestore_feed_repository.dart';
 import '../../domain/entities/post.dart';
@@ -51,7 +53,7 @@ class FeedController extends FamilyAsyncNotifier<FeedState, FeedTab> {
     final blocked = await ref.watch(blockedUserIdsProvider.future);
     final page = await _fetch(null);
     return FeedState(
-      posts: _withoutBlocked(page.posts, blocked),
+      posts: _prepare(page.posts, blocked),
       cursor: page.cursor,
       hasMore: page.hasMore,
     );
@@ -63,6 +65,19 @@ class FeedController extends FamilyAsyncNotifier<FeedState, FeedTab> {
     return posts.where((p) => !ids.contains(p.authorId)).toList();
   }
 
+  /// Blocked-user filter + dietary-preference boost.
+  ///
+  /// Only For You is re-ranked; Following stays strictly chronological.
+  /// Ranking runs per fetched page, so pagination never reshuffles posts
+  /// the diner has already scrolled past.
+  List<Post> _prepare(List<Post> posts, [Set<String>? blocked]) {
+    final visible = _withoutBlocked(posts, blocked);
+    if (arg != FeedTab.forYou) return visible;
+    final preferences =
+        ref.read(currentUserProvider)?.dietaryPreferences ?? const [];
+    return DietaryRanking.rankPosts(visible, preferences);
+  }
+
   Future<FeedPage> _fetch(Object? cursor) => switch (arg) {
         FeedTab.forYou => _repo.fetchForYou(cursor: cursor),
         FeedTab.following => _repo.fetchFollowing(cursor: cursor),
@@ -72,7 +87,7 @@ class FeedController extends FamilyAsyncNotifier<FeedState, FeedTab> {
     state = await AsyncValue.guard(() async {
       final page = await _fetch(null);
       return FeedState(
-        posts: _withoutBlocked(page.posts),
+        posts: _prepare(page.posts),
         cursor: page.cursor,
         hasMore: page.hasMore,
       );
@@ -88,7 +103,7 @@ class FeedController extends FamilyAsyncNotifier<FeedState, FeedTab> {
       final page = await _fetch(current.cursor);
       state = AsyncData(
         current.copyWith(
-          posts: [...current.posts, ..._withoutBlocked(page.posts)],
+          posts: [...current.posts, ..._prepare(page.posts)],
           cursor: page.cursor,
           hasMore: page.hasMore,
           isLoadingMore: false,

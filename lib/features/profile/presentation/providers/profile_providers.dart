@@ -106,6 +106,7 @@ class EditProfileController extends AutoDisposeAsyncNotifier<void> {
     required String displayName,
     required String bio,
     String? phone,
+    List<DietaryPreference>? dietaryPreferences,
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
@@ -113,8 +114,10 @@ class EditProfileController extends AutoDisposeAsyncNotifier<void> {
             displayName: displayName,
             bio: bio,
             phone: phone,
+            dietaryPreferences: dietaryPreferences,
           ),
     );
+    if (!state.hasError) ref.invalidate(authStateProvider);
     return !state.hasError;
   }
 

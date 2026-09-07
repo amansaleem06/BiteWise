@@ -25,6 +25,7 @@ abstract interface class UserRepository {
     String? bio,
     String? phone,
     MessagePrivacy? messagePrivacy,
+    List<DietaryPreference>? dietaryPreferences,
   });
 
   /// Uploads a new avatar and updates Firestore + Auth photoUrl.

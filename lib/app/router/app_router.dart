@@ -31,6 +31,7 @@ import '../../features/restaurants/presentation/screens/restaurant_screen.dart';
 import '../../features/shell/presentation/main_shell.dart';
 import '../../features/stories/presentation/screens/story_edit_screen.dart';
 import '../../features/stories/presentation/screens/story_viewer_screen.dart';
+import '../../features/taste/presentation/screens/diet_plan_screen.dart';
 import '../../features/taste/presentation/screens/taste_passport_screen.dart';
 import 'routes.dart';
 
@@ -187,6 +188,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.tastePassport,
         builder: (_, __) => const TastePassportScreen(),
+      ),
+      GoRoute(
+        path: Routes.dietPlan,
+        builder: (_, __) => const DietPlanScreen(),
       ),
       GoRoute(
         path: Routes.stories,

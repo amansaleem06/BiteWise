@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/errors/app_exception.dart';
+import '../../../../core/services/food_vision_service.dart';
 import '../../../../core/services/places_search_service.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../explore/presentation/providers/explore_providers.dart';
@@ -22,6 +23,10 @@ final createPostRepositoryProvider = Provider<CreatePostRepository>(
 
 final placesSearchServiceProvider = Provider<PlacesSearchService>(
   (ref) => PlacesSearchService(),
+);
+
+final foodVisionServiceProvider = Provider<FoodVisionService>(
+  (ref) => FoodVisionService(),
 );
 
 /// Debounced Google Places search for restaurant tagging.
@@ -163,6 +168,21 @@ class CreatePostController extends AutoDisposeNotifier<CreatePostState> {
       return 'Tag a restaurant to publish a rating.';
     }
     state = state.copyWith(isSubmitting: true, progress: 0);
+
+    // AI gate: this is a food app — photos must actually show food.
+    // Fail-open on outages; only a confident "not food" blocks the post.
+    final foodCheck = await ref
+        .read(foodVisionServiceProvider)
+        .checkPostImages(state.images);
+    if (!foodCheck.allFood) {
+      state = state.copyWith(isSubmitting: false);
+      final which = foodCheck.failedIndexes.length == 1
+          ? 'Photo ${foodCheck.failedIndexes.first + 1}'
+          : 'Some of these photos';
+      return '$which doesn\'t look like food. '
+          'Please share a picture of your meal, drink, or menu.';
+    }
+
     try {
       await ref.read(createPostRepositoryProvider).publishPost(
             images: state.images,

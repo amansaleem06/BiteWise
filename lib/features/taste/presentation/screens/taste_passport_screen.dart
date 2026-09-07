@@ -2,12 +2,15 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/widgets/async_error_view.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
+import '../../data/diet_plan_repository.dart';
 import '../../domain/taste_stats.dart';
 import '../providers/taste_providers.dart';
 
@@ -178,6 +181,8 @@ class _PassportBody extends StatelessWidget {
             ),
           ],
         ),
+        const SizedBox(height: AppSpacing.md),
+        _DietPlanCard(plateCount: stats.postCount),
         const SizedBox(height: AppSpacing.lg),
 
         Text(
@@ -212,6 +217,92 @@ class _PassportBody extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// AI diet plan entry point: locked with progress until enough plates.
+class _DietPlanCard extends StatelessWidget {
+  const _DietPlanCard({required this.plateCount});
+
+  final int plateCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    const needed = DietPlanRepository.minPlates;
+    final unlocked = plateCount >= needed;
+    final remaining = (needed - plateCount).clamp(0, needed);
+
+    return Material(
+      color: theme.colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        side: BorderSide(color: AppColors.accent.withValues(alpha: 0.5)),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        onTap: unlocked ? () => context.push(Routes.dietPlan) : null,
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    unlocked
+                        ? Icons.auto_awesome_rounded
+                        : Icons.lock_outline_rounded,
+                    color: AppColors.accentDark,
+                    size: 20,
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Expanded(
+                    child: Text(
+                      unlocked ? 'Your AI diet plan' : 'AI diet plan',
+                      style: theme.textTheme.titleMedium,
+                    ),
+                  ),
+                  if (unlocked)
+                    const Icon(Icons.chevron_right_rounded),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.xxs),
+              Text(
+                unlocked
+                    ? 'Calorie targets, meal ideas from your plates, and '
+                        'healthier picks near you.'
+                    : 'Log $remaining more plate${remaining == 1 ? '' : 's'} '
+                        'to unlock a plan built from your Taste Passport.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              if (!unlocked) ...[
+                const SizedBox(height: AppSpacing.sm),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(99),
+                  child: LinearProgressIndicator(
+                    value: plateCount / needed,
+                    minHeight: 6,
+                    backgroundColor:
+                        theme.colorScheme.surfaceContainerHighest,
+                    color: AppColors.accent,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '$plateCount / $needed plates',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

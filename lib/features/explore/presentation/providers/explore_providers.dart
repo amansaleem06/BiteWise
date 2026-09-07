@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/services/recent_searches_service.dart';
+import '../../../../core/utils/dietary_ranking.dart';
 import '../../../auth/domain/entities/app_user.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../feed/domain/entities/post.dart';
 import '../../../restaurants/domain/entities/restaurant.dart';
 import '../../data/repositories/firestore_explore_repository.dart';
@@ -15,12 +17,24 @@ final recentSearchesServiceProvider =
     Provider<RecentSearchesService>((ref) => RecentSearchesService());
 
 final trendingPostsProvider = FutureProvider.autoDispose<List<Post>>(
-  (ref) => ref.read(exploreRepositoryProvider).fetchTrendingPosts(),
+  (ref) async {
+    final posts =
+        await ref.read(exploreRepositoryProvider).fetchTrendingPosts();
+    final preferences =
+        ref.watch(currentUserProvider)?.dietaryPreferences ?? const [];
+    return DietaryRanking.rankPosts(posts, preferences);
+  },
 );
 
 final topRatedRestaurantsProvider =
     FutureProvider.autoDispose<List<Restaurant>>(
-  (ref) => ref.read(exploreRepositoryProvider).fetchTopRatedRestaurants(),
+  (ref) async {
+    final restaurants =
+        await ref.read(exploreRepositoryProvider).fetchTopRatedRestaurants();
+    final preferences =
+        ref.watch(currentUserProvider)?.dietaryPreferences ?? const [];
+    return DietaryRanking.rankRestaurants(restaurants, preferences);
+  },
 );
 
 final rankedRestaurantsProvider =
