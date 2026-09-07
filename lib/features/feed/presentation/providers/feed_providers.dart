@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/utils/dietary_ranking.dart';
+import '../../../../core/utils/palette_ranking.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../safety/presentation/providers/safety_providers.dart';
+import '../../../taste/presentation/providers/diet_plan_providers.dart';
 import '../../data/repositories/firestore_feed_repository.dart';
 import '../../domain/entities/post.dart';
 import '../../domain/repositories/feed_repository.dart';
@@ -11,7 +13,7 @@ final feedRepositoryProvider = Provider<FeedRepository>(
   (ref) => FirestoreFeedRepository(),
 );
 
-enum FeedTab { forYou, following }
+enum FeedTab { forYou, following, palette }
 
 /// Immutable feed state with pagination bookkeeping.
 class FeedState {
@@ -50,6 +52,10 @@ class FeedController extends FamilyAsyncNotifier<FeedState, FeedTab> {
 
   @override
   Future<FeedState> build(FeedTab tab) async {
+    if (tab == FeedTab.palette) {
+      ref.watch(nutritionProfileProvider);
+      ref.watch(currentDietPlanProvider);
+    }
     final blocked = await ref.watch(blockedUserIdsProvider.future);
     final page = await _fetch(null);
     return FeedState(
@@ -72,14 +78,32 @@ class FeedController extends FamilyAsyncNotifier<FeedState, FeedTab> {
   /// the diner has already scrolled past.
   List<Post> _prepare(List<Post> posts, [Set<String>? blocked]) {
     final visible = _withoutBlocked(posts, blocked);
-    if (arg != FeedTab.forYou) return visible;
+    if (arg == FeedTab.following) return visible;
     final preferences =
         ref.read(currentUserProvider)?.dietaryPreferences ?? const [];
+    if (arg == FeedTab.palette) {
+      final profile = ref.read(nutritionProfileProvider).valueOrNull;
+      final plan = ref.read(currentDietPlanProvider).valueOrNull;
+      return PaletteRanking.apply(
+        posts: visible,
+        cuisines: profile?.favoriteCuisines ?? const [],
+        dishes: profile?.favoriteDishes ?? const [],
+        avoids: profile?.avoids ?? const [],
+        mealHints: [
+          if (plan != null)
+            for (final meal in plan.meals) ...[
+              meal.title,
+              if (meal.basedOn != null) meal.basedOn!,
+            ],
+        ],
+        preferences: preferences,
+      );
+    }
     return DietaryRanking.rankPosts(visible, preferences);
   }
 
   Future<FeedPage> _fetch(Object? cursor) => switch (arg) {
-        FeedTab.forYou => _repo.fetchForYou(cursor: cursor),
+        FeedTab.forYou || FeedTab.palette => _repo.fetchForYou(cursor: cursor),
         FeedTab.following => _repo.fetchFollowing(cursor: cursor),
       };
 

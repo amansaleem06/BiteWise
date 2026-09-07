@@ -10,6 +10,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/widgets/async_error_view.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
+import '../../domain/palette_copy.dart';
 import '../../domain/taste_stats.dart';
 import '../providers/taste_providers.dart';
 
@@ -252,7 +253,7 @@ class _DietPlanCard extends StatelessWidget {
                   const SizedBox(width: AppSpacing.xs),
                   Expanded(
                     child: Text(
-                      'Your AI diet plan',
+                      PaletteCopy.name,
                       style: theme.textTheme.titleMedium,
                     ),
                   ),
@@ -261,8 +262,7 @@ class _DietPlanCard extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.xxs),
               Text(
-                'Pick the cuisines and dishes you eat — or we\'ll use plates '
-                'you\'ve already logged.',
+                PaletteCopy.passportBlurb,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),

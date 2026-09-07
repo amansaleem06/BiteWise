@@ -11,6 +11,8 @@ import '../../../../core/constants/app_strings.dart';
 import '../../../../core/errors/error_text.dart';
 import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/widgets/app_snackbar.dart';
+import '../../../taste/domain/palette_copy.dart';
+import '../../../taste/presentation/providers/diet_plan_providers.dart';
 import '../providers/feed_providers.dart';
 import 'feed_shimmer.dart';
 import 'post_card.dart';
@@ -108,6 +110,9 @@ class _FeedListState extends ConsumerState<FeedList> {
                 .toList();
 
         if (posts.isEmpty) {
+          final paletteReady = widget.tab != FeedTab.palette ||
+              (ref.watch(nutritionProfileProvider).valueOrNull?.hasTaste ??
+                  false);
           return RefreshIndicator(
             onRefresh: controller.refresh,
             color: AppColors.primary,
@@ -119,17 +124,33 @@ class _FeedListState extends ConsumerState<FeedList> {
                   child: AppEmptyState(
                     icon: widget.tab == FeedTab.following
                         ? Icons.group_outlined
-                        : Icons.restaurant_outlined,
+                        : widget.tab == FeedTab.palette
+                            ? Icons.auto_awesome_rounded
+                            : Icons.restaurant_outlined,
                     title: widget.cuisineFilter != null
                         ? 'No ${widget.cuisineFilter} posts'
                         : widget.tab == FeedTab.following
                             ? 'Nothing here yet'
-                            : 'No plates yet',
+                            : widget.tab == FeedTab.palette
+                                ? (paletteReady
+                                    ? 'Nothing on Palette yet'
+                                    : PaletteCopy.emptyFeedTitle)
+                                : 'No plates yet',
                     subtitle: widget.cuisineFilter != null
                         ? 'Try another cuisine, or tag a post when you publish.'
                         : widget.tab == FeedTab.following
                             ? 'Follow food lovers to fill your Following course.'
-                            : 'Be the first to share a delicious bite.',
+                            : widget.tab == FeedTab.palette
+                                ? (paletteReady
+                                    ? 'More matching plates will land here as people post.'
+                                    : PaletteCopy.emptyFeedSubtitle)
+                                : 'Be the first to share a delicious bite.',
+                    actionLabel: widget.tab == FeedTab.palette && !paletteReady
+                        ? PaletteCopy.emptyFeedAction
+                        : null,
+                    onAction: widget.tab == FeedTab.palette && !paletteReady
+                        ? () => context.push(Routes.dietPlan)
+                        : null,
                   ),
                 ),
               ],

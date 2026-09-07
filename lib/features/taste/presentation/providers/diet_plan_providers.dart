@@ -89,7 +89,7 @@ class DietPlanController extends AutoDisposeAsyncNotifier<void> {
     } on AppException catch (e) {
       state = const AsyncData(null);
       return e.code == 'GEMINI_KEY_MISSING'
-          ? 'AI plans are not available in this build.'
+          ? 'Your Palette isn\'t available in this build.'
           : e.message;
     } catch (e) {
       state = const AsyncData(null);

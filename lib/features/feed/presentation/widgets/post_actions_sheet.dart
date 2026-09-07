@@ -218,6 +218,7 @@ class PostActionsSheet extends ConsumerWidget {
       }
       ref.invalidate(feedControllerProvider(FeedTab.forYou));
       ref.invalidate(feedControllerProvider(FeedTab.following));
+      ref.invalidate(feedControllerProvider(FeedTab.palette));
       ref.invalidate(userPostsProvider(post.authorId));
       if (post.restaurantId.isNotEmpty) {
         ref.invalidate(restaurantPostsProvider(post.restaurantId));

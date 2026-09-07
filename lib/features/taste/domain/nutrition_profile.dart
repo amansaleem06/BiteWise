@@ -1,4 +1,4 @@
-/// One-time personal stats for AI diet plans. Editable anytime.
+/// One-time personal stats for Your Palette. Editable anytime.
 ///
 /// Stored at `users/{uid}/private/nutrition` — owner-only read/write.
 /// Never written onto the public profile document.
@@ -46,6 +46,7 @@ class NutritionProfile {
     this.sex,
     this.favoriteCuisines = const [],
     this.favoriteDishes = const [],
+    this.avoids = const [],
   });
 
   final int heightCm;
@@ -62,6 +63,9 @@ class NutritionProfile {
 
   /// Dishes the diner typed in (e.g. "goulash", "avocado toast").
   final List<String> favoriteDishes;
+
+  /// Allergies and foods to keep off the plan and the Palette feed.
+  final List<String> avoids;
 
   bool get hasTaste =>
       favoriteCuisines.isNotEmpty || favoriteDishes.isNotEmpty;
@@ -102,6 +106,7 @@ class NutritionProfile {
       sex: raw['sex'] as String?,
       favoriteCuisines: _stringList(raw['favoriteCuisines']),
       favoriteDishes: _stringList(raw['favoriteDishes'], maxItems: 12),
+      avoids: _stringList(raw['avoids'], maxItems: 20),
     );
   }
 
@@ -114,5 +119,6 @@ class NutritionProfile {
         if (sex != null) 'sex': sex,
         'favoriteCuisines': favoriteCuisines,
         'favoriteDishes': favoriteDishes,
+        'avoids': avoids,
       };
 }

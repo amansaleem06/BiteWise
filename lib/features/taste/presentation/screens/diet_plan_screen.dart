@@ -15,10 +15,11 @@ import '../../../../core/widgets/async_error_view.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../domain/diet_plan.dart';
 import '../../domain/nutrition_profile.dart';
+import '../../domain/palette_copy.dart';
 import '../providers/diet_plan_providers.dart';
 import '../providers/taste_providers.dart';
 
-/// AI diet plan: one-time profile setup, then a weekly cached plan.
+/// Your Palette: one-time setup, then a weekly cached eating brief.
 class DietPlanScreen extends ConsumerStatefulWidget {
   const DietPlanScreen({super.key});
 
@@ -40,7 +41,7 @@ class _DietPlanScreenState extends ConsumerState<DietPlanScreen> {
     if (error != null) {
       AppSnackbar.error(context, error);
     } else {
-      AppSnackbar.success(context, 'Your plan is ready.');
+      AppSnackbar.success(context, '${PaletteCopy.name} is ready.');
     }
   }
 
@@ -59,7 +60,7 @@ class _DietPlanScreenState extends ConsumerState<DietPlanScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'AI Diet Plan',
+          PaletteCopy.name,
           style: GoogleFonts.fraunces(fontWeight: FontWeight.w800),
         ),
       ),
@@ -108,7 +109,7 @@ class _DietPlanScreenState extends ConsumerState<DietPlanScreen> {
             error: (error, stack) => AsyncErrorView(
               error: error,
               stackTrace: stack,
-              title: 'Couldn\'t load your plan',
+              title: 'Couldn\'t load ${PaletteCopy.name}',
               onRetry: () => ref.invalidate(currentDietPlanProvider),
             ),
             data: (plan) => _PlanBody(
@@ -165,6 +166,8 @@ class _ProfileFormState extends State<_ProfileForm> {
       ...widget.suggestedCuisines.take(6),
   };
   late final _dishes = [...?widget.initial?.favoriteDishes];
+  late final _avoid = TextEditingController();
+  late final _avoids = [...?widget.initial?.avoids];
   var _tasteError = false;
 
   @override
@@ -173,6 +176,7 @@ class _ProfileFormState extends State<_ProfileForm> {
     _weight.dispose();
     _age.dispose();
     _dish.dispose();
+    _avoid.dispose();
     super.dispose();
   }
 
@@ -184,24 +188,39 @@ class _ProfileFormState extends State<_ProfileForm> {
     return null;
   }
 
-  void _addDish() {
+  void _addTokens(
+    TextEditingController controller,
+    List<String> target, {
+    int maxItems = 12,
+  }) {
     final added = <String>[];
-    for (final part in _dish.text.split(',')) {
+    for (final part in controller.text.split(',')) {
       final value = part.trim();
       if (value.isEmpty || value.length > 40) continue;
-      if (_dishes.contains(value) || added.contains(value)) continue;
+      if (target.any((item) => item.toLowerCase() == value.toLowerCase()) ||
+          added.any((item) => item.toLowerCase() == value.toLowerCase())) {
+        continue;
+      }
       added.add(value);
     }
     if (added.isEmpty) return;
     setState(() {
-      _dishes.addAll(added.take(12 - _dishes.length));
+      target.addAll(added.take(maxItems - target.length));
       _tasteError = false;
     });
-    _dish.clear();
+    controller.clear();
   }
 
+  bool _hasAvoid(String value) =>
+      _avoids.any((item) => item.toLowerCase() == value.toLowerCase());
+
   void _submit() {
-    if (_dish.text.trim().isNotEmpty) _addDish();
+    if (_dish.text.trim().isNotEmpty) {
+      _addTokens(_dish, _dishes);
+    }
+    if (_avoid.text.trim().isNotEmpty) {
+      _addTokens(_avoid, _avoids, maxItems: 20);
+    }
     if (!_formKey.currentState!.validate()) return;
     if (_cuisines.isEmpty && _dishes.isEmpty && !widget.hasPostedPlates) {
       setState(() => _tasteError = true);
@@ -217,6 +236,7 @@ class _ProfileFormState extends State<_ProfileForm> {
         sex: _sex,
         favoriteCuisines: _cuisines.toList(),
         favoriteDishes: _dishes,
+        avoids: _avoids,
       ),
     );
   }
@@ -228,8 +248,8 @@ class _ProfileFormState extends State<_ProfileForm> {
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
       children: [
         Text(
-          'Stats size the calorie target. Cuisines and dishes tell the plan '
-          'what you actually like — no posts required.',
+          'Stats size the calorie target. Cuisines, dishes, and anything to '
+          'skip tell ${PaletteCopy.name} what belongs on your plate.',
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -364,12 +384,12 @@ class _ProfileFormState extends State<_ProfileForm> {
         TextField(
           controller: _dish,
           textInputAction: TextInputAction.done,
-          onSubmitted: (_) => _addDish(),
+          onSubmitted: (_) => _addTokens(_dish, _dishes),
           decoration: InputDecoration(
             labelText: 'e.g. goulash, avocado toast',
             suffixIcon: IconButton(
               tooltip: 'Add dish',
-              onPressed: _addDish,
+              onPressed: () => _addTokens(_dish, _dishes),
               icon: const Icon(Icons.add_rounded),
             ),
           ),
@@ -397,9 +417,77 @@ class _ProfileFormState extends State<_ProfileForm> {
             ),
           ),
         ],
+        const SizedBox(height: AppSpacing.lg),
+        Text('Allergies & skip list', style: theme.textTheme.titleSmall),
+        const SizedBox(height: AppSpacing.xxs),
+        Text(
+          'We keep these out of ${PaletteCopy.name} and the Palette feed.',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Wrap(
+          spacing: AppSpacing.xs,
+          runSpacing: AppSpacing.xs,
+          children: [
+            for (final item in Avoidance.common)
+              FilterChip(
+                label: Text(item),
+                selected: _hasAvoid(item),
+                onSelected: (selected) => setState(() {
+                  if (selected) {
+                    if (!_hasAvoid(item)) _avoids.add(item);
+                  } else {
+                    _avoids.removeWhere(
+                      (avoid) => avoid.toLowerCase() == item.toLowerCase(),
+                    );
+                  }
+                }),
+              ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        TextField(
+          controller: _avoid,
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) => _addTokens(_avoid, _avoids, maxItems: 20),
+          decoration: InputDecoration(
+            labelText: 'Anything else to skip',
+            hintText: 'fried food, coriander…',
+            suffixIcon: IconButton(
+              tooltip: 'Add',
+              onPressed: () => _addTokens(_avoid, _avoids, maxItems: 20),
+              icon: const Icon(Icons.add_rounded),
+            ),
+          ),
+        ),
+        if (_avoids
+            .where(
+              (item) => !Avoidance.common.any(
+                (common) => common.toLowerCase() == item.toLowerCase(),
+              ),
+            )
+            .isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.xs),
+          Wrap(
+            spacing: AppSpacing.xs,
+            runSpacing: AppSpacing.xs,
+            children: [
+              for (final item in _avoids)
+                if (!Avoidance.common.any(
+                  (common) => common.toLowerCase() == item.toLowerCase(),
+                ))
+                  InputChip(
+                    label: Text(item),
+                    onDeleted: () => setState(() => _avoids.remove(item)),
+                  ),
+            ],
+          ),
+        ],
         const SizedBox(height: AppSpacing.xl),
         AppButton(
-          label: 'Save and generate my plan',
+          label: 'Save and build ${PaletteCopy.name}',
           isLoading: widget.saving,
           onPressed: _submit,
         ),
@@ -435,13 +523,13 @@ class _PlanBody extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
         children: [
           Text(
-            'Generate a plan from the cuisines and dishes you picked. '
+            'Build ${PaletteCopy.name} from the cuisines and dishes you picked. '
             'Logged plates are included when you have them.',
             style: theme.textTheme.bodyMedium,
           ),
           const SizedBox(height: AppSpacing.lg),
           AppButton(
-            label: 'Generate my plan',
+            label: 'Build ${PaletteCopy.name}',
             isLoading: generating,
             onPressed: onGenerate,
           ),
@@ -578,13 +666,15 @@ class _PlanBody extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.sm),
         AppButton(
-          label: current.isExpired ? 'Regenerate plan' : 'Plan is up to date',
+          label: current.isExpired
+              ? 'Refresh ${PaletteCopy.name}'
+              : '${PaletteCopy.name} is up to date',
           isLoading: generating,
           onPressed: current.isExpired ? onGenerate : null,
         ),
         TextButton(
           onPressed: onEditProfile,
-          child: const Text('Edit stats and tastes (regenerates the plan)'),
+          child: const Text('Edit stats and tastes (rebuilds Your Palette)'),
         ),
         const SizedBox(height: AppSpacing.sm),
         const _Disclaimer(),

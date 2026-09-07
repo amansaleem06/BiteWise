@@ -12,6 +12,7 @@ import '../../../feed/presentation/providers/feed_providers.dart';
 import '../../../feed/presentation/widgets/feed_list.dart';
 import '../../../notifications/presentation/providers/notification_providers.dart';
 import '../../../stories/presentation/widgets/stories_tray.dart';
+import '../../../taste/domain/palette_copy.dart';
 
 /// Plate course — editorial feed with mode pill + cuisine chips.
 class HomeScreen extends ConsumerStatefulWidget {
@@ -23,6 +24,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   var _followingVisited = false;
+  var _paletteVisited = false;
   var _tab = FeedTab.forYou;
   String? _cuisineFilter;
   var _chromeVisible = true;
@@ -78,6 +80,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   selected: _tab == FeedTab.following,
                   onTap: () => Navigator.pop(context, FeedTab.following),
                 ),
+                const SizedBox(height: AppSpacing.xs),
+                _ModeTile(
+                  title: PaletteCopy.feedTab,
+                  subtitle: PaletteCopy.feedSubtitle,
+                  selected: _tab == FeedTab.palette,
+                  onTap: () => Navigator.pop(context, FeedTab.palette),
+                ),
               ],
             ),
           ),
@@ -88,6 +97,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       setState(() {
         _tab = chosen;
         if (chosen == FeedTab.following) _followingVisited = true;
+        if (chosen == FeedTab.palette) _paletteVisited = true;
       });
     }
   }
@@ -135,7 +145,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final hasUnread =
         ref.watch(hasUnreadNotificationsProvider).valueOrNull ?? false;
     final preview = Cuisines.all.take(3).toList();
-    final modeLabel = _tab == FeedTab.forYou ? 'For You' : 'Following';
+    final modeLabel = switch (_tab) {
+      FeedTab.forYou => 'For You',
+      FeedTab.following => 'Following',
+      FeedTab.palette => PaletteCopy.feedTab,
+    };
 
     return Scaffold(
       body: DecoratedBox(
@@ -272,14 +286,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
             ],
-            body: _tab == FeedTab.forYou
-                ? FeedList(tab: FeedTab.forYou, cuisineFilter: _cuisineFilter)
-                : (_followingVisited || _tab == FeedTab.following)
-                    ? FeedList(
-                        tab: FeedTab.following,
-                        cuisineFilter: _cuisineFilter,
-                      )
-                    : const SizedBox.shrink(),
+            body: switch (_tab) {
+              FeedTab.forYou => FeedList(
+                  tab: FeedTab.forYou,
+                  cuisineFilter: _cuisineFilter,
+                ),
+              FeedTab.following => (_followingVisited ||
+                      _tab == FeedTab.following)
+                  ? FeedList(
+                      tab: FeedTab.following,
+                      cuisineFilter: _cuisineFilter,
+                    )
+                  : const SizedBox.shrink(),
+              FeedTab.palette => (_paletteVisited || _tab == FeedTab.palette)
+                  ? FeedList(
+                      tab: FeedTab.palette,
+                      cuisineFilter: _cuisineFilter,
+                    )
+                  : const SizedBox.shrink(),
+            },
           ),
         ),
       ),

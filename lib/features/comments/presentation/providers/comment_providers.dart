@@ -168,6 +168,7 @@ class CommentsController
       ref.read(postDetailProvider(arg).notifier).adjustCommentCount(1);
       ref.invalidate(feedControllerProvider(FeedTab.forYou));
       ref.invalidate(feedControllerProvider(FeedTab.following));
+      ref.invalidate(feedControllerProvider(FeedTab.palette));
       return true;
     } catch (_) {
       state = AsyncData(current.copyWith(isSending: false));

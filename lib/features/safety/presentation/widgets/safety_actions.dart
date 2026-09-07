@@ -153,6 +153,7 @@ abstract final class SafetyActions {
       await ref.read(safetyRepositoryProvider).blockUser(uid);
       ref.invalidate(feedControllerProvider(FeedTab.forYou));
       ref.invalidate(feedControllerProvider(FeedTab.following));
+      ref.invalidate(feedControllerProvider(FeedTab.palette));
       ref.invalidate(chatsProvider);
       ref.invalidate(userPostsProvider(uid));
       if (context.mounted) {
@@ -174,6 +175,7 @@ abstract final class SafetyActions {
       await ref.read(safetyRepositoryProvider).unblockUser(uid);
       ref.invalidate(feedControllerProvider(FeedTab.forYou));
       ref.invalidate(feedControllerProvider(FeedTab.following));
+      ref.invalidate(feedControllerProvider(FeedTab.palette));
       ref.invalidate(chatsProvider);
       if (context.mounted) {
         AppSnackbar.success(context, 'User unblocked');

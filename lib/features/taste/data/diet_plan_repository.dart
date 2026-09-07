@@ -103,6 +103,7 @@ class DietPlanRepository {
       'taste': {
         'favoriteCuisines': profile.favoriteCuisines,
         'favoriteDishes': profile.favoriteDishes,
+        'avoids': profile.avoids,
         'source': profile.hasTaste && stats.postCount > 0
             ? 'manual+posts'
             : profile.hasTaste
@@ -151,6 +152,8 @@ Rules:
 - Estimate daily calories with Mifflin-St Jeor adjusted for activityLevel
   and goal (moderate deficit for loseWeight, surplus for gainMuscle).
 - Respect dietaryPreferences as HARD restrictions (vegan/vegetarian).
+- NEVER use anything in taste.avoids (allergies and skip-list). Treat
+  those as unsafe to include in meals, swaps, tips, or restaurant picks.
 - Prefer taste.favoriteDishes and taste.favoriteCuisines. Also use
   history.dishes posted by the user when present.
 - "meals": 3-4 suggestions built on those dishes/cuisines ("basedOn"),
