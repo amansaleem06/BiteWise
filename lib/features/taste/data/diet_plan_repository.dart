@@ -27,9 +27,6 @@ class DietPlanRepository {
   final fb.FirebaseAuth _auth;
   final GeminiService _gemini;
 
-  /// Plates required before the plan unlocks.
-  static const minPlates = 8;
-
   String get _uid {
     final uid = _auth.currentUser?.uid;
     if (uid == null) throw const AppException('Not signed in');
@@ -84,6 +81,18 @@ class DietPlanRepository {
     }
 
     final candidates = candidateRestaurants.take(12).toList();
+    final postedDishes = [
+      for (final post in recentPosts
+          .where((p) => (p.dishName ?? '').trim().isNotEmpty)
+          .take(8))
+        {
+          'dish': post.dishName,
+          'source': 'posted',
+          if (post.rating != null) 'rating': post.rating,
+          if (post.restaurantName.trim().isNotEmpty)
+            'restaurant': post.restaurantName,
+        },
+    ];
     final input = {
       'profile': {
         ...profile.toMap(),
@@ -91,23 +100,30 @@ class DietPlanRepository {
           for (final preference in preferences) preference.name,
         ],
       },
+      'taste': {
+        'favoriteCuisines': profile.favoriteCuisines,
+        'favoriteDishes': profile.favoriteDishes,
+        'source': profile.hasTaste && stats.postCount > 0
+            ? 'manual+posts'
+            : profile.hasTaste
+                ? 'manual'
+                : 'posts',
+      },
       'history': {
         'platesLogged': stats.postCount,
         'averageRatingGiven': stats.averageRating,
         'topCuisines': [
-          for (final stamp in stats.earnedStamps.take(6))
-            {'cuisine': stamp.cuisine, 'count': stamp.count},
+          if (profile.favoriteCuisines.isNotEmpty)
+            for (final cuisine in profile.favoriteCuisines)
+              {'cuisine': cuisine, 'source': 'chosen'}
+          else
+            for (final stamp in stats.earnedStamps.take(6))
+              {'cuisine': stamp.cuisine, 'count': stamp.count},
         ],
-        'recentDishes': [
-          for (final post in recentPosts
-              .where((p) => (p.dishName ?? '').trim().isNotEmpty)
-              .take(8))
-            {
-              'dish': post.dishName,
-              if (post.rating != null) 'rating': post.rating,
-              if (post.restaurantName.trim().isNotEmpty)
-                'restaurant': post.restaurantName,
-            },
+        'dishes': [
+          for (final dish in profile.favoriteDishes)
+            {'dish': dish, 'source': 'chosen'},
+          ...postedDishes,
         ],
       },
       'candidateRestaurants': [
@@ -135,11 +151,13 @@ Rules:
 - Estimate daily calories with Mifflin-St Jeor adjusted for activityLevel
   and goal (moderate deficit for loseWeight, surplus for gainMuscle).
 - Respect dietaryPreferences as HARD restrictions (vegan/vegetarian).
-- "meals": 3-4 suggestions. Where possible, build each on a dish from
-  history.recentDishes or history.topCuisines ("basedOn"), with a
-  healthier variant in "swap".
-- "restaurantPicks": choose 2-3 ONLY from candidateRestaurants, copying
-  restaurantId and name exactly. Never invent restaurants.
+- Prefer taste.favoriteDishes and taste.favoriteCuisines. Also use
+  history.dishes posted by the user when present.
+- "meals": 3-4 suggestions built on those dishes/cuisines ("basedOn"),
+  with a healthier variant in "swap".
+- "restaurantPicks": if candidateRestaurants is empty, return [].
+  Otherwise choose 2-3 ONLY from that list, copying restaurantId and
+  name exactly. Never invent restaurants.
 - "tips": 2-3 short, specific habits based on their actual pattern.
 - "summary": 2-3 friendly sentences referencing what they actually eat.
 - Plain language, no markdown, metric units.

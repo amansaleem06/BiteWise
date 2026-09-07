@@ -58,10 +58,9 @@ class DietPlanController extends AutoDisposeAsyncNotifier<void> {
       }
 
       final stats = await ref.read(tasteStatsProvider(me.uid).future);
-      if (stats.postCount < DietPlanRepository.minPlates) {
+      if (!profile.hasTaste && stats.postCount == 0) {
         state = const AsyncData(null);
-        return 'Log ${DietPlanRepository.minPlates - stats.postCount} more '
-            'plates to unlock your plan.';
+        return 'Pick at least one cuisine or add a dish you eat.';
       }
 
       // Recent posts for dish-level grounding.

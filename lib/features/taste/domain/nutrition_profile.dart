@@ -44,6 +44,8 @@ class NutritionProfile {
     required this.activityLevel,
     required this.goal,
     this.sex,
+    this.favoriteCuisines = const [],
+    this.favoriteDishes = const [],
   });
 
   final int heightCm;
@@ -54,6 +56,28 @@ class NutritionProfile {
 
   /// 'male' | 'female' | null (prefer not to say).
   final String? sex;
+
+  /// Manual cuisine picks so a plan can be built without posting plates.
+  final List<String> favoriteCuisines;
+
+  /// Dishes the diner typed in (e.g. "goulash", "avocado toast").
+  final List<String> favoriteDishes;
+
+  bool get hasTaste =>
+      favoriteCuisines.isNotEmpty || favoriteDishes.isNotEmpty;
+
+  static List<String> _stringList(dynamic raw, {int maxItems = 16}) {
+    if (raw is! List) return const [];
+    final values = <String>[];
+    for (final item in raw) {
+      if (item is! String) continue;
+      final trimmed = item.trim();
+      if (trimmed.isEmpty || values.contains(trimmed)) continue;
+      values.add(trimmed);
+      if (values.length >= maxItems) break;
+    }
+    return values;
+  }
 
   static NutritionProfile? fromMap(dynamic raw) {
     if (raw is! Map) return null;
@@ -76,6 +100,8 @@ class NutritionProfile {
       activityLevel: activity,
       goal: goal,
       sex: raw['sex'] as String?,
+      favoriteCuisines: _stringList(raw['favoriteCuisines']),
+      favoriteDishes: _stringList(raw['favoriteDishes'], maxItems: 12),
     );
   }
 
@@ -86,5 +112,7 @@ class NutritionProfile {
         'activityLevel': activityLevel.name,
         'goal': goal.name,
         if (sex != null) 'sex': sex,
+        'favoriteCuisines': favoriteCuisines,
+        'favoriteDishes': favoriteDishes,
       };
 }

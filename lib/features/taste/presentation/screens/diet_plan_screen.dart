@@ -6,14 +6,17 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../core/constants/cuisines.dart';
 import '../../../../core/errors/error_text.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/async_error_view.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../domain/diet_plan.dart';
 import '../../domain/nutrition_profile.dart';
 import '../providers/diet_plan_providers.dart';
+import '../providers/taste_providers.dart';
 
 /// AI diet plan: one-time profile setup, then a weekly cached plan.
 class DietPlanScreen extends ConsumerStatefulWidget {
@@ -33,7 +36,7 @@ class _DietPlanScreenState extends ConsumerState<DietPlanScreen> {
     final error = await ref
         .read(dietPlanControllerProvider.notifier)
         .generate(profile, force: force);
-    if (!context.mounted) return;
+    if (!mounted) return;
     if (error != null) {
       AppSnackbar.error(context, error);
     } else {
@@ -46,6 +49,12 @@ class _DietPlanScreenState extends ConsumerState<DietPlanScreen> {
     final profileAsync = ref.watch(nutritionProfileProvider);
     final planAsync = ref.watch(currentDietPlanProvider);
     final generating = ref.watch(dietPlanControllerProvider).isLoading;
+    final uid = ref.watch(currentUserProvider)?.uid;
+    final stats = uid == null ? null : ref.watch(tasteStatsProvider(uid)).valueOrNull;
+    final suggestedCuisines =
+        stats?.earnedStamps.map((stamp) => stamp.cuisine).toList() ??
+            const <String>[];
+    final hasPostedPlates = (stats?.postCount ?? 0) > 0;
 
     return Scaffold(
       appBar: AppBar(
@@ -64,10 +73,14 @@ class _DietPlanScreenState extends ConsumerState<DietPlanScreen> {
           onRetry: () => ref.invalidate(nutritionProfileProvider),
         ),
         data: (profile) {
-          if (profile == null || _editingProfile) {
+          final needsTaste =
+              profile != null && !profile.hasTaste && !hasPostedPlates;
+          if (profile == null || _editingProfile || needsTaste) {
             return _ProfileForm(
               initial: profile,
               saving: generating,
+              suggestedCuisines: suggestedCuisines,
+              hasPostedPlates: hasPostedPlates,
               onSubmit: (updated) async {
                 final saved = await ref
                     .read(dietPlanControllerProvider.notifier)
@@ -116,11 +129,15 @@ class _ProfileForm extends StatefulWidget {
   const _ProfileForm({
     required this.initial,
     required this.saving,
+    required this.suggestedCuisines,
+    required this.hasPostedPlates,
     required this.onSubmit,
   });
 
   final NutritionProfile? initial;
   final bool saving;
+  final List<String> suggestedCuisines;
+  final bool hasPostedPlates;
   final Future<void> Function(NutritionProfile profile) onSubmit;
 
   @override
@@ -141,12 +158,21 @@ class _ProfileFormState extends State<_ProfileForm> {
   late var _activity = widget.initial?.activityLevel ?? ActivityLevel.moderate;
   late var _goal = widget.initial?.goal ?? NutritionGoal.eatHealthier;
   late String? _sex = widget.initial?.sex;
+  late final _dish = TextEditingController();
+  late final _cuisines = <String>{
+    ...?widget.initial?.favoriteCuisines,
+    if (widget.initial == null || widget.initial!.favoriteCuisines.isEmpty)
+      ...widget.suggestedCuisines.take(6),
+  };
+  late final _dishes = [...?widget.initial?.favoriteDishes];
+  var _tasteError = false;
 
   @override
   void dispose() {
     _height.dispose();
     _weight.dispose();
     _age.dispose();
+    _dish.dispose();
     super.dispose();
   }
 
@@ -158,8 +184,29 @@ class _ProfileFormState extends State<_ProfileForm> {
     return null;
   }
 
+  void _addDish() {
+    final added = <String>[];
+    for (final part in _dish.text.split(',')) {
+      final value = part.trim();
+      if (value.isEmpty || value.length > 40) continue;
+      if (_dishes.contains(value) || added.contains(value)) continue;
+      added.add(value);
+    }
+    if (added.isEmpty) return;
+    setState(() {
+      _dishes.addAll(added.take(12 - _dishes.length));
+      _tasteError = false;
+    });
+    _dish.clear();
+  }
+
   void _submit() {
+    if (_dish.text.trim().isNotEmpty) _addDish();
     if (!_formKey.currentState!.validate()) return;
+    if (_cuisines.isEmpty && _dishes.isEmpty && !widget.hasPostedPlates) {
+      setState(() => _tasteError = true);
+      return;
+    }
     widget.onSubmit(
       NutritionProfile(
         heightCm: int.parse(_height.text.trim()),
@@ -168,6 +215,8 @@ class _ProfileFormState extends State<_ProfileForm> {
         activityLevel: _activity,
         goal: _goal,
         sex: _sex,
+        favoriteCuisines: _cuisines.toList(),
+        favoriteDishes: _dishes,
       ),
     );
   }
@@ -179,8 +228,8 @@ class _ProfileFormState extends State<_ProfileForm> {
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
       children: [
         Text(
-          'These stats stay on your profile and are only used to size your '
-          'plan. Edit them anytime.',
+          'Stats size the calorie target. Cuisines and dishes tell the plan '
+          'what you actually like — no posts required.',
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -273,6 +322,81 @@ class _ProfileFormState extends State<_ProfileForm> {
               ),
           ],
         ),
+        const SizedBox(height: AppSpacing.lg),
+        Text('Cuisines you like', style: theme.textTheme.titleSmall),
+        const SizedBox(height: AppSpacing.xxs),
+        Text(
+          'Pick a few. We\'ll build meals around them.',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Wrap(
+          spacing: AppSpacing.xs,
+          runSpacing: AppSpacing.xs,
+          children: [
+            for (final cuisine in Cuisines.all)
+              FilterChip(
+                label: Text(cuisine),
+                selected: _cuisines.contains(cuisine),
+                onSelected: (selected) => setState(() {
+                  _tasteError = false;
+                  if (selected) {
+                    _cuisines.add(cuisine);
+                  } else {
+                    _cuisines.remove(cuisine);
+                  }
+                }),
+              ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        Text('Dishes you eat', style: theme.textTheme.titleSmall),
+        const SizedBox(height: AppSpacing.xxs),
+        Text(
+          'Type a dish and tap add. Commas work too.',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        TextField(
+          controller: _dish,
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) => _addDish(),
+          decoration: InputDecoration(
+            labelText: 'e.g. goulash, avocado toast',
+            suffixIcon: IconButton(
+              tooltip: 'Add dish',
+              onPressed: _addDish,
+              icon: const Icon(Icons.add_rounded),
+            ),
+          ),
+        ),
+        if (_dishes.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.xs),
+          Wrap(
+            spacing: AppSpacing.xs,
+            runSpacing: AppSpacing.xs,
+            children: [
+              for (final dish in _dishes)
+                InputChip(
+                  label: Text(dish),
+                  onDeleted: () => setState(() => _dishes.remove(dish)),
+                ),
+            ],
+          ),
+        ],
+        if (_tasteError) ...[
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            'Pick at least one cuisine or add a dish you eat.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.error,
+            ),
+          ),
+        ],
         const SizedBox(height: AppSpacing.xl),
         AppButton(
           label: 'Save and generate my plan',
@@ -311,8 +435,8 @@ class _PlanBody extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
         children: [
           Text(
-            'Your Taste Passport history is ready. Generate a plan built on '
-            'the dishes you actually eat.',
+            'Generate a plan from the cuisines and dishes you picked. '
+            'Logged plates are included when you have them.',
             style: theme.textTheme.bodyMedium,
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -323,7 +447,7 @@ class _PlanBody extends StatelessWidget {
           ),
           TextButton(
             onPressed: onEditProfile,
-            child: const Text('Edit my stats'),
+            child: const Text('Edit stats and tastes'),
           ),
           const SizedBox(height: AppSpacing.md),
           const _Disclaimer(),
@@ -381,7 +505,7 @@ class _PlanBody extends StatelessWidget {
 
         if (current.meals.isNotEmpty) ...[
           Text(
-            'Meals built on your plates',
+            'Meal ideas',
             style: theme.textTheme.titleMedium,
           ),
           const SizedBox(height: AppSpacing.xs),
@@ -460,7 +584,7 @@ class _PlanBody extends StatelessWidget {
         ),
         TextButton(
           onPressed: onEditProfile,
-          child: const Text('Edit my stats (regenerates the plan)'),
+          child: const Text('Edit stats and tastes (regenerates the plan)'),
         ),
         const SizedBox(height: AppSpacing.sm),
         const _Disclaimer(),
