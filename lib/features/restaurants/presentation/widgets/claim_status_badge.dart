@@ -24,10 +24,10 @@ class ClaimStatusBadge extends StatelessWidget {
       bg = AppColors.primary;
       fg = AppColors.cream;
     } else if (restaurant.isPendingClaim) {
-      label = 'Verified Owner';
-      icon = Icons.verified_rounded;
-      bg = AppColors.primary;
-      fg = AppColors.cream;
+      label = 'Claim under review';
+      icon = Icons.hourglass_top_rounded;
+      bg = theme.colorScheme.secondaryContainer;
+      fg = theme.colorScheme.onSecondaryContainer;
     } else {
       label = 'Unclaimed listing';
       icon = Icons.public_outlined;

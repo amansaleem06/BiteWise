@@ -28,4 +28,18 @@ abstract final class Formatters {
     if (diff.inDays < 7) return '${diff.inDays}d';
     return DateFormat.MMMd().format(time);
   }
+
+  /// Profile join line, e.g. "Joined Mar 2026".
+  static String joined(DateTime? time) {
+    if (time == null) return '';
+    return 'Joined ${DateFormat.yMMM().format(time)}';
+  }
+
+  /// "Updated 3h ago" / "Updated Mar 4".
+  static String updated(DateTime? time) {
+    final relative = relativeTime(time);
+    if (relative.isEmpty) return '';
+    if (relative == 'now') return 'Updated just now';
+    return 'Updated $relative';
+  }
 }

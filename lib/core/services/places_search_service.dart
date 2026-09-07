@@ -16,6 +16,8 @@ class PlaceSuggestion {
     this.address,
     this.latitude,
     this.longitude,
+    this.phone,
+    this.website,
   });
 
   final String placeId;
@@ -23,6 +25,8 @@ class PlaceSuggestion {
   final String? address;
   final double? latitude;
   final double? longitude;
+  final String? phone;
+  final String? website;
 
   String? get city {
     final parts = address?.split(',') ?? const [];
@@ -111,7 +115,9 @@ class PlacesSearchService {
             'Content-Type': 'application/json',
             'X-Goog-Api-Key': apiKey,
             'X-Goog-FieldMask':
-                'places.id,places.displayName,places.formattedAddress,places.location',
+                'places.id,places.displayName,places.formattedAddress,'
+                'places.location,places.nationalPhoneNumber,'
+                'places.internationalPhoneNumber,places.websiteUri',
           },
           body: jsonEncode(body),
         )
@@ -142,8 +148,90 @@ class PlacesSearchService {
         address: m['formattedAddress'] as String?,
         latitude: (loc?['latitude'] as num?)?.toDouble(),
         longitude: (loc?['longitude'] as num?)?.toDouble(),
+        phone: (m['nationalPhoneNumber'] as String?) ??
+            (m['internationalPhoneNumber'] as String?),
+        website: m['websiteUri'] as String?,
       );
     }).where((p) => p.placeId.isNotEmpty && p.name.isNotEmpty).toList();
+  }
+
+  /// Phone and website for a listing — used to raise the claim bar.
+  Future<PlaceSuggestion> fetchPlaceDetails(String placeId) async {
+    var id = placeId.trim();
+    if (id.startsWith('places/')) id = id.substring('places/'.length);
+    if (id.isEmpty) {
+      throw const AppException('Missing Google Maps listing.');
+    }
+
+    final keys = MapsConfig.placesApiKeys;
+    if (keys.isEmpty) {
+      throw const AppException(
+        'Maps search is not configured in this build.',
+        code: 'PLACES_KEY_MISSING',
+      );
+    }
+
+    PlacesApiException? last;
+    for (final apiKey in keys) {
+      try {
+        return await _getPlaceDetails(id, apiKey);
+      } on PlacesApiException catch (e) {
+        last = e;
+        if (e.status == 'REQUEST_DENIED' ||
+            e.status == 'PERMISSION_DENIED' ||
+            e.status == 'API_KEY_INVALID') {
+          continue;
+        }
+        break;
+      }
+    }
+    throw AppException(
+      last?.message?.trim().isNotEmpty == true
+          ? last!.message!.trim()
+          : 'Could not load this Maps listing.',
+      code: last?.status,
+    );
+  }
+
+  Future<PlaceSuggestion> _getPlaceDetails(String placeId, String apiKey) async {
+    final res = await http
+        .get(
+          Uri.https('places.googleapis.com', '/v1/places/$placeId'),
+          headers: {
+            'X-Goog-Api-Key': apiKey,
+            'X-Goog-FieldMask':
+                'id,displayName,formattedAddress,location,'
+                'nationalPhoneNumber,internationalPhoneNumber,websiteUri',
+          },
+        )
+        .timeout(const Duration(seconds: 12));
+
+    final decoded = jsonDecode(res.body);
+    if (decoded is! Map<String, dynamic>) {
+      throw PlacesApiException('INVALID_RESPONSE', 'Unexpected Places response');
+    }
+    if (res.statusCode != 200) {
+      final err = decoded['error'] as Map<String, dynamic>?;
+      throw PlacesApiException(
+        (err?['status'] as String?) ?? 'HTTP_${res.statusCode}',
+        err?['message'] as String?,
+      );
+    }
+
+    final display = decoded['displayName'] as Map<String, dynamic>?;
+    final loc = decoded['location'] as Map<String, dynamic>?;
+    var id = decoded['id'] as String? ?? placeId;
+    if (id.startsWith('places/')) id = id.substring('places/'.length);
+    return PlaceSuggestion(
+      placeId: id,
+      name: (display?['text'] as String?) ?? '',
+      address: decoded['formattedAddress'] as String?,
+      latitude: (loc?['latitude'] as num?)?.toDouble(),
+      longitude: (loc?['longitude'] as num?)?.toDouble(),
+      phone: (decoded['nationalPhoneNumber'] as String?) ??
+          (decoded['internationalPhoneNumber'] as String?),
+      website: decoded['websiteUri'] as String?,
+    );
   }
 }
 

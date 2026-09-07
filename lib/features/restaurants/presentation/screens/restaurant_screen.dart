@@ -11,6 +11,7 @@ import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/errors/error_text.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/services/media_upload_service.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../feed/presentation/widgets/feed_shimmer.dart';
@@ -19,6 +20,7 @@ import '../../../stories/presentation/screens/story_edit_screen.dart';
 import '../../domain/entities/restaurant.dart';
 import '../providers/page_identity_provider.dart';
 import '../providers/restaurant_providers.dart';
+import '../widgets/claim_pending_card.dart';
 import '../widgets/claim_status_badge.dart';
 import '../widgets/page_identity_bar.dart';
 import '../widgets/restaurant_mentions_tab.dart';
@@ -156,10 +158,15 @@ class _IdentitySection extends ConsumerWidget {
     final theme = Theme.of(context);
     final rating = restaurant.averageRating;
     final me = ref.watch(currentUserProvider);
+    final pendingHere = me != null &&
+        me.pendingClaimRestaurantId == restaurant.id;
     final canClaim = me != null &&
         me.isBusiness &&
         restaurant.isUnclaimed &&
+        !pendingHere &&
         (me.ownedRestaurantId == null || me.ownedRestaurantId!.isEmpty);
+    final isVerifiedOwner =
+        me != null && restaurant.ownerId == me.uid && restaurant.isClaimed;
 
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -249,7 +256,7 @@ class _IdentitySection extends ConsumerWidget {
             ),
           ],
           const SizedBox(height: AppSpacing.md),
-          if (me != null && restaurant.ownerId == me.uid) ...[
+          if (isVerifiedOwner) ...[
             const PageIdentityBar(),
             const SizedBox(height: AppSpacing.sm),
             Row(
@@ -292,15 +299,37 @@ class _IdentitySection extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.sm),
           ],
+          if (pendingHere && (me.pendingClaimCode ?? '').isNotEmpty) ...[
+            ClaimPendingCard(
+              restaurantName: restaurant.name,
+              claimCode: me.pendingClaimCode!,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
           if (canClaim) ...[
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
                 onPressed: () async {
+                  if (me.needsBusinessDetails) {
+                    context.push(Routes.businessSetup);
+                    return;
+                  }
                   try {
+                    final image = await ImagePicker().pickImage(
+                      source: ImageSource.gallery,
+                      imageQuality: 85,
+                    );
+                    if (image == null || !context.mounted) return;
+                    final proofUrl = await MediaUploadService()
+                        .uploadRestaurantImage(
+                      uid: me.uid,
+                      file: image,
+                      kind: 'claim-proof',
+                    );
                     await ref
                         .read(restaurantRepositoryProvider)
-                        .claimRestaurant(restaurant.id);
+                        .claimRestaurant(restaurant.id, proofUrl: proofUrl);
                     ref.invalidate(authStateProvider);
                     ref.invalidate(
                       restaurantControllerProvider(restaurant.id),
@@ -308,7 +337,8 @@ class _IdentitySection extends ConsumerWidget {
                     if (!context.mounted) return;
                     AppSnackbar.success(
                       context,
-                      'This is now your restaurant page. You post as ${restaurant.name}.',
+                      'Claim submitted. Email your code to TasteWise support '
+                      'to finish verification.',
                     );
                   } catch (e) {
                     if (!context.mounted) return;
@@ -402,7 +432,7 @@ class _AboutTab extends StatelessWidget {
                 restaurant.isClaimed
                     ? 'This restaurant hasn\'t added details yet.'
                     : restaurant.isPendingClaim
-                        ? 'This listing is claimed. Ratings already on this page stay here.'
+                        ? 'A claim is under review. This page is not Verified Owner yet.'
                         : 'Unclaimed Maps listing — ratings here are from TasteWise diners, with no verified owner. Are you the owner? Claim it from your business profile.',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium

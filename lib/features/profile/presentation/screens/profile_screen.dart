@@ -10,6 +10,7 @@ import '../../../../core/constants/app_strings.dart';
 import '../../../../core/widgets/async_error_view.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../restaurants/presentation/providers/restaurant_providers.dart';
+import '../../../restaurants/presentation/widgets/claim_pending_card.dart';
 import '../../../restaurants/presentation/widgets/page_identity_bar.dart';
 import '../providers/profile_providers.dart';
 import '../widgets/owned_restaurant_banner.dart';
@@ -26,7 +27,8 @@ class ProfileScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final restaurantId = me?.ownedRestaurantId?.isNotEmpty == true
         ? me!.ownedRestaurantId
-        : me?.pendingClaimRestaurantId;
+        : null;
+    final pendingClaim = me?.pendingClaimRestaurantId?.isNotEmpty == true;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -89,6 +91,16 @@ class ProfileScreen extends ConsumerWidget {
                       child: PageIdentityBar(),
                     ),
                     if (me?.isBusiness == true &&
+                        pendingClaim &&
+                        (me!.pendingClaimCode ?? '').isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                        child: ClaimPendingCard(
+                          restaurantName: me.businessName ?? 'your restaurant',
+                          claimCode: me.pendingClaimCode!,
+                        ),
+                      )
+                    else if (me?.isBusiness == true &&
                         (restaurantId == null || restaurantId.isEmpty))
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -98,7 +110,7 @@ class ProfileScreen extends ConsumerWidget {
                           child: ListTile(
                             title: const Text('Claim your restaurant'),
                             subtitle: const Text(
-                              'Match your business to a Maps listing.',
+                              'Match your Maps listing, then send proof only an owner would have.',
                             ),
                             trailing: const Icon(Icons.chevron_right_rounded),
                             onTap: () => context.push(Routes.businessSetup),

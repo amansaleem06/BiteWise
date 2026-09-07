@@ -134,15 +134,32 @@ class FirestoreRestaurantRepository implements RestaurantRepository {
   }
 
   @override
-  Future<ClaimResult> claimFromPlace(PlaceSuggestion place) async {
+  Future<ClaimResult> claimFromPlace(
+    PlaceSuggestion place, {
+    required String proofUrl,
+  }) async {
     final createRepo = FirebaseCreatePostRepository(firestore: _firestore);
     final ref = await createRepo.upsertRestaurantFromPlace(place);
-    return claimRestaurant(ref.id);
+    return claimRestaurant(
+      ref.id,
+      proofUrl: proofUrl,
+      placeDetails: place,
+    );
   }
 
   @override
-  Future<ClaimResult> claimRestaurant(String restaurantId) async {
+  Future<ClaimResult> claimRestaurant(
+    String restaurantId, {
+    required String proofUrl,
+    PlaceSuggestion? placeDetails,
+  }) async {
     final uid = _uid;
+    if (proofUrl.trim().isEmpty) {
+      throw const AppException(
+        'Upload a photo of your storefront sign or business license.',
+      );
+    }
+
     final userSnap = await _firestore.collection('users').doc(uid).get();
     final user = userSnap.data() ?? {};
     if ((user['role'] as String?) != UserRole.restaurantOwner.name) {
@@ -152,69 +169,133 @@ class FirestoreRestaurantRepository implements RestaurantRepository {
     final owned = user['ownedRestaurantId'] as String?;
     if (owned != null && owned.isNotEmpty && owned != restaurantId) {
       throw const AppException(
-        'You already have a claimed restaurant on this account.',
+        'You already have a verified restaurant on this account.',
+      );
+    }
+
+    final pending = user['pendingClaimRestaurantId'] as String?;
+    if (pending != null && pending.isNotEmpty && pending != restaurantId) {
+      throw const AppException(
+        'You already have a claim under review. Wait for that review, or '
+        'email tastewise2026@gmail.com to cancel it.',
       );
     }
 
     final restaurantRef = _restaurants.doc(restaurantId);
-    late ClaimStatus nextStatus;
-
-    await _firestore.runTransaction((tx) async {
-      final snap = await tx.get(restaurantRef);
-      if (!snap.exists) {
-        throw const AppException('Restaurant not found.');
+    final snap = await restaurantRef.get();
+    if (!snap.exists) {
+      throw const AppException('Restaurant not found.');
+    }
+    final data = snap.data() ?? {};
+    var details = placeDetails;
+    final storedPlaceId = (data['googlePlaceId'] as String?) ?? '';
+    if (details == null && storedPlaceId.isNotEmpty) {
+      try {
+        details = await PlacesSearchService().fetchPlaceDetails(storedPlaceId);
+      } catch (_) {
+        // Still accept the claim request; listing phone may be missing.
       }
-      final data = snap.data() ?? {};
-      final existingOwner = data['ownerId'] as String?;
-      final existingClaim = ClaimStatus.fromKey(
-        data['claimStatus'] as String?,
-        claimed: (data['claimed'] as bool?) ?? false,
+    }
+    final existingOwner = data['ownerId'] as String?;
+    final existingClaim = ClaimStatus.fromKey(
+      data['claimStatus'] as String?,
+      claimed: (data['claimed'] as bool?) ?? false,
+    );
+
+    if (existingClaim == ClaimStatus.claimed &&
+        existingOwner != null &&
+        existingOwner != uid) {
+      throw const AppException(
+        'This restaurant already has a verified owner.',
       );
+    }
 
-      if (existingClaim == ClaimStatus.claimed &&
-          existingOwner != null &&
-          existingOwner != uid) {
-        throw const AppException(
-          'This restaurant already has a verified owner.',
-        );
-      }
-      if (existingClaim == ClaimStatus.pending &&
-          existingOwner != null &&
-          existingOwner != uid) {
-        throw const AppException(
-          'Another owner already submitted a claim for this listing.',
-        );
-      }
+    final listingName =
+        (details?.name.isNotEmpty == true
+            ? details!.name
+            : data['name'] as String?) ??
+        '';
+    final listingAddress = details?.address ?? data['address'] as String?;
+    final listingPhone = details?.phone ?? data['phone'] as String?;
 
-      nextStatus = ClaimStatus.claimed;
+    final businessName =
+        ((user['businessName'] as String?) ?? '').trim();
+    final businessAddress =
+        ((user['businessAddress'] as String?) ?? '').trim();
+    final businessPhone =
+        ((user['businessPhone'] as String?) ?? '').trim();
+    final businessEmail =
+        ((user['businessEmail'] as String?) ?? '').trim();
 
-      tx.update(restaurantRef, {
-        'ownerId': uid,
-        'claimed': true,
-        'claimStatus': ClaimStatus.claimed.name,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+    if (businessName.isNotEmpty &&
+        listingName.isNotEmpty &&
+        !ClaimMatcher.isStrongMatch(
+          businessName: businessName,
+          businessAddress: businessAddress,
+          restaurantName: listingName,
+          restaurantAddress: listingAddress,
+        )) {
+      throw const AppException(
+        'That Maps listing does not match the business name and address '
+        'you entered. Check the spelling, or pick the listing that matches '
+        'your signup details.',
+      );
+    }
+
+    if (listingPhone != null &&
+        listingPhone.trim().isNotEmpty &&
+        businessPhone.isNotEmpty &&
+        !ClaimMatcher.phonesMatch(businessPhone, listingPhone)) {
+      throw AppException(
+        'The phone on this Google listing is $listingPhone. '
+        'Enter that same number in your business details — it is a check '
+        'that you know the public listing, not a secret code.',
+      );
+    }
+
+    final existingCode = user['pendingClaimCode'] as String?;
+    final claimCode = (existingCode != null &&
+            existingCode.startsWith('TW-') &&
+            pending == restaurantId)
+        ? existingCode
+        : ClaimMatcher.generateCode();
+
+    await restaurantRef.collection('claimRequests').doc(uid).set({
+      'status': ClaimStatus.pending.name,
+      'claimCode': claimCode,
+      'proofUrl': proofUrl.trim(),
+      'businessName': businessName,
+      'businessAddress': businessAddress,
+      'businessPhone': businessPhone,
+      'businessEmail': businessEmail,
+      'restaurantName': listingName,
+      'mapsAddress': listingAddress,
+      'mapsPhone': listingPhone,
+      'googlePlaceId': details?.placeId ?? data['googlePlaceId'] as String?,
+      'mapsWebsite': details?.website ?? data['website'] as String?,
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
     });
 
-    final userUpdates = <String, dynamic>{
-      'updatedAt': FieldValue.serverTimestamp(),
-      'ownedRestaurantId': restaurantId,
-      'pendingClaimRestaurantId': FieldValue.delete(),
+    await _firestore.collection('users').doc(uid).update({
+      'pendingClaimRestaurantId': restaurantId,
+      'pendingClaimCode': claimCode,
       'businessVerificationStatus':
-          BusinessVerificationStatus.verified.name,
-    };
-    await _firestore.collection('users').doc(uid).update(userUpdates);
+          BusinessVerificationStatus.pending.name,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
 
-    return ClaimResult(restaurantId: restaurantId, status: nextStatus);
+    return ClaimResult(
+      restaurantId: restaurantId,
+      status: ClaimStatus.pending,
+      claimCode: claimCode,
+    );
   }
 
   @override
   Future<void> finalizePendingClaim() async {
-    final uid = _uid;
-    final userSnap = await _firestore.collection('users').doc(uid).get();
-    final pending = userSnap.data()?['pendingClaimRestaurantId'] as String?;
-    if (pending == null || pending.isEmpty) return;
-    await claimRestaurant(pending);
+    // Instant approve on launch was the old trust hole. Claims stay
+    // pending until TasteWise support marks the request approved.
   }
 
   @override

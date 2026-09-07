@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_spacing.dart';
+import '../../../../core/widgets/app_empty_state.dart';
 import '../../../feed/domain/entities/post.dart';
 import '../providers/restaurant_providers.dart';
 
@@ -33,17 +33,11 @@ class RestaurantPostsGrid extends ConsumerWidget {
       ),
       data: (feed) {
         if (feed.posts.isEmpty) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.xl),
-              child: Text(
-                'Official posts from this restaurant appear here.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-              ),
-            ),
+          return const AppEmptyState(
+            icon: Icons.restaurant_outlined,
+            title: 'No official posts yet',
+            subtitle:
+                'When the restaurant publishes as its page, those plates appear here.',
           );
         }
 
@@ -58,17 +52,11 @@ class RestaurantPostsGrid extends ConsumerWidget {
               child: CircularProgressIndicator(strokeWidth: 2.5),
             );
           }
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.xl),
-              child: Text(
-                'No official posts yet. Diner photos tagged here show up in Mentions.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-              ),
-            ),
+          return const AppEmptyState(
+            icon: Icons.photo_outlined,
+            title: 'No official posts yet',
+            subtitle:
+                'Diner photos tagged here show up in Mentions. Page posts appear in this grid.',
           );
         }
 

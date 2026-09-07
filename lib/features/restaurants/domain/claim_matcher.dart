@@ -1,8 +1,35 @@
+import 'dart:math';
+
 import 'entities/claim_status.dart';
 
 /// Cross-check business signup details against a Maps restaurant listing.
 abstract final class ClaimMatcher {
-  /// Strong match → auto-claim. Weak/mismatch → pending manual review.
+  static const _codeChars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+  /// Unique code only the submitter and TasteWise support share.
+  static String generateCode() {
+    final random = Random.secure();
+    final body = List.generate(
+      6,
+      (_) => _codeChars[random.nextInt(_codeChars.length)],
+    ).join();
+    return 'TW-$body';
+  }
+
+  static String digitsOnly(String? raw) =>
+      (raw ?? '').replaceAll(RegExp(r'\D'), '');
+
+  /// Compare national numbers by the last 7–8 digits.
+  static bool phonesMatch(String? a, String? b) {
+    final da = digitsOnly(a);
+    final db = digitsOnly(b);
+    if (da.isEmpty || db.isEmpty) return false;
+    final n = (da.length < 8 || db.length < 8) ? 7 : 8;
+    if (da.length < n || db.length < n) return da == db;
+    return da.substring(da.length - n) == db.substring(db.length - n);
+  }
+
+  /// Name + address must line up with the Maps listing.
   static bool isStrongMatch({
     required String businessName,
     String? businessAddress,
@@ -48,10 +75,12 @@ class ClaimResult {
   const ClaimResult({
     required this.restaurantId,
     required this.status,
+    this.claimCode,
   });
 
   final String restaurantId;
   final ClaimStatus status;
+  final String? claimCode;
 
   bool get isApproved => status == ClaimStatus.claimed;
 }

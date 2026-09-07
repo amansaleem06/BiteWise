@@ -17,7 +17,7 @@
 
 ## Promotional text (optional, 170 chars)
 
-`Share food moments, find nearby restaurants, follow food lovers, and book tables — all in one place.`
+`See what people actually eat nearby. Share plates, follow restaurants, and collect Taste Passport stamps.`
 
 ## Description
 
@@ -25,17 +25,20 @@
 TasteWise is a food-focused social app for discovering restaurants and sharing what you love to eat.
 
 With TasteWise you can:
-• Share dishes with photos, captions, ratings, and tags
+• Share dishes with photos, captions, ratings, tags, and stories
 • Explore a For You and Following feed
 • Discover restaurants near you on the map
 • Follow people and restaurants you love
-• Like, comment, bookmark, and message
+• Like, comment, bookmark, message, and collect Taste Passport stamps
 • Book restaurant reservations
 • Get notifications about likes, comments, follows, and chats
+
+Restaurant owners can post as their page and review diner mentions.
 
 Whether you’re hunting for your next favorite spot or posting tonight’s plate, TasteWise helps every dish find its story.
 
 Delete your account anytime in Profile → Settings → Delete account.
+Need help? Email tastewise2026@gmail.com
 ```
 
 ## Keywords (100 characters max, comma-separated, no spaces after commas preferred)

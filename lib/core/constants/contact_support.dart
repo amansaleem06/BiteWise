@@ -10,11 +10,15 @@ abstract final class ContactSupport {
   static Future<void> email(
     BuildContext context, {
     String subject = 'TasteWise support',
+    String? body,
   }) async {
     final uri = Uri(
       scheme: 'mailto',
       path: AppLegal.supportEmail,
-      queryParameters: {'subject': subject},
+      queryParameters: {
+        'subject': subject,
+        if (body != null && body.isNotEmpty) 'body': body,
+      },
     );
     try {
       final opened = await launchUrl(uri);

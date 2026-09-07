@@ -9,6 +9,7 @@ import '../../../../app/theme/theme_mode_provider.dart';
 import '../../../../core/constants/app_legal.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/errors/error_text.dart';
+import '../../../../core/widgets/app_confirm_dialog.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../auth/domain/entities/app_user.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
@@ -70,6 +71,13 @@ class SettingsScreen extends ConsumerWidget {
             title: const Text(AppStrings.signOut),
             enabled: !authState.isLoading,
             onTap: () async {
+              final ok = await AppConfirmDialog.show(
+                context,
+                title: 'Sign out?',
+                message: 'You can sign back in anytime with the same account.',
+                confirmLabel: 'Sign out',
+              );
+              if (!ok || !context.mounted) return;
               try {
                 await ref.read(authControllerProvider.notifier).signOut();
               } catch (e) {

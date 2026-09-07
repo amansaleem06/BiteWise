@@ -46,6 +46,29 @@ class SupportScreen extends StatelessWidget {
             onTap: () => ContactSupport.copyEmail(context),
           ),
           const Divider(height: 32),
+          Text('Common questions', style: theme.textTheme.titleMedium),
+          const SizedBox(height: AppSpacing.sm),
+          const _Faq(
+            question: 'How do I claim my restaurant?',
+            answer:
+                'Create a business account, match the Google Maps listing, then upload a storefront or license photo and email the claim code to support. We mark Verified Owner after that review.',
+          ),
+          const _Faq(
+            question: 'How do I report or block someone?',
+            answer:
+                'On a post, tap ••• then Report or Block. The same menu is on profiles, chats, stories, and comments.',
+          ),
+          const _Faq(
+            question: 'Where are my saved plates?',
+            answer:
+                'Profile → Settings → Saved plates, or the bookmark icon on any post.',
+          ),
+          const _Faq(
+            question: 'Can I delete my account?',
+            answer:
+                'Yes. Settings → Delete account. Your profile is removed and posts are anonymized.',
+          ),
+          const Divider(height: 32),
           Text('Report or block someone', style: theme.textTheme.titleMedium),
           const SizedBox(height: AppSpacing.sm),
           Text(
@@ -58,6 +81,33 @@ class SupportScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _Faq extends StatelessWidget {
+  const _Faq({required this.question, required this.answer});
+
+  final String question;
+  final String answer;
+
+  @override
+  Widget build(BuildContext context) {
+    return ExpansionTile(
+      tilePadding: EdgeInsets.zero,
+      childrenPadding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      title: Text(question),
+      children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            answer,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
+        ),
+      ],
     );
   }
 }

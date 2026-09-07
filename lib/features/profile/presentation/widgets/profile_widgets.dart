@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -7,6 +8,8 @@ import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/widgets/app_empty_state.dart';
+import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/identity_badge.dart';
 import '../../../auth/domain/entities/app_user.dart';
 import '../../../feed/domain/entities/post.dart';
@@ -62,6 +65,15 @@ class ProfileHeader extends StatelessWidget {
             user.displayName,
             style: theme.textTheme.titleLarge,
           ),
+          if (user.createdAt != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              Formatters.joined(user.createdAt),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
           if (user.isBusiness) ...[
             const SizedBox(height: AppSpacing.xxs),
             Text(
@@ -79,10 +91,23 @@ class ProfileHeader extends StatelessWidget {
                   ? IdentityBadge.restaurantOwner()
                   : IdentityBadge.member(),
               if (user.username != null && user.username!.isNotEmpty)
-                Text(
-                  '@${user.username}',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                GestureDetector(
+                  onTap: () async {
+                    await Clipboard.setData(
+                      ClipboardData(text: '@${user.username}'),
+                    );
+                    if (context.mounted) {
+                      AppSnackbar.success(
+                        context,
+                        'Copied @${user.username}',
+                      );
+                    }
+                  },
+                  child: Text(
+                    '@${user.username}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
             ],
@@ -188,8 +213,7 @@ class UserPostsGrid extends ConsumerWidget {
     final controller = ref.read(userPostsProvider(uid).notifier);
 
     return postsAsync.when(
-      loading: () =>
-          const Center(child: CircularProgressIndicator(strokeWidth: 2.5)),
+      loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 2.5)),
       error: (_, __) => Center(
         child: TextButton(
           onPressed: () => ref.invalidate(userPostsProvider(uid)),
@@ -199,17 +223,11 @@ class UserPostsGrid extends ConsumerWidget {
         data: (feed) {
         final personal = feed.posts.where((p) => !p.postedAsRestaurant).toList();
         if (personal.isEmpty) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.xl),
-              child: Text(
-                'Personal plates live here. Official restaurant posts appear on the restaurant page.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-              ),
-            ),
+          return const AppEmptyState(
+            icon: Icons.grid_view_rounded,
+            title: 'No personal plates yet',
+            subtitle:
+                'Posts you share as yourself show up here. Restaurant posts live on the restaurant page.',
           );
         }
         return NotificationListener<ScrollNotification>(

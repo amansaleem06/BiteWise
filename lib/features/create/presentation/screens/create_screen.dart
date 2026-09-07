@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,6 +17,7 @@ import '../../../restaurants/domain/entities/restaurant_ref.dart';
 import '../../../restaurants/presentation/providers/page_identity_provider.dart';
 import '../../../restaurants/presentation/providers/restaurant_providers.dart';
 import '../../../restaurants/presentation/widgets/page_identity_bar.dart';
+import '../../data/create_draft_store.dart';
 import '../providers/create_post_providers.dart';
 import '../widgets/currency_picker_sheet.dart';
 import '../widgets/media_picker_grid.dart';
@@ -37,9 +40,73 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
   final _cuisines = <String>{};
   var _pageKind = 'plate';
   var _currency = LocaleCurrency.deviceDefault;
+  final _drafts = CreateDraftStore();
+  Timer? _draftTimer;
+  var _hydrated = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _dish.addListener(_scheduleDraftSave);
+    _caption.addListener(_scheduleDraftSave);
+    _price.addListener(_scheduleDraftSave);
+    _tags.addListener(_scheduleDraftSave);
+    _restoreDraft();
+  }
+
+  Future<void> _restoreDraft() async {
+    final draft = await _drafts.load();
+    if (!mounted || draft == null) {
+      _hydrated = true;
+      return;
+    }
+    _dish.text = (draft['dish'] as String?) ?? '';
+    _caption.text = (draft['caption'] as String?) ?? '';
+    _price.text = (draft['price'] as String?) ?? '';
+    _tags.text = (draft['tags'] as String?) ?? '';
+    _pageKind = (draft['pageKind'] as String?) ?? 'plate';
+    final currencyCode = draft['currency'] as String?;
+    if (currencyCode != null) {
+      _currency = LocaleCurrency.byCode(currencyCode) ?? _currency;
+    }
+    final cuisines = (draft['cuisines'] as List?)?.whereType<String>() ?? [];
+    _cuisines.addAll(cuisines);
+    final restaurantId = draft['restaurantId'] as String?;
+    final restaurantName = draft['restaurantName'] as String?;
+    if (restaurantId != null &&
+        restaurantId.isNotEmpty &&
+        restaurantName != null) {
+      ref.read(createPostControllerProvider.notifier).setRestaurant(
+            RestaurantRef(id: restaurantId, name: restaurantName),
+          );
+    }
+    setState(() => _hydrated = true);
+  }
+
+  void _scheduleDraftSave() {
+    if (!_hydrated) return;
+    _draftTimer?.cancel();
+    _draftTimer = Timer(const Duration(milliseconds: 600), _saveDraft);
+  }
+
+  Future<void> _saveDraft() async {
+    final restaurant = ref.read(createPostControllerProvider).restaurant;
+    await _drafts.save({
+      'dish': _dish.text,
+      'caption': _caption.text,
+      'price': _price.text,
+      'tags': _tags.text,
+      'pageKind': _pageKind,
+      'currency': _currency.code,
+      'cuisines': _cuisines.toList(),
+      'restaurantId': restaurant?.id,
+      'restaurantName': restaurant?.name,
+    });
+  }
 
   @override
   void dispose() {
+    _draftTimer?.cancel();
     _dish.dispose();
     _caption.dispose();
     _price.dispose();
@@ -85,6 +152,8 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
       _price.clear();
       _tags.clear();
       setState(_cuisines.clear);
+      await _drafts.clear();
+      if (!mounted) return;
       AppSnackbar.success(context, 'Posted!');
       context.go(Routes.home);
     }
@@ -156,19 +225,26 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
                       ChoiceChip(
                         label: const Text('Plate'),
                         selected: _pageKind == 'plate',
-                        onSelected: (_) =>
-                            setState(() => _pageKind = 'plate'),
+                        onSelected: (_) {
+                          setState(() => _pageKind = 'plate');
+                          _scheduleDraftSave();
+                        },
                       ),
                       ChoiceChip(
                         label: const Text('Promo'),
                         selected: _pageKind == 'promo',
-                        onSelected: (_) =>
-                            setState(() => _pageKind = 'promo'),
+                        onSelected: (_) {
+                          setState(() => _pageKind = 'promo');
+                          _scheduleDraftSave();
+                        },
                       ),
                       ChoiceChip(
                         label: const Text('Menu update'),
                         selected: _pageKind == 'menu',
-                        onSelected: (_) => setState(() => _pageKind = 'menu'),
+                        onSelected: (_) {
+                          setState(() => _pageKind = 'menu');
+                          _scheduleDraftSave();
+                        },
                       ),
                     ],
                   ),
@@ -189,7 +265,23 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
             onAddFromGallery: controller.pickImages,
             onAddFromCamera: controller.takePhoto,
             onRemove: controller.removeImage,
+            onReorder: controller.reorderImages,
           ),
+          if (state.images.length > 1)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                AppSpacing.xs,
+                AppSpacing.md,
+                0,
+              ),
+              child: Text(
+                'Press and hold a photo to reorder.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
           const SizedBox(height: AppSpacing.md),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
@@ -239,6 +331,7 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
                         await RestaurantPickerSheet.show(context);
                     if (restaurant != null) {
                       controller.setRestaurant(restaurant);
+                      _scheduleDraftSave();
                     }
                   },
                 ),
@@ -321,6 +414,7 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
                           );
                           if (picked != null) {
                             setState(() => _currency = picked);
+                            _scheduleDraftSave();
                           }
                         },
                         child: InputDecorator(
@@ -366,6 +460,7 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
                               _cuisines.remove(cuisine);
                             }
                           });
+                          _scheduleDraftSave();
                         },
                       ),
                   ],

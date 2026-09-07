@@ -25,7 +25,8 @@ class RestaurantMentionsTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final me = ref.watch(currentUserProvider);
-    final isOwner = me != null && restaurant.ownerId == me.uid;
+    final isOwner =
+        me != null && restaurant.ownerId == me.uid && restaurant.isClaimed;
     final postsAsync = ref.watch(restaurantPostsProvider(restaurant.id));
     final controller =
         ref.read(restaurantPostsProvider(restaurant.id).notifier);

@@ -60,7 +60,10 @@ class PageIdentityController extends StateNotifier<PageIdentity> {
 
 final pageIdentityProvider =
     StateNotifierProvider<PageIdentityController, PageIdentity>((ref) {
-  final owned = ref.watch(currentUserProvider)?.ownedRestaurantId;
+  final me = ref.watch(currentUserProvider);
+  final owned = me != null && me.hasVerifiedBusiness
+      ? me.ownedRestaurantId
+      : null;
   return PageIdentityController(owned);
 });
 
@@ -71,7 +74,8 @@ final actingPageVoiceProvider = FutureProvider<RestaurantPageVoice?>((ref) {
 });
 
 final ownedRestaurantProvider = Provider<Restaurant?>((ref) {
-  final id = ref.watch(currentUserProvider)?.ownedRestaurantId;
+  final me = ref.watch(currentUserProvider);
+  final id = me != null && me.hasVerifiedBusiness ? me.ownedRestaurantId : null;
   if (id == null || id.isEmpty) return null;
   return ref.watch(restaurantControllerProvider(id)).valueOrNull;
 });

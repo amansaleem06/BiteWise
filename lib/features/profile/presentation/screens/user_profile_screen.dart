@@ -23,10 +23,23 @@ class UserProfileScreen extends ConsumerWidget {
   final String uid;
 
   Future<void> _toggleFollow(BuildContext context, WidgetRef ref) async {
+    final profile = ref.read(userProfileProvider(uid)).valueOrNull;
+    final wasFollowing = profile?.isFollowedByMe ?? false;
     final error =
         await ref.read(userProfileProvider(uid).notifier).toggleFollow();
-    if (error != null && context.mounted) {
+    if (!context.mounted) return;
+    if (error != null) {
       AppSnackbar.error(context, error);
+      return;
+    }
+    if (wasFollowing) {
+      AppSnackbar.undo(
+        context,
+        'Unfollowed',
+        onUndo: () {
+          ref.read(userProfileProvider(uid).notifier).toggleFollow();
+        },
+      );
     }
   }
 

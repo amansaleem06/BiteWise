@@ -27,6 +27,8 @@ class RestaurantPageVoice {
     final rest = await db.collection('restaurants').doc(owned).get();
     final data = rest.data();
     if (data == null) return null;
+    final claimed = data['claimed'] == true || data['claimStatus'] == 'claimed';
+    if (!claimed) return null;
     final name = (data['name'] as String?)?.trim();
     if (name == null || name.isEmpty) return null;
     return RestaurantPageVoice(

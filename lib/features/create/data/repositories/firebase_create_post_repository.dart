@@ -108,6 +108,8 @@ class FirebaseCreatePostRepository implements CreatePostRepository {
       'nameLower': name.toLowerCase(),
       'googlePlaceId': place.placeId,
       if (place.address != null) 'address': place.address,
+      if (place.phone != null) 'phone': place.phone,
+      if (place.website != null) 'website': place.website,
       if (place.city != null) 'city': place.city,
       'claimed': false,
       'claimStatus': 'unclaimed',
@@ -173,7 +175,7 @@ class FirebaseCreatePostRepository implements CreatePostRepository {
         final claimed = (data?['claimed'] as bool?) ?? false;
         final claimStatus = data?['claimStatus'] as String?;
         postingAsPage = ownerId == user.uid &&
-            (claimed || claimStatus == 'claimed' || claimStatus == 'pending');
+            (claimed || claimStatus == 'claimed');
         if (postingAsPage) {
           page = RestaurantPageVoice(
             id: restaurantId,

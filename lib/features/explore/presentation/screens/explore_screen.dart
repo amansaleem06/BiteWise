@@ -8,6 +8,7 @@ import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/constants/cuisines.dart';
+import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/widgets/async_error_view.dart';
 import '../../../feed/domain/entities/post.dart';
 import '../../../restaurants/domain/entities/restaurant.dart';
@@ -230,16 +231,14 @@ class _TrendingTab extends ConsumerWidget {
                 )
                 .toList();
         if (filtered.isEmpty) {
-          return Center(
-            child: Text(
-              cuisineFilter == null
-                  ? 'Nothing trending yet — start posting!'
-                  : 'No $cuisineFilter posts yet. Tag a post with this cuisine.',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-            ),
+          return AppEmptyState(
+            icon: Icons.local_fire_department_outlined,
+            title: cuisineFilter == null
+                ? 'Nothing trending yet'
+                : 'No $cuisineFilter posts yet',
+            subtitle: cuisineFilter == null
+                ? 'Share a plate to get TasteWise started.'
+                : 'Tag a post with this cuisine to see it here.',
           );
         }
         return RefreshIndicator(

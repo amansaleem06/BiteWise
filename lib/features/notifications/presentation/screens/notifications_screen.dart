@@ -6,7 +6,9 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
-import '../../../../core/constants/app_strings.dart';
+import '../../../../core/widgets/app_empty_state.dart';
+import '../../../../core/widgets/async_error_view.dart';
+import '../../../../core/widgets/list_shimmer.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../domain/entities/app_notification.dart';
 import '../providers/notification_providers.dart';
@@ -16,48 +18,25 @@ class NotificationsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final stateAsync = ref.watch(notificationsControllerProvider);
     final controller = ref.read(notificationsControllerProvider.notifier);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Notifications')),
       body: stateAsync.when(
-        loading: () =>
-            const Center(child: CircularProgressIndicator(strokeWidth: 2.5)),
-        error: (_, __) => Center(
-          child: TextButton(
-            onPressed: () => ref.invalidate(notificationsControllerProvider),
-            child: const Text(AppStrings.retry),
-          ),
+        loading: () => const ListShimmer(),
+        error: (error, stack) => AsyncErrorView(
+          error: error,
+          stackTrace: stack,
+          title: 'Couldn\'t load notifications',
+          onRetry: () => ref.invalidate(notificationsControllerProvider),
         ),
         data: (state) {
           if (state.items.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.xl),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.notifications_none_rounded,
-                      size: 48,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    Text('No notifications yet',
-                        style: theme.textTheme.titleLarge,),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      'Likes, comments, and new followers show up here.',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            return const AppEmptyState(
+              icon: Icons.notifications_none_rounded,
+              title: 'No notifications yet',
+              subtitle: 'Likes, comments, and new followers show up here.',
             );
           }
           return RefreshIndicator(

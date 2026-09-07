@@ -123,6 +123,15 @@ class CreatePostController extends AutoDisposeNotifier<CreatePostState> {
     state = state.copyWith(images: images);
   }
 
+  void reorderImages(int oldIndex, int newIndex) {
+    final images = [...state.images];
+    var dest = newIndex;
+    if (dest > oldIndex) dest -= 1;
+    final item = images.removeAt(oldIndex);
+    images.insert(dest, item);
+    state = state.copyWith(images: images);
+  }
+
   void setRestaurant(RestaurantRef? restaurant) => state = restaurant == null
       ? state.copyWith(clearRestaurant: true)
       : state.copyWith(restaurant: restaurant);

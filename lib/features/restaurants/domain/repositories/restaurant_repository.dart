@@ -19,11 +19,18 @@ abstract interface class RestaurantRepository {
     String? businessEmail,
   });
 
-  Future<ClaimResult> claimFromPlace(PlaceSuggestion place);
+  Future<ClaimResult> claimFromPlace(
+    PlaceSuggestion place, {
+    required String proofUrl,
+  });
 
-  Future<ClaimResult> claimRestaurant(String restaurantId);
+  Future<ClaimResult> claimRestaurant(
+    String restaurantId, {
+    required String proofUrl,
+    PlaceSuggestion? placeDetails,
+  });
 
-  /// Converts a leftover pending claim into an immediate verified claim.
+  /// Leftover helper from the old instant-claim flow. Now a no-op.
   Future<void> finalizePendingClaim();
 
   Future<void> setGuestFeedMode(String restaurantId, GuestFeedMode mode);

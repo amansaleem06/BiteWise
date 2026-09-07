@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../domain/entities/reservation.dart';
 import '../providers/reservation_providers.dart';
@@ -80,18 +81,11 @@ class _ReservationList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     if (reservations.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Text(
-            emptyText,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyMedium
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-          ),
-        ),
+      return AppEmptyState(
+        icon: Icons.calendar_month_outlined,
+        title: 'Nothing here',
+        subtitle: emptyText,
       );
     }
     return ListView.separated(

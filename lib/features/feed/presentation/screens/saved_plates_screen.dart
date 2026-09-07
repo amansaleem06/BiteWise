@@ -6,8 +6,12 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../app/router/author_nav.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../core/widgets/app_empty_state.dart';
+import '../../../../core/widgets/app_snackbar.dart';
+import '../../../../core/widgets/async_error_view.dart';
 import '../../../feed/domain/entities/post.dart';
 import '../../../feed/presentation/providers/feed_providers.dart';
+import '../../../feed/presentation/widgets/feed_shimmer.dart';
 import '../../../feed/presentation/widgets/post_card.dart';
 
 final savedPlatesProvider =
@@ -23,7 +27,6 @@ class SavedPlatesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(savedPlatesProvider);
-    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -33,19 +36,19 @@ class SavedPlatesScreen extends ConsumerWidget {
         ),
       ),
       body: async.when(
-        loading: () =>
-            const Center(child: CircularProgressIndicator(strokeWidth: 2.5)),
-        error: (e, _) => Center(child: Text('$e')),
+        loading: () => const FeedShimmer(itemCount: 2),
+        error: (e, st) => AsyncErrorView(
+          error: e,
+          stackTrace: st,
+          title: 'Couldn\'t load saved plates',
+          onRetry: () => ref.invalidate(savedPlatesProvider),
+        ),
         data: (posts) {
           if (posts.isEmpty) {
-            return Center(
-              child: Text(
-                'No saved plates yet.\nBookmark a plate from the Stage.',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
+            return const AppEmptyState(
+              icon: Icons.bookmark_outline_rounded,
+              title: 'No saved plates yet',
+              subtitle: 'Tap the bookmark on a post to keep it here.',
             );
           }
           return ListView.builder(
@@ -61,6 +64,17 @@ class SavedPlatesScreen extends ConsumerWidget {
                       .read(feedRepositoryProvider)
                       .setBookmarked(post.id, bookmarked: false);
                   ref.invalidate(savedPlatesProvider);
+                  if (!context.mounted) return;
+                  AppSnackbar.undo(
+                    context,
+                    'Removed from saved',
+                    onUndo: () async {
+                      await ref
+                          .read(feedRepositoryProvider)
+                          .setBookmarked(post.id, bookmarked: true);
+                      ref.invalidate(savedPlatesProvider);
+                    },
+                  );
                 },
                 onComment: () => context.push(Routes.postPath(post.id)),
                 onAuthorTap: () => openPostAuthor(context, post),

@@ -15,6 +15,7 @@ class MediaPickerGrid extends StatelessWidget {
     required this.onAddFromGallery,
     required this.onAddFromCamera,
     required this.onRemove,
+    this.onReorder,
     this.maxImages = 10,
   });
 
@@ -22,32 +23,57 @@ class MediaPickerGrid extends StatelessWidget {
   final VoidCallback onAddFromGallery;
   final VoidCallback onAddFromCamera;
   final void Function(int index) onRemove;
+  final void Function(int oldIndex, int newIndex)? onReorder;
   final int maxImages;
 
   @override
   Widget build(BuildContext context) {
     const tileSize = 104.0;
     final canAdd = images.length < maxImages;
+    final extra = canAdd ? 1 : 0;
 
     return SizedBox(
       height: tileSize,
-      child: ListView.separated(
+      child: ReorderableListView.builder(
         scrollDirection: Axis.horizontal,
+        buildDefaultDragHandles: false,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-        itemCount: images.length + (canAdd ? 1 : 0),
-        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.xs),
+        itemCount: images.length + extra,
+        proxyDecorator: (child, index, animation) => AnimatedBuilder(
+          animation: animation,
+          builder: (context, child) => Transform.scale(
+            scale: 1.05,
+            child: child,
+          ),
+          child: child,
+        ),
+        onReorder: (oldIndex, newIndex) {
+          if (oldIndex >= images.length) return;
+          var dest = newIndex;
+          if (dest > images.length) dest = images.length;
+          onReorder?.call(oldIndex, dest);
+        },
         itemBuilder: (context, index) {
           if (index == images.length) {
             return _AddTile(
+              key: const ValueKey('add-photo'),
               size: tileSize,
               onGallery: onAddFromGallery,
               onCamera: onAddFromCamera,
             );
           }
-          return _PhotoTile(
-            size: tileSize,
-            file: images[index],
-            onRemove: () => onRemove(index),
+          return ReorderableDelayedDragStartListener(
+            key: ValueKey(images[index].path),
+            index: index,
+            enabled: onReorder != null && images.length > 1,
+            child: Padding(
+              padding: const EdgeInsets.only(right: AppSpacing.xs),
+              child: _PhotoTile(
+                size: tileSize,
+                file: images[index],
+                onRemove: () => onRemove(index),
+              ),
+            ),
           );
         },
       ),
@@ -105,6 +131,7 @@ class _PhotoTile extends StatelessWidget {
 
 class _AddTile extends StatelessWidget {
   const _AddTile({
+    super.key,
     required this.size,
     required this.onGallery,
     required this.onCamera,

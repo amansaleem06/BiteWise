@@ -79,7 +79,11 @@ class _NearbyMapTabState extends ConsumerState<NearbyMapTab> {
             snippet: [
               if (r.averageRating != null)
                 '${r.averageRating!.toStringAsFixed(1)} ★',
-              r.isClaimed ? 'Verified Owner' : 'Unclaimed listing',
+              r.isClaimed
+                  ? 'Verified Owner'
+                  : r.isPendingClaim
+                      ? 'Claim under review'
+                      : 'Unclaimed listing',
             ].join(' · '),
           ),
           onTap: () => setState(() => _selected = r),

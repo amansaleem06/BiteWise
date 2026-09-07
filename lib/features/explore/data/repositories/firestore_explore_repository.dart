@@ -186,15 +186,35 @@ class FirestoreExploreRepository implements ExploreRepository {
 
   @override
   Future<List<AppUser>> searchUsers(String query, {int limit = 15}) async {
-    final q = query.trim().toLowerCase();
+    var q = query.trim().toLowerCase();
+    if (q.startsWith('@')) q = q.substring(1);
     if (q.isEmpty) return const [];
-    final snap = await _firestore
-        .collection('users')
-        .where('displayNameLower', isGreaterThanOrEqualTo: q)
-        .where('displayNameLower', isLessThan: '$q')
-        .limit(limit)
-        .get();
-    return snap.docs.map(UserModel.fromDoc).toList();
+
+    final users = _firestore.collection('users');
+    final byId = <String, AppUser>{};
+
+    Future<void> addPrefix(String field) async {
+      try {
+        final snap = await users
+            .where(field, isGreaterThanOrEqualTo: q)
+            .where(field, isLessThan: '$q')
+            .limit(limit)
+            .get();
+        for (final doc in snap.docs) {
+          byId[doc.id] = UserModel.fromDoc(doc);
+        }
+      } catch (_) {
+        // A missing index or older docs without the field must not
+        // hide people matches from the other fields.
+      }
+    }
+
+    await Future.wait([
+      addPrefix('displayNameLower'),
+      addPrefix('username'),
+      addPrefix('usernameLower'),
+    ]);
+    return byId.values.take(limit).toList();
   }
 
   @override

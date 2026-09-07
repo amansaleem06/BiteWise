@@ -9,8 +9,10 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/errors/error_text.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/async_error_view.dart';
+import '../../../../core/widgets/list_shimmer.dart';
 import '../../../explore/presentation/providers/explore_providers.dart';
 import '../../../safety/presentation/providers/safety_providers.dart';
 import '../../domain/entities/chat.dart';
@@ -22,7 +24,6 @@ class MessagesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final chatsAsync = ref.watch(chatsProvider);
 
     return Scaffold(
@@ -53,8 +54,7 @@ class MessagesScreen extends ConsumerWidget {
         ],
       ),
       body: chatsAsync.when(
-        loading: () =>
-            const Center(child: CircularProgressIndicator(strokeWidth: 2.5)),
+        loading: () => const ListShimmer(),
         error: (error, stack) => AsyncErrorView(
           error: error,
           stackTrace: stack,
@@ -68,36 +68,12 @@ class MessagesScreen extends ConsumerWidget {
               .where((chat) => !blocked.contains(chat.peer.uid))
               .toList();
           if (visible.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.xl),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.chat_bubble_outline_rounded,
-                      size: 48,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    Text('No messages yet', style: theme.textTheme.titleLarge),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      'Start a conversation with a fellow food lover.',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    FilledButton.icon(
-                      onPressed: () => _NewChatSheet.show(context),
-                      icon: const Icon(Icons.edit_square, size: 18),
-                      label: const Text('New message'),
-                    ),
-                  ],
-                ),
-              ),
+            return AppEmptyState(
+              icon: Icons.chat_bubble_outline_rounded,
+              title: 'No messages yet',
+              subtitle: 'Start a conversation with a fellow food lover.',
+              actionLabel: 'New message',
+              onAction: () => _NewChatSheet.show(context),
             );
           }
           return ListView.builder(
@@ -230,7 +206,15 @@ class _NewChatSheetState extends ConsumerState<_NewChatSheet> {
                 loading: () => const Center(
                   child: CircularProgressIndicator(strokeWidth: 2.5),
                 ),
-                error: (_, __) => const SizedBox.shrink(),
+                error: (e, _) => Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    child: Text(
+                      userMessageFrom(e),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
                 data: (r) => ListView(
                   controller: scrollController,
                   children: [
@@ -239,6 +223,15 @@ class _NewChatSheetState extends ConsumerState<_NewChatSheet> {
                         padding: const EdgeInsets.all(AppSpacing.xl),
                         child: Text(
                           'Search for someone to message.',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      )
+                    else if (r.users.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(AppSpacing.xl),
+                        child: Text(
+                          'No people match "$_query". Try their name or @username.',
                           textAlign: TextAlign.center,
                           style: theme.textTheme.bodySmall,
                         ),
@@ -262,6 +255,10 @@ class _NewChatSheetState extends ConsumerState<_NewChatSheet> {
                               : null,
                         ),
                         title: Text(user.displayName),
+                        subtitle: user.username != null &&
+                                user.username!.isNotEmpty
+                            ? Text('@${user.username}')
+                            : null,
                         onTap: () async {
                           try {
                             final chatId = await ref

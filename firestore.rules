@@ -32,20 +32,20 @@ service cloud.firestore {
       return isSignedIn() && userRole() == 'restaurantOwner';
     }
 
-    function isClaimingRestaurant() {
-      return isRestaurantOwner()
-        && resource.data.get('claimed', false) == false
-        && (
-          !('ownerId' in resource.data)
-          || resource.data.ownerId == null
-          || resource.data.ownerId == request.auth.uid
-        )
-        && request.resource.data.ownerId == request.auth.uid
-        && request.resource.data.get('claimStatus', '') in ['pending', 'claimed']
-        && request.resource.data.followerCount == resource.data.get('followerCount', 0)
-        && request.resource.data.get('ratingSum', 0) == resource.data.get('ratingSum', 0)
-        && request.resource.data.get('ratingCount', 0) == resource.data.get('ratingCount', 0)
-        && request.resource.data.name == resource.data.name;
+    function verificationNotSelfGranted() {
+      return request.resource.data.get('businessVerificationStatus', 'pending')
+          == resource.data.get('businessVerificationStatus', 'pending')
+        || (
+          request.resource.data.get('businessVerificationStatus', 'pending')
+            == 'pending'
+          && resource.data.get('businessVerificationStatus', 'pending')
+            != 'verified'
+        );
+    }
+
+    function ownedRestaurantUnchanged() {
+      return request.resource.data.get('ownedRestaurantId', '')
+        == resource.data.get('ownedRestaurantId', '');
     }
 
     // ---------- Users ----------
@@ -74,11 +74,8 @@ service cloud.firestore {
           && request.resource.data.followerCount == resource.data.followerCount
           && request.resource.data.followingCount == resource.data.followingCount
           && request.resource.data.postCount == resource.data.postCount
-          && (
-            request.resource.data.get('businessVerificationStatus', 'pending')
-              != 'verified'
-            || request.resource.data.ownedRestaurantId is string
-          )
+          && verificationNotSelfGranted()
+          && ownedRestaurantUnchanged()
           && request.resource.data.get('businessVerificationStatus', 'pending')
             != 'rejected'
         );
@@ -231,17 +228,12 @@ service cloud.firestore {
         && request.resource.data.createdBy == request.auth.uid
         && request.resource.data.followerCount == 0
         && request.resource.data.postCount == 0
-        && (
-          (request.resource.data.claimed == false
-            && request.resource.data.ownerId == null)
-          || (request.resource.data.claimed == true
-            && request.resource.data.ownerId == request.auth.uid)
-        );
+        && request.resource.data.claimed == false
+        && request.resource.data.ownerId == null;
 
       // Owners may edit profile fields; counters stay locked except rating
       // aggregates / postCount bumped by any signed-in publisher.
       allow update: if isAdmin()
-        || isClaimingRestaurant()
         || (isSignedIn()
           && resource.data.ownerId == request.auth.uid
           && request.resource.data.ownerId == resource.data.ownerId
@@ -262,6 +254,26 @@ service cloud.firestore {
         allow read: if isSignedIn();
         allow create, delete: if isSelf(uid);
       }
+
+      // Owner-only proof for a listing. Clients may submit pending
+      // requests; only admin / Cloud Functions can mark approved.
+      match /claimRequests/{uid} {
+        allow read: if isSelf(uid) || isAdmin();
+        allow create: if isSelf(uid)
+          && isRestaurantOwner()
+          && request.resource.data.status == 'pending'
+          && request.resource.data.claimCode is string
+          && request.resource.data.claimCode.size() >= 8
+          && request.resource.data.proofUrl is string
+          && request.resource.data.proofUrl.size() > 8;
+        allow update: if isAdmin()
+          || (isSelf(uid)
+            && resource.data.status == 'pending'
+            && request.resource.data.status == 'pending'
+            && request.resource.data.claimCode == resource.data.claimCode);
+        allow delete: if isAdmin()
+          || (isSelf(uid) && resource.data.status == 'pending');
+      }
     }
 
     // ---------- Chats ----------
@@ -270,7 +282,13 @@ service cloud.firestore {
         return isSignedIn() && request.auth.uid in resource.data.participants;
       }
 
-      allow read: if isParticipant();
+      // Missing docs have no resource. A get() used to check "does this
+      // chat exist?" must be allowed, or starting a first conversation
+      // fails with permission-denied.
+      allow get: if isSignedIn() && (
+        resource == null || request.auth.uid in resource.data.participants
+      );
+      allow list: if isParticipant();
 
       // Creating a chat: exactly two participants including yourself,
       // the doc id must be the sorted uid pair, and the other person

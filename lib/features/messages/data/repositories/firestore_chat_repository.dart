@@ -76,8 +76,14 @@ class FirestoreChatRepository implements ChatRepository {
   }) async {
     final user = _user;
     final chatId = Chat.idFor(user.uid, peerUid);
-    final existing = await _chats.doc(chatId).get();
-    if (existing.exists) {
+    DocumentSnapshot<Map<String, dynamic>>? existing;
+    try {
+      existing = await _chats.doc(chatId).get();
+    } on FirebaseException catch (e) {
+      // Older rules deny get() on a chat that does not exist yet.
+      if (e.code != 'permission-denied') rethrow;
+    }
+    if (existing != null && existing.exists) {
       await _chats.doc(chatId).set({
         'participantInfo': {
           user.uid: {

@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../core/widgets/app_empty_state.dart';
+import '../../../../core/widgets/list_shimmer.dart';
 import '../../../feed/domain/entities/post.dart';
 import '../providers/explore_providers.dart';
 import '../widgets/result_tiles.dart';
@@ -142,12 +144,10 @@ class _Results extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final resultsAsync = ref.watch(searchResultsProvider(query));
 
     return resultsAsync.when(
-      loading: () =>
-          const Center(child: CircularProgressIndicator(strokeWidth: 2.5)),
+      loading: () => const ListShimmer(),
       error: (_, __) => Center(
         child: TextButton(
           onPressed: () => ref.invalidate(searchResultsProvider(query)),
@@ -156,12 +156,10 @@ class _Results extends ConsumerWidget {
       ),
       data: (results) {
         if (results.isEmpty) {
-          return Center(
-            child: Text(
-              'No results for "$query"',
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-            ),
+          return AppEmptyState(
+            icon: Icons.search_off_rounded,
+            title: 'No results',
+            subtitle: 'No restaurants, people, or tags match "$query".',
           );
         }
         return ListView(

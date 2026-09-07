@@ -36,6 +36,7 @@ abstract final class UserModel {
       businessVerificationStatus: verification,
       ownedRestaurantId: ownedId,
       pendingClaimRestaurantId: data['pendingClaimRestaurantId'] as String?,
+      pendingClaimCode: data['pendingClaimCode'] as String?,
       phone: data['phone'] as String?,
       messagePrivacy: MessagePrivacy.fromKey(data['messagePrivacy'] as String?),
       emailVerified: (data['emailVerified'] as bool?) ?? false,

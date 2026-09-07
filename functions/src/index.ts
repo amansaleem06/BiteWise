@@ -37,3 +37,5 @@ export {
 } from "./reservations";
 
 export { onAuthUserDeleted } from "./account_deletion";
+
+export { onClaimRequestApproved } from "./claims";

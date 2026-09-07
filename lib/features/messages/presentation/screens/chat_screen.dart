@@ -12,7 +12,9 @@ import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/errors/error_text.dart';
+import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/widgets/app_snackbar.dart';
+import '../../../../core/widgets/async_error_view.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../safety/domain/repositories/safety_repository.dart';
 import '../../../safety/presentation/widgets/safety_actions.dart';
@@ -288,22 +290,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               loading: () => const Center(
                 child: CircularProgressIndicator(strokeWidth: 2.5),
               ),
-              error: (_, __) => Center(
-                child: TextButton(
-                  onPressed: () =>
-                      ref.invalidate(chatMessagesProvider(widget.chatId)),
-                  child: const Text('Couldn\'t load messages — retry'),
-                ),
+              error: (error, stack) => AsyncErrorView(
+                error: error,
+                stackTrace: stack,
+                title: 'Couldn\'t load messages',
+                onRetry: () =>
+                    ref.invalidate(chatMessagesProvider(widget.chatId)),
               ),
               data: (messages) {
                 if (messages.isEmpty) {
-                  return Center(
-                    child: Text(
-                      'Say hi 👋',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
+                  return const AppEmptyState(
+                    icon: Icons.waving_hand_outlined,
+                    title: 'Say hi',
+                    subtitle: 'This is the start of your conversation.',
                   );
                 }
                 final myLatestIndex =

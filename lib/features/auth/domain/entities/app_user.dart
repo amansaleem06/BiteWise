@@ -55,6 +55,7 @@ class AppUser extends Equatable {
     this.businessVerificationStatus,
     this.ownedRestaurantId,
     this.pendingClaimRestaurantId,
+    this.pendingClaimCode,
     this.phone,
     this.messagePrivacy = MessagePrivacy.everyone,
     this.emailVerified = false,
@@ -80,6 +81,7 @@ class AppUser extends Equatable {
   final BusinessVerificationStatus? businessVerificationStatus;
   final String? ownedRestaurantId;
   final String? pendingClaimRestaurantId;
+  final String? pendingClaimCode;
   final String? phone;
   final MessagePrivacy messagePrivacy;
   final bool emailVerified;
@@ -118,6 +120,7 @@ class AppUser extends Equatable {
     BusinessVerificationStatus? businessVerificationStatus,
     String? ownedRestaurantId,
     String? pendingClaimRestaurantId,
+    String? pendingClaimCode,
     bool clearPendingClaim = false,
     String? phone,
     MessagePrivacy? messagePrivacy,
@@ -141,6 +144,9 @@ class AppUser extends Equatable {
         pendingClaimRestaurantId: clearPendingClaim
             ? null
             : (pendingClaimRestaurantId ?? this.pendingClaimRestaurantId),
+        pendingClaimCode: clearPendingClaim
+            ? null
+            : (pendingClaimCode ?? this.pendingClaimCode),
         phone: phone ?? this.phone,
         messagePrivacy: messagePrivacy ?? this.messagePrivacy,
         emailVerified: emailVerified ?? this.emailVerified,
@@ -171,6 +177,7 @@ class AppUser extends Equatable {
         businessVerificationStatus: businessVerificationStatus,
         ownedRestaurantId: ownedRestaurantId,
         pendingClaimRestaurantId: pendingClaimRestaurantId,
+        pendingClaimCode: pendingClaimCode,
         phone: phone,
         messagePrivacy: messagePrivacy,
         emailVerified: emailVerified,
@@ -196,6 +203,7 @@ class AppUser extends Equatable {
         businessVerificationStatus,
         ownedRestaurantId,
         pendingClaimRestaurantId,
+        pendingClaimCode,
         phone,
         messagePrivacy,
         emailVerified,

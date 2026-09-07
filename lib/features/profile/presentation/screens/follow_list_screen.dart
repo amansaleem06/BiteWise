@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/widgets/async_error_view.dart';
+import '../../../../core/widgets/list_shimmer.dart';
 import '../../../auth/domain/entities/app_user.dart';
 import '../providers/profile_providers.dart';
 
@@ -39,8 +41,7 @@ class FollowListScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text(title)),
       body: async.when(
-        loading: () =>
-            const Center(child: CircularProgressIndicator(strokeWidth: 2.5)),
+        loading: () => const ListShimmer(),
         error: (e, st) => AsyncErrorView(
           error: e,
           stackTrace: st,
@@ -50,15 +51,16 @@ class FollowListScreen extends ConsumerWidget {
         ),
         data: (users) {
           if (users.isEmpty) {
-            return Center(
-              child: Text(
-                kind == FollowListKind.followers
-                    ? 'No followers yet'
-                    : 'Not following anyone yet',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-              ),
+            return AppEmptyState(
+              icon: kind == FollowListKind.followers
+                  ? Icons.people_outline_rounded
+                  : Icons.person_add_alt_1_outlined,
+              title: kind == FollowListKind.followers
+                  ? 'No followers yet'
+                  : 'Not following anyone yet',
+              subtitle: kind == FollowListKind.followers
+                  ? 'When people follow this account, they show up here.'
+                  : 'Find food lovers on Explore and follow them.',
             );
           }
           return ListView.separated(
