@@ -126,6 +126,7 @@ class DietPlanRepository {
 
     final response = await _gemini.generateJson(
       model: AiConfig.planModel,
+      fallbackModels: AiConfig.planFallbacks,
       prompt: '''
 You are a nutrition coach inside TasteWise, a food-sharing app. Using the
 user data below, produce a practical weekly guidance plan.
@@ -153,7 +154,7 @@ Respond with JSON only, exactly this shape:
  "meals": [{"title": "...", "basedOn": "...", "swap": "...", "approxKcal": 550}],
  "restaurantPicks": [{"restaurantId": "...", "name": "...", "why": "..."}],
  "tips": ["...", "..."]}''',
-      maxOutputTokens: 2048,
+      maxOutputTokens: 8192,
       timeout: const Duration(seconds: 45),
     );
 

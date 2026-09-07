@@ -12,9 +12,13 @@
 abstract final class AiConfig {
   static const String geminiApiKey = String.fromEnvironment('GEMINI_API_KEY');
 
-  static bool get hasGeminiKey => geminiApiKey.isNotEmpty;
+  static bool get hasGeminiKey => geminiApiKey.trim().isNotEmpty;
 
   /// Cheap multimodal tier — used for food-photo checks and diet plans.
   static const String visionModel = 'gemini-2.5-flash-lite';
   static const String planModel = 'gemini-2.5-flash';
+
+  /// Tried if the preferred model is missing on this API key.
+  static const List<String> visionFallbacks = ['gemini-2.0-flash'];
+  static const List<String> planFallbacks = ['gemini-2.0-flash'];
 }

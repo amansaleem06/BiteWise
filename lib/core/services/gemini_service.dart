@@ -30,6 +30,7 @@ class GeminiService {
     required String model,
     required String prompt,
     List<GeminiImage> images = const [],
+    List<String> fallbackModels = const [],
     int maxOutputTokens = 2048,
     Duration timeout = const Duration(seconds: 30),
   }) async {
@@ -41,14 +42,73 @@ class GeminiService {
       );
     }
 
-    final body = {
+    final models = <String>[
+      model,
+      for (final fallback in fallbackModels)
+        if (fallback != model) fallback,
+    ];
+
+    Object? lastError;
+    for (final current in models) {
+      try {
+        return await _generateJsonOnce(
+          model: current,
+          prompt: prompt,
+          images: images,
+          maxOutputTokens: maxOutputTokens,
+          timeout: timeout,
+          disableThinking: true,
+        );
+      } on AppException catch (e) {
+        var error = e;
+        if (e.code == 'INVALID_ARGUMENT' || e.code == 'HTTP_400') {
+          try {
+            return await _generateJsonOnce(
+              model: current,
+              prompt: prompt,
+              images: images,
+              maxOutputTokens: maxOutputTokens,
+              timeout: timeout,
+              disableThinking: false,
+            );
+          } on AppException catch (retryError) {
+            error = retryError;
+          }
+        }
+        lastError = error;
+        final retryable = error.code == 'NOT_FOUND' ||
+            error.code == 'HTTP_404' ||
+            error.code == 'INVALID_ARGUMENT' ||
+            error.code == 'HTTP_400';
+        if (!retryable || current == models.last) throw error;
+        debugPrint('Gemini $current failed (${error.code}); trying next model.');
+      }
+    }
+
+    Error.throwWithStackTrace(
+      lastError ?? const AppException('AI request failed. Please try again.'),
+      StackTrace.current,
+    );
+  }
+
+  Future<Map<String, dynamic>> _generateJsonOnce({
+    required String model,
+    required String prompt,
+    required List<GeminiImage> images,
+    required int maxOutputTokens,
+    required Duration timeout,
+    required bool disableThinking,
+  }) async {
+    final key = AiConfig.geminiApiKey.trim();
+    final body = <String, dynamic>{
       'contents': [
         {
+          'role': 'user',
           'parts': [
             for (final image in images)
               {
-                'inline_data': {
-                  'mime_type': image.mimeType,
+                'inlineData': {
+                  'mimeType': image.mimeType,
                   'data': base64Encode(image.bytes),
                 },
               },
@@ -57,9 +117,11 @@ class GeminiService {
         },
       ],
       'generationConfig': {
-        'response_mime_type': 'application/json',
+        'responseMimeType': 'application/json',
         'maxOutputTokens': maxOutputTokens,
         'temperature': 0.4,
+        if (disableThinking)
+          'thinkingConfig': {'thinkingBudget': 0},
       },
     };
 
@@ -68,24 +130,29 @@ class GeminiService {
           Uri.https(
             'generativelanguage.googleapis.com',
             '/v1beta/models/$model:generateContent',
+            {'key': key},
           ),
           headers: {
             'Content-Type': 'application/json',
-            'x-goog-api-key': AiConfig.geminiApiKey,
+            'x-goog-api-key': key,
           },
           body: jsonEncode(body),
         )
         .timeout(timeout);
 
-    final decoded = jsonDecode(res.body);
+    final decoded = _tryDecode(res.body);
     if (res.statusCode != 200) {
       final error = decoded is Map<String, dynamic>
           ? decoded['error'] as Map<String, dynamic>?
           : null;
-      debugPrint('Gemini error ${res.statusCode}: ${error?['message']}');
+      final apiMessage = error?['message'] as String?;
+      final apiStatus = error?['status'] as String?;
+      debugPrint(
+        'Gemini error ${res.statusCode} $model: $apiStatus $apiMessage',
+      );
       throw AppException(
-        'AI request failed. Please try again.',
-        code: (error?['status'] as String?) ?? 'HTTP_${res.statusCode}',
+        _userMessage(res.statusCode, apiStatus, apiMessage),
+        code: apiStatus ?? 'HTTP_${res.statusCode}',
       );
     }
 
@@ -97,7 +164,7 @@ class GeminiService {
       );
     }
 
-    final parsed = jsonDecode(text);
+    final parsed = _tryDecode(_stripFences(text));
     if (parsed is Map<String, dynamic>) return parsed;
     throw const AppException(
       'AI returned an unexpected format.',
@@ -105,16 +172,58 @@ class GeminiService {
     );
   }
 
+  static String _userMessage(
+    int status,
+    String? apiStatus,
+    String? apiMessage,
+  ) {
+    final detail = (apiMessage ?? '').toLowerCase();
+    if (status == 401 ||
+        status == 403 ||
+        apiStatus == 'PERMISSION_DENIED' ||
+        apiStatus == 'UNAUTHENTICATED' ||
+        detail.contains('api key')) {
+      return 'Gemini rejected this API key. In Google AI Studio, create a '
+          'new key with no app restriction, allow the Generative Language '
+          'API, and put it in GEMINI_API_KEY — do not reuse the Places key.';
+    }
+    if (status == 404 || apiStatus == 'NOT_FOUND') {
+      return 'Gemini model is unavailable. Please try again.';
+    }
+    if (status == 429 || apiStatus == 'RESOURCE_EXHAUSTED') {
+      return 'Gemini is busy. Please wait a moment and try again.';
+    }
+    return 'AI request failed. Please try again.';
+  }
+
+  static dynamic _tryDecode(String raw) {
+    try {
+      return jsonDecode(raw);
+    } on FormatException {
+      return raw;
+    }
+  }
+
+  static String _stripFences(String text) {
+    final trimmed = text.trim();
+    final match = RegExp(
+      r'^```(?:json)?\s*([\s\S]*?)\s*```$',
+      caseSensitive: false,
+    ).firstMatch(trimmed);
+    return match?[1]?.trim() ?? trimmed;
+  }
+
   static String? _firstCandidateText(dynamic decoded) {
     if (decoded is! Map<String, dynamic>) return null;
     final candidates = decoded['candidates'] as List<dynamic>? ?? const [];
     if (candidates.isEmpty) return null;
-    final content =
-        (candidates.first as Map<String, dynamic>)['content']
-            as Map<String, dynamic>?;
+    final first = candidates.first;
+    if (first is! Map<String, dynamic>) return null;
+    final content = first['content'] as Map<String, dynamic>?;
     final parts = content?['parts'] as List<dynamic>? ?? const [];
     for (final part in parts) {
-      final text = (part as Map<String, dynamic>)['text'] as String?;
+      if (part is! Map<String, dynamic>) continue;
+      final text = part['text'] as String?;
       if (text != null && text.isNotEmpty) return text;
     }
     return null;

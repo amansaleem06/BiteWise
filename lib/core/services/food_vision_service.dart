@@ -52,6 +52,7 @@ class FoodVisionService {
 
       final response = await _gemini.generateJson(
         model: AiConfig.visionModel,
+        fallbackModels: AiConfig.visionFallbacks,
         prompt: '''
 You are moderating photos for a food-sharing social app. For each attached
 image, in order, decide whether it belongs on a food app. ACCEPT images that
