@@ -23,6 +23,9 @@ class GeminiService {
 
   final http.Client _client;
 
+  /// Model ids this API key can actually call, discovered once per session.
+  List<String>? _listedModels;
+
   bool get isConfigured => AiConfig.hasGeminiKey;
 
   /// Sends [prompt] (plus optional [images]) and returns the decoded JSON.
@@ -49,7 +52,9 @@ class GeminiService {
     ];
 
     Object? lastError;
-    for (final current in models) {
+    var listed = false;
+    for (var i = 0; i < models.length; i++) {
+      final current = models[i];
       try {
         return await _generateJsonOnce(
           model: current,
@@ -76,11 +81,20 @@ class GeminiService {
           }
         }
         lastError = error;
-        final retryable = error.code == 'NOT_FOUND' ||
-            error.code == 'HTTP_404' ||
+
+        final missing = error.code == 'NOT_FOUND' || error.code == 'HTTP_404';
+        if (missing && !listed) {
+          listed = true;
+          final discovered = await _discoverModels();
+          for (final id in discovered) {
+            if (!models.contains(id)) models.add(id);
+          }
+        }
+
+        final retryable = missing ||
             error.code == 'INVALID_ARGUMENT' ||
             error.code == 'HTTP_400';
-        if (!retryable || current == models.last) throw error;
+        if (!retryable || i == models.length - 1) throw error;
         debugPrint('Gemini $current failed (${error.code}); trying next model.');
       }
     }
@@ -120,56 +134,121 @@ class GeminiService {
         'responseMimeType': 'application/json',
         'maxOutputTokens': maxOutputTokens,
         'temperature': 0.4,
-        if (disableThinking)
-          'thinkingConfig': {'thinkingBudget': 0},
+        if (disableThinking) 'thinkingConfig': {'thinkingBudget': 0},
       },
     };
 
-    final res = await _client
-        .post(
-          Uri.https(
-            'generativelanguage.googleapis.com',
-            '/v1beta/models/$model:generateContent',
-            {'key': key},
-          ),
-          headers: {
-            'Content-Type': 'application/json',
-            'x-goog-api-key': key,
-          },
-          body: jsonEncode(body),
-        )
-        .timeout(timeout);
+    AppException? last;
+    for (final version in const ['v1beta', 'v1']) {
+      final res = await _client
+          .post(
+            Uri.https(
+              'generativelanguage.googleapis.com',
+              '/$version/models/$model:generateContent',
+              {'key': key},
+            ),
+            headers: {
+              'Content-Type': 'application/json',
+              'x-goog-api-key': key,
+            },
+            body: jsonEncode(body),
+          )
+          .timeout(timeout);
 
-    final decoded = _tryDecode(res.body);
-    if (res.statusCode != 200) {
+      final decoded = _tryDecode(res.body);
+      if (res.statusCode == 200) {
+        final text = _firstCandidateText(decoded);
+        if (text == null || text.trim().isEmpty) {
+          throw const AppException(
+            'AI returned an empty response.',
+            code: 'GEMINI_EMPTY',
+          );
+        }
+        final parsed = _tryDecode(_stripFences(text));
+        if (parsed is Map<String, dynamic>) return parsed;
+        throw const AppException(
+          'AI returned an unexpected format.',
+          code: 'GEMINI_BAD_JSON',
+        );
+      }
+
       final error = decoded is Map<String, dynamic>
           ? decoded['error'] as Map<String, dynamic>?
           : null;
       final apiMessage = error?['message'] as String?;
       final apiStatus = error?['status'] as String?;
       debugPrint(
-        'Gemini error ${res.statusCode} $model: $apiStatus $apiMessage',
+        'Gemini error ${res.statusCode} $version/$model: $apiStatus $apiMessage',
       );
-      throw AppException(
+      last = AppException(
         _userMessage(res.statusCode, apiStatus, apiMessage),
         code: apiStatus ?? 'HTTP_${res.statusCode}',
       );
+      if (res.statusCode != 404 && apiStatus != 'NOT_FOUND') throw last;
+    }
+    throw last ??
+        const AppException(
+          'Gemini model is unavailable. Please try again.',
+          code: 'NOT_FOUND',
+        );
+  }
+
+  /// Asks Gemini which generateContent models this key can use.
+  Future<List<String>> _discoverModels() async {
+    if (_listedModels != null) return _listedModels!;
+    final key = AiConfig.geminiApiKey.trim();
+    final found = <String>[];
+    for (final version in const ['v1beta', 'v1']) {
+      try {
+        final res = await _client
+            .get(
+              Uri.https(
+                'generativelanguage.googleapis.com',
+                '/$version/models',
+                {'key': key},
+              ),
+              headers: {'x-goog-api-key': key},
+            )
+            .timeout(const Duration(seconds: 15));
+        final decoded = _tryDecode(res.body);
+        if (res.statusCode != 200 || decoded is! Map<String, dynamic>) {
+          debugPrint('Gemini list models $version: ${res.statusCode}');
+          continue;
+        }
+        final models = decoded['models'] as List<dynamic>? ?? const [];
+        for (final raw in models) {
+          if (raw is! Map) continue;
+          final methods = raw['supportedGenerationMethods'] as List<dynamic>? ??
+              const [];
+          if (!methods.contains('generateContent')) continue;
+          var name = raw['name'] as String? ?? '';
+          if (name.startsWith('models/')) name = name.substring(7);
+          if (name.isEmpty || found.contains(name)) continue;
+          found.add(name);
+        }
+        if (found.isNotEmpty) break;
+      } catch (e) {
+        debugPrint('Gemini list models $version failed: $e');
+      }
+    }
+    found.sort(_preferFlash);
+    _listedModels = found;
+    debugPrint('Gemini models available: $found');
+    return found;
+  }
+
+  /// Flash / lite first, then everything else the key listed.
+  static int _preferFlash(String a, String b) {
+    int rank(String id) {
+      final lower = id.toLowerCase();
+      if (lower.contains('flash-lite') || lower.contains('flashlite')) return 0;
+      if (lower.contains('flash')) return 1;
+      if (lower.contains('lite')) return 2;
+      return 3;
     }
 
-    final text = _firstCandidateText(decoded);
-    if (text == null || text.trim().isEmpty) {
-      throw const AppException(
-        'AI returned an empty response.',
-        code: 'GEMINI_EMPTY',
-      );
-    }
-
-    final parsed = _tryDecode(_stripFences(text));
-    if (parsed is Map<String, dynamic>) return parsed;
-    throw const AppException(
-      'AI returned an unexpected format.',
-      code: 'GEMINI_BAD_JSON',
-    );
+    final byRank = rank(a).compareTo(rank(b));
+    return byRank != 0 ? byRank : a.compareTo(b);
   }
 
   static String _userMessage(

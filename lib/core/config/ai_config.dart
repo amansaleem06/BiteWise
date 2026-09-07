@@ -19,6 +19,16 @@ abstract final class AiConfig {
   static const String planModel = 'gemini-2.5-flash';
 
   /// Tried if the preferred model is missing on this API key.
-  static const List<String> visionFallbacks = ['gemini-2.0-flash'];
-  static const List<String> planFallbacks = ['gemini-2.0-flash'];
+  /// `*-latest` aliases track whatever Google currently serves.
+  static const List<String> visionFallbacks = [
+    'gemini-flash-lite-latest',
+    'gemini-2.0-flash',
+    'gemini-flash-latest',
+  ];
+  static const List<String> planFallbacks = [
+    'gemini-flash-latest',
+    'gemini-2.0-flash',
+    'gemini-3.5-flash',
+    'gemini-3-flash',
+  ];
 }
