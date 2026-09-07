@@ -14,21 +14,18 @@ abstract final class AiConfig {
 
   static bool get hasGeminiKey => geminiApiKey.trim().isNotEmpty;
 
-  /// Cheap multimodal tier — used for food-photo checks and diet plans.
-  static const String visionModel = 'gemini-2.5-flash-lite';
-  static const String planModel = 'gemini-2.5-flash';
+  /// Flash Lite for photo checks. 2.0 Flash for plans — higher free-tier
+  /// room than 2.5, which is what was returning 429 "busy".
+  static const String visionModel = 'gemini-2.0-flash';
+  static const String planModel = 'gemini-2.0-flash';
 
-  /// Tried if the preferred model is missing on this API key.
-  /// `*-latest` aliases track whatever Google currently serves.
   static const List<String> visionFallbacks = [
     'gemini-flash-lite-latest',
-    'gemini-2.0-flash',
+    'gemini-2.5-flash-lite',
     'gemini-flash-latest',
   ];
   static const List<String> planFallbacks = [
     'gemini-flash-latest',
-    'gemini-2.0-flash',
-    'gemini-3.5-flash',
-    'gemini-3-flash',
+    'gemini-2.5-flash',
   ];
 }

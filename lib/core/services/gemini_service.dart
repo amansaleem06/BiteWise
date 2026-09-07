@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/ai_config.dart';
 import '../errors/app_exception.dart';
@@ -14,6 +15,13 @@ class GeminiImage {
   final String mimeType;
 }
 
+class _Endpoint {
+  const _Endpoint(this.model, this.version);
+
+  final String model;
+  final String version;
+}
+
 /// Thin REST client for the Gemini generateContent endpoint.
 ///
 /// Responses are forced to `application/json` so callers always parse
@@ -23,8 +31,12 @@ class GeminiService {
 
   final http.Client _client;
 
-  /// Model ids this API key can actually call, discovered once per session.
-  List<String>? _listedModels;
+  static const _cacheModelKey = 'gemini.workingModel';
+  static const _cacheVersionKey = 'gemini.workingVersion';
+
+  /// Shared across Diet Plan / vision so we do not rediscover every call.
+  static _Endpoint? _cached;
+  static List<String>? _listedModels;
 
   bool get isConfigured => AiConfig.hasGeminiKey;
 
@@ -45,64 +57,93 @@ class GeminiService {
       );
     }
 
-    final models = <String>[
-      model,
-      for (final fallback in fallbackModels)
-        if (fallback != model) fallback,
-    ];
+    await _restoreCache();
+    final candidates = await _candidates(model, fallbackModels);
+    AppException? last;
 
-    Object? lastError;
-    var listed = false;
-    for (var i = 0; i < models.length; i++) {
-      final current = models[i];
+    for (var i = 0; i < candidates.length; i++) {
+      final current = candidates[i];
       try {
-        return await _generateJsonOnce(
+        final result = await _generateJsonOnce(
           model: current,
           prompt: prompt,
           images: images,
           maxOutputTokens: maxOutputTokens,
           timeout: timeout,
-          disableThinking: true,
         );
+        await _remember(_cached ?? _Endpoint(current, 'v1beta'));
+        return result;
       } on AppException catch (e) {
-        var error = e;
-        if (e.code == 'INVALID_ARGUMENT' || e.code == 'HTTP_400') {
-          try {
-            return await _generateJsonOnce(
-              model: current,
-              prompt: prompt,
-              images: images,
-              maxOutputTokens: maxOutputTokens,
-              timeout: timeout,
-              disableThinking: false,
-            );
-          } on AppException catch (retryError) {
-            error = retryError;
-          }
+        last = e;
+        final missing = e.code == 'NOT_FOUND' || e.code == 'HTTP_404';
+        final busy = e.code == 'RESOURCE_EXHAUSTED' || e.code == 'HTTP_429';
+        if (busy) {
+          // Same project quota — other models will fail the same way.
+          throw e;
         }
-        lastError = error;
-
-        final missing = error.code == 'NOT_FOUND' || error.code == 'HTTP_404';
-        if (missing && !listed) {
-          listed = true;
-          final discovered = await _discoverModels();
-          for (final id in discovered) {
-            if (!models.contains(id)) models.add(id);
-          }
-        }
-
-        final retryable = missing ||
-            error.code == 'INVALID_ARGUMENT' ||
-            error.code == 'HTTP_400';
-        if (!retryable || i == models.length - 1) throw error;
-        debugPrint('Gemini $current failed (${error.code}); trying next model.');
+        if (!missing || i == candidates.length - 1) throw e;
+        debugPrint('Gemini $current failed (${e.code}); trying next model.');
       }
     }
 
-    Error.throwWithStackTrace(
-      lastError ?? const AppException('AI request failed. Please try again.'),
-      StackTrace.current,
-    );
+    throw last ??
+        const AppException('AI request failed. Please try again.');
+  }
+
+  Future<List<String>> _candidates(
+    String preferred,
+    List<String> fallbacks,
+  ) async {
+    final wanted = <String>[
+      if (_cached != null) _cached!.model,
+      preferred,
+      ...fallbacks,
+    ];
+    final listed = await _discoverModels();
+    if (listed.isEmpty) {
+      return _unique(wanted).take(2).toList();
+    }
+    final fromWanted = [
+      for (final id in wanted)
+        if (listed.contains(id)) id,
+    ];
+    final extras = [
+      for (final id in listed)
+        if (id.toLowerCase().contains('flash') && !fromWanted.contains(id)) id,
+    ];
+    return _unique([...fromWanted, ...extras]).take(2).toList();
+  }
+
+  static List<String> _unique(Iterable<String> ids) {
+    final out = <String>[];
+    for (final id in ids) {
+      if (id.isNotEmpty && !out.contains(id)) out.add(id);
+    }
+    return out;
+  }
+
+  Future<void> _restoreCache() async {
+    if (_cached != null) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final model = prefs.getString(_cacheModelKey);
+      final version = prefs.getString(_cacheVersionKey);
+      if (model != null &&
+          model.isNotEmpty &&
+          version != null &&
+          version.isNotEmpty) {
+        _cached = _Endpoint(model, version);
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _remember(_Endpoint endpoint) async {
+    _cached = endpoint;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_cacheModelKey, endpoint.model);
+      await prefs.setString(_cacheVersionKey, endpoint.version);
+    } catch (_) {}
   }
 
   Future<Map<String, dynamic>> _generateJsonOnce({
@@ -111,9 +152,10 @@ class GeminiService {
     required List<GeminiImage> images,
     required int maxOutputTokens,
     required Duration timeout,
-    required bool disableThinking,
   }) async {
     final key = AiConfig.geminiApiKey.trim();
+    final usesThinking =
+        model.contains('2.5') || model.contains('3.') || model.contains('3-');
     final body = <String, dynamic>{
       'contents': [
         {
@@ -134,12 +176,60 @@ class GeminiService {
         'responseMimeType': 'application/json',
         'maxOutputTokens': maxOutputTokens,
         'temperature': 0.4,
-        if (disableThinking) 'thinkingConfig': {'thinkingBudget': 0},
+        if (usesThinking) 'thinkingConfig': {'thinkingBudget': 0},
       },
     };
 
+    final versions = _cached?.model == model
+        ? <String>[_cached!.version]
+        : const ['v1beta', 'v1'];
+
     AppException? last;
-    for (final version in const ['v1beta', 'v1']) {
+    for (final version in versions) {
+      try {
+        final decoded = await _postWithRetry(
+          version: version,
+          model: model,
+          key: key,
+          body: body,
+          timeout: timeout,
+        );
+        _cached = _Endpoint(model, version);
+        final text = _firstCandidateText(decoded);
+        if (text == null || text.trim().isEmpty) {
+          throw const AppException(
+            'AI returned an empty response.',
+            code: 'GEMINI_EMPTY',
+          );
+        }
+        final parsed = _tryDecode(_stripFences(text));
+        if (parsed is Map<String, dynamic>) return parsed;
+        throw const AppException(
+          'AI returned an unexpected format.',
+          code: 'GEMINI_BAD_JSON',
+        );
+      } on AppException catch (e) {
+        last = e;
+        final missing = e.code == 'NOT_FOUND' || e.code == 'HTTP_404';
+        if (!missing) rethrow;
+      }
+    }
+    throw last ??
+        const AppException(
+          'Gemini model is unavailable. Please try again.',
+          code: 'NOT_FOUND',
+        );
+  }
+
+  Future<Map<String, dynamic>> _postWithRetry({
+    required String version,
+    required String model,
+    required String key,
+    required Map<String, dynamic> body,
+    required Duration timeout,
+  }) async {
+    const maxAttempts = 3;
+    for (var attempt = 1; attempt <= maxAttempts; attempt++) {
       final res = await _client
           .post(
             Uri.https(
@@ -157,15 +247,7 @@ class GeminiService {
 
       final decoded = _tryDecode(res.body);
       if (res.statusCode == 200) {
-        final text = _firstCandidateText(decoded);
-        if (text == null || text.trim().isEmpty) {
-          throw const AppException(
-            'AI returned an empty response.',
-            code: 'GEMINI_EMPTY',
-          );
-        }
-        final parsed = _tryDecode(_stripFences(text));
-        if (parsed is Map<String, dynamic>) return parsed;
+        if (decoded is Map<String, dynamic>) return decoded;
         throw const AppException(
           'AI returned an unexpected format.',
           code: 'GEMINI_BAD_JSON',
@@ -178,22 +260,39 @@ class GeminiService {
       final apiMessage = error?['message'] as String?;
       final apiStatus = error?['status'] as String?;
       debugPrint(
-        'Gemini error ${res.statusCode} $version/$model: $apiStatus $apiMessage',
+        'Gemini error ${res.statusCode} $version/$model '
+        '(attempt $attempt): $apiStatus $apiMessage',
       );
-      last = AppException(
+
+      final busy =
+          res.statusCode == 429 || apiStatus == 'RESOURCE_EXHAUSTED';
+      if (busy && attempt < maxAttempts) {
+        final wait = _retryAfter(res, attempt);
+        debugPrint('Gemini busy; waiting ${wait.inSeconds}s.');
+        await Future<void>.delayed(wait);
+        continue;
+      }
+
+      throw AppException(
         _userMessage(res.statusCode, apiStatus, apiMessage),
         code: apiStatus ?? 'HTTP_${res.statusCode}',
       );
-      if (res.statusCode != 404 && apiStatus != 'NOT_FOUND') throw last;
     }
-    throw last ??
-        const AppException(
-          'Gemini model is unavailable. Please try again.',
-          code: 'NOT_FOUND',
-        );
+    throw const AppException(
+      'Gemini is rate-limiting this key. Wait a minute and try again.',
+      code: 'RESOURCE_EXHAUSTED',
+    );
   }
 
-  /// Asks Gemini which generateContent models this key can use.
+  static Duration _retryAfter(http.Response res, int attempt) {
+    final header = res.headers['retry-after'];
+    final seconds = int.tryParse(header ?? '');
+    if (seconds != null && seconds > 0 && seconds <= 30) {
+      return Duration(seconds: seconds);
+    }
+    return Duration(seconds: 3 * attempt);
+  }
+
   Future<List<String>> _discoverModels() async {
     if (_listedModels != null) return _listedModels!;
     final key = AiConfig.geminiApiKey.trim();
@@ -237,11 +336,12 @@ class GeminiService {
     return found;
   }
 
-  /// Flash / lite first, then everything else the key listed.
   static int _preferFlash(String a, String b) {
     int rank(String id) {
       final lower = id.toLowerCase();
-      if (lower.contains('flash-lite') || lower.contains('flashlite')) return 0;
+      if (lower.contains('flash-lite') || lower.contains('flashlite')) {
+        return 0;
+      }
       if (lower.contains('flash')) return 1;
       if (lower.contains('lite')) return 2;
       return 3;
@@ -270,7 +370,13 @@ class GeminiService {
       return 'Gemini model is unavailable. Please try again.';
     }
     if (status == 429 || apiStatus == 'RESOURCE_EXHAUSTED') {
-      return 'Gemini is busy. Please wait a moment and try again.';
+      if (detail.contains('quota') ||
+          detail.contains('limit') ||
+          detail.contains('billing')) {
+        return 'Gemini\'s free daily limit is used up. Wait a while, or '
+            'enable billing on this AI Studio key.';
+      }
+      return 'Gemini is rate-limiting this key. Wait a minute and try again.';
     }
     return 'AI request failed. Please try again.';
   }
