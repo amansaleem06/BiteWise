@@ -13,3 +13,13 @@ Use the **1284 × 2778** files. The `1242 × 2688` copies are a fallback if App 
 Do not upload empty Create screens. Plate Roulette and Mentions are fine later, not in the first three.
 
 After upload, open **View All Sizes in Media Manager** and let Apple generate the other iPhone sizes.
+
+## 13-inch iPad (required — this build supports iPad)
+
+Upload these three, in this order, into the **13-inch iPad** slot (2064 × 2752):
+
+| Order | File |
+|---|---|
+| 1 | `01-feed-ipad-13-2064x2752.png` |
+| 2 | `02-explore-ipad-13-2064x2752.png` |
+| 3 | `03-passport-ipad-13-2064x2752.png` |

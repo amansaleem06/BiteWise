@@ -8,6 +8,7 @@ import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/constants/cuisines.dart';
+import '../../../../core/layout/app_breakpoints.dart';
 import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/widgets/async_error_view.dart';
 import '../../../feed/domain/entities/post.dart';
@@ -247,8 +248,12 @@ class _TrendingTab extends ConsumerWidget {
           child: GridView.builder(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(2, 2, 2, 160),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: AppBreakpoints.gridColumns(
+                context,
+                phone: 3,
+                tablet: 5,
+              ),
               mainAxisSpacing: 2,
               crossAxisSpacing: 2,
             ),
@@ -350,6 +355,10 @@ class _TopRatedTabState extends ConsumerState<_TopRatedTab> {
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(0, 8, 0, 160),
             children: [
+              AppContent(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                 child: Row(
@@ -387,6 +396,9 @@ class _TopRatedTabState extends ConsumerState<_TopRatedTab> {
                 for (var i = 1; i < restaurants.length; i++)
                   RestaurantTile(restaurant: restaurants[i], rank: i + 1),
               ],
+                  ],
+                ),
+              ),
             ],
           ),
         );

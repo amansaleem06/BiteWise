@@ -6,6 +6,7 @@ import '../../../../app/router/author_nav.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../core/layout/app_breakpoints.dart';
 import '../../../../app/theme/theme_mode_provider.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/errors/error_text.dart';
@@ -182,7 +183,8 @@ class _FeedListState extends ConsumerState<FeedList> {
                     );
                   }
                   final post = posts[index];
-                  return PostCard(
+                  return AppContent(
+                    child: PostCard(
                     post: post,
                     onLike: () => controller.toggleLike(post.id),
                     onBookmark: () {
@@ -211,6 +213,7 @@ class _FeedListState extends ConsumerState<FeedList> {
                       context,
                       post: post,
                       feedTab: widget.tab,
+                    ),
                     ),
                   );
                 },

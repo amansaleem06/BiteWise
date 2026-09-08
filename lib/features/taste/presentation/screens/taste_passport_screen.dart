@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../core/layout/app_breakpoints.dart';
 import '../../../../core/widgets/async_error_view.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../domain/palette_copy.dart';
@@ -85,6 +86,10 @@ class _PassportBody extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
       children: [
+        AppContent(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
         // Passport cover.
         Container(
           padding: const EdgeInsets.all(AppSpacing.lg),
@@ -204,8 +209,12 @@ class _PassportBody extends StatelessWidget {
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 4,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: AppBreakpoints.gridColumns(
+              context,
+              phone: 4,
+              tablet: 6,
+            ),
             mainAxisSpacing: 10,
             crossAxisSpacing: 10,
             childAspectRatio: 0.86,
@@ -214,6 +223,9 @@ class _PassportBody extends StatelessWidget {
           itemBuilder: (context, i) => _Stamp(
             stamp: stats.stamps[i],
             order: i,
+          ),
+        ),
+            ],
           ),
         ),
       ],

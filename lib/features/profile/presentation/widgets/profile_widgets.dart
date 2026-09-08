@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../core/layout/app_breakpoints.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/widgets/app_snackbar.dart';
@@ -239,8 +240,12 @@ class UserPostsGrid extends ConsumerWidget {
           },
           child: GridView.builder(
             padding: const EdgeInsets.fromLTRB(2, 2, 2, 160),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: AppBreakpoints.gridColumns(
+                context,
+                phone: 3,
+                tablet: 5,
+              ),
               mainAxisSpacing: 2,
               crossAxisSpacing: 2,
             ),
