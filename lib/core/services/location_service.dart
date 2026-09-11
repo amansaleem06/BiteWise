@@ -17,10 +17,13 @@ class LocationService {
         return null;
       }
 
+      final last = await Geolocator.getLastKnownPosition();
+      if (last != null) return last;
+
       return await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.medium,
-          timeLimit: Duration(seconds: 8),
+          timeLimit: Duration(seconds: 20),
         ),
       );
     } catch (_) {

@@ -25,15 +25,17 @@ class NearbyState {
   final List<Restaurant> restaurants;
 }
 
+/// Used when GPS is denied or times out so the map still renders.
+const _fallbackMapCenter = LatLng(47.4979, 19.0402);
+
 final nearbyProvider = FutureProvider.autoDispose<NearbyState>((ref) async {
   final position = await LocationService().currentPosition();
-  if (position == null) {
-    return const NearbyState(position: null, restaurants: []);
-  }
+  final latitude = position?.latitude ?? _fallbackMapCenter.latitude;
+  final longitude = position?.longitude ?? _fallbackMapCenter.longitude;
   final restaurants =
       await ref.read(exploreRepositoryProvider).fetchNearbyRestaurants(
-            latitude: position.latitude,
-            longitude: position.longitude,
+            latitude: latitude,
+            longitude: longitude,
           );
   return NearbyState(position: position, restaurants: restaurants);
 });
@@ -117,51 +119,19 @@ class _NearbyMapTabState extends ConsumerState<NearbyMapTab> {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _syncMarkers(nearby.restaurants);
         });
-        if (nearby.position == null) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.xl),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.location_off_rounded,
-                    size: 48,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Text('Location unavailable',
-                      style: theme.textTheme.titleLarge,),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    'Allow location access to see restaurants near you.',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  TextButton(
-                    onPressed: () => ref.invalidate(nearbyProvider),
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-
-        final me = LatLng(
-          nearby.position!.latitude,
-          nearby.position!.longitude,
-        );
+        final me = nearby.position == null
+            ? _fallbackMapCenter
+            : LatLng(
+                nearby.position!.latitude,
+                nearby.position!.longitude,
+              );
 
         return Stack(
           children: [
             GoogleMap(
               initialCameraPosition: CameraPosition(target: me, zoom: 14),
-              myLocationEnabled: true,
-              myLocationButtonEnabled: true,
+              myLocationEnabled: nearby.position != null,
+              myLocationButtonEnabled: nearby.position != null,
               zoomControlsEnabled: false,
               padding: const EdgeInsets.only(bottom: 108, right: 8),
               // Win the gesture arena against the parent TabBarView.
@@ -177,7 +147,32 @@ class _NearbyMapTabState extends ConsumerState<NearbyMapTab> {
               onTap: (_) => setState(() => _selected = null),
               markers: _markers,
             ),
-            if (nearby.restaurants.isEmpty)
+            if (nearby.position == null)
+              Positioned(
+                top: AppSpacing.md,
+                left: AppSpacing.md,
+                right: AppSpacing.md,
+                child: Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    child: Column(
+                      children: [
+                        Text(
+                          'Location is off — showing a default area. '
+                          'Allow location to center the map on you.',
+                          style: theme.textTheme.bodySmall,
+                          textAlign: TextAlign.center,
+                        ),
+                        TextButton(
+                          onPressed: () => ref.invalidate(nearbyProvider),
+                          child: const Text('Retry location'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              )
+            else if (nearby.restaurants.isEmpty)
               Positioned(
                 top: AppSpacing.md,
                 left: AppSpacing.md,
