@@ -118,9 +118,18 @@ workflows:
             "keyAlias=$CM_KEY_ALIAS" \
             "storeFile=$CM_KEYSTORE_PATH" \
             > "$CM_BUILD_DIR/android/key.properties"
+      - name: Resolve next Android version code
+        script: |
+          set -euo pipefail
+          latest="${PROJECT_BUILD_NUMBER:-22}"
+          if [ "$latest" -le 21 ]; then latest=22; fi
+          echo "ANDROID_VERSION_CODE=$latest" >> "$CM_ENV"
+          echo "Using versionCode=$latest"
       - name: Build app bundle
         script: |
           flutter build appbundle --release \
+            --build-name=1.0.0 \
+            --build-number="${ANDROID_VERSION_CODE}" \
             --dart-define=PLACES_API_KEY="${PLACES_API_KEY:-}" \
             --dart-define=GEMINI_API_KEY="${GEMINI_API_KEY:-}"
     artifacts:
