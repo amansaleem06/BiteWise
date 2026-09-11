@@ -15,7 +15,7 @@
              the release/debug signing certificate SHA-1 values. -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyC-qlh313FPRv9gbsvqQGLC1kVPUe4s5K0"/>
+            android:value="AIzaSyDkIw-Ec4825zHweO7kVENYN2Zwpfh93vM"/>
         <activity
             android:name=".MainActivity"
             android:exported="true"
