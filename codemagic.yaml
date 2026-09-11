@@ -105,6 +105,19 @@ workflows:
       - name: Flutter analyze
         script: |
           flutter analyze --no-fatal-infos --no-fatal-warnings
+      - name: Configure Android release signing
+        script: |
+          set -euo pipefail
+          if [ -z "${CM_KEYSTORE_PATH:-}" ]; then
+            echo "Missing bitewise_keystore. Upload it in Codemagic → Code signing identities."
+            exit 1
+          fi
+          printf '%s\n' \
+            "storePassword=$CM_KEYSTORE_PASSWORD" \
+            "keyPassword=$CM_KEY_PASSWORD" \
+            "keyAlias=$CM_KEY_ALIAS" \
+            "storeFile=$CM_KEYSTORE_PATH" \
+            > "$CM_BUILD_DIR/android/key.properties"
       - name: Build app bundle
         script: |
           flutter build appbundle --release \

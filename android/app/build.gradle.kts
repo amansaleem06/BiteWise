@@ -1,3 +1,6 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // START: FlutterFire Configuration
@@ -6,6 +9,17 @@ plugins {
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
+
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
+
+val cmKeystorePath = System.getenv("CM_KEYSTORE_PATH")
+val useReleaseSigning =
+    !cmKeystorePath.isNullOrBlank() ||
+        !keystoreProperties.getProperty("storeFile").isNullOrBlank()
 
 android {
     namespace = "com.bitewise.bitewise"
@@ -28,11 +42,34 @@ android {
         versionName = flutter.versionName
     }
 
+    if (useReleaseSigning) {
+        signingConfigs {
+            create("release") {
+                if (!cmKeystorePath.isNullOrBlank()) {
+                    storeFile = file(cmKeystorePath)
+                    storePassword = System.getenv("CM_KEYSTORE_PASSWORD")
+                    keyAlias = System.getenv("CM_KEY_ALIAS")
+                    keyPassword = System.getenv("CM_KEY_PASSWORD")
+                } else {
+                    keyAlias = keystoreProperties.getProperty("keyAlias")
+                    keyPassword = keystoreProperties.getProperty("keyPassword")
+                    storePassword = keystoreProperties.getProperty("storePassword")
+                    storeFile = file(keystoreProperties.getProperty("storeFile"))
+                }
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Codemagic / key.properties use the upload keystore. Local
+            // `flutter run --release` still falls back to debug signing.
+            signingConfig =
+                if (useReleaseSigning) {
+                    signingConfigs.getByName("release")
+                } else {
+                    signingConfigs.getByName("debug")
+                }
         }
     }
 }
