@@ -3,7 +3,7 @@ rules_version = '2';
 // Assumed data model (default Firestore database):
 // - users/{uid}: private account/contact/preferences; owner + admin read only.
 // - publicProfiles/{uid}: validated, non-sensitive profile projection.
-// - users/{uid}/{legal,bookmarks,reposts,following,followers,tokens,aiPlans,
+// - users/{uid}/{bookmarks,reposts,following,followers,tokens,aiPlans,
 //   private,notifications,blocked,blockedBy}: per-user state with explicit rules.
 // - posts, stories, restaurants, chats: signed-in product content.
 // - reports, moderationAudit: reporter writes; moderators read/resolve.
@@ -26,7 +26,7 @@ service cloud.firestore {
 
     function hasAcceptedTerms() {
       return isSignedIn()
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)/legal/current).data.version == '2026-09-21';
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('termsAcceptedVersion', '') == '2026-09-21';
     }
 
     function canParticipate() {
@@ -88,6 +88,7 @@ service cloud.firestore {
           'businessEmail', 'businessVerificationStatus',
           'ownedRestaurantId', 'pendingClaimRestaurantId',
           'pendingClaimCode', 'messagePrivacy', 'dietaryPreferences',
+          'termsAcceptedVersion', 'termsAcceptedAt',
           'emailVerified', 'followerCount', 'followingCount', 'postCount',
           'suspended', 'createdAt', 'updatedAt'
         ])
@@ -123,7 +124,11 @@ service cloud.firestore {
         && (!( 'businessVerificationStatus' in data)
           || data.businessVerificationStatus in ['pending', 'verified', 'rejected'])
         && (!( 'dietaryPreferences' in data)
-          || (data.dietaryPreferences is list && data.dietaryPreferences.size() <= 20));
+          || (data.dietaryPreferences is list && data.dietaryPreferences.size() <= 20))
+        && (!( 'termsAcceptedVersion' in data)
+          || data.termsAcceptedVersion is string)
+        && (!( 'termsAcceptedAt' in data)
+          || data.termsAcceptedAt is timestamp);
     }
 
     function isValidPublicProfile(data) {
@@ -189,6 +194,13 @@ service cloud.firestore {
         );
     }
 
+    function isTermsAcceptanceOnly() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['termsAcceptedVersion', 'termsAcceptedAt'])
+        && request.resource.data.termsAcceptedVersion == '2026-09-21'
+        && request.resource.data.termsAcceptedAt == request.time;
+    }
+
     // ---------- Users ----------
     match /users/{uid} {
       // Account/contact/preferences are private. Other users read the safe
@@ -219,8 +231,8 @@ service cloud.firestore {
       // Business owners may attach verification details and a claimed restaurant.
       allow update: if isValidPrivateUser(request.resource.data)
         && (isAdmin()
-        || (isSelf(uid)
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        || (isSelf(uid) && (isTermsAcceptanceOnly() || (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             'displayName', 'displayNameLower', 'username', 'usernameLower',
             'photoUrl', 'bio', 'phone', 'businessName', 'businessAddress',
             'businessPhone', 'businessEmail', 'businessVerificationStatus',
@@ -243,7 +255,7 @@ service cloud.firestore {
           && request.resource.data.get('businessVerificationStatus', 'pending')
             != 'rejected'
           && publicProfileIsSynced(uid)
-        ));
+        ))));
 
       // Self-delete required for App Store account deletion (Guideline 5.1.1).
       // Cascade cleanup of posts/follows continues in Cloud Functions.
@@ -275,15 +287,6 @@ service cloud.firestore {
           request.resource.data,
           getAfter(/databases/$(database)/documents/users/$(uid)).data
         );
-      allow delete: if false;
-    }
-
-    match /users/{uid}/legal/current {
-      allow read: if isSelf(uid);
-      allow create, update: if isSelf(uid)
-        && request.resource.data.keys().hasOnly(['version', 'acceptedAt'])
-        && request.resource.data.version == '2026-09-21'
-        && request.resource.data.acceptedAt == request.time;
       allow delete: if false;
     }
 

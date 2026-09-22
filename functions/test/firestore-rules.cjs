@@ -57,8 +57,8 @@ async function main(){
   passed++;console.log('PASS public profile excludes email and legacy phone');
   await commit('alice',[patch('publicProfiles/alice',{email:'leak@example.com'})],false,'public profile schema rejects private fields');
   await commit('alice',[write('posts/pre-consent',post('alice'))],false,'publishing requires terms');
-  await commit('alice',[write('users/alice/legal/current',{version:'wrong'},['acceptedAt'])],false,'wrong terms version rejected');
-  for(const uid of ['alice','bob'])await commit(uid,[write('users/'+uid+'/legal/current',{version:'2026-09-21'},['acceptedAt'])],true,uid+' accepts terms');
+  await commit('alice',[patch('users/alice',{termsAcceptedVersion:'wrong'},['termsAcceptedAt'])],false,'wrong terms version rejected');
+  for(const uid of ['alice','bob'])await commit(uid,[patch('users/'+uid,{termsAcceptedVersion:'2026-09-21'},['termsAcceptedAt'])],true,uid+' accepts terms');
   await commit('alice',[
     patch('users/alice',{bio:'Food lover\nCoffee enthusiast'},['updatedAt']),
     patch('publicProfiles/alice',{bio:'Food lover\nCoffee enthusiast'},['updatedAt'])
