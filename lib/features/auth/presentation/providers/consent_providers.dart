@@ -20,9 +20,15 @@ final termsAcceptedProvider = StreamProvider<bool>((ref) {
       );
 });
 
-Future<void> recordTermsAcceptance(Ref ref, String uid) async {
-  await ref.read(consentStoreProvider).doc('users/$uid').set({
+Future<bool> recordTermsAcceptance(Ref ref, String uid) async {
+  final userRef = ref.read(consentStoreProvider).doc('users/$uid');
+  final existing = await userRef.get();
+  if (existing.data()?['termsAcceptedVersion'] == AppLegal.termsVersion) {
+    return false;
+  }
+  await userRef.set({
     'termsAcceptedVersion': AppLegal.termsVersion,
     'termsAcceptedAt': FieldValue.serverTimestamp(),
   }, SetOptions(merge: true));
+  return true;
 }

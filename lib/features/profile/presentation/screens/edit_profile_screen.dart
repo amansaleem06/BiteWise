@@ -90,8 +90,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       if (ok) {
         AppSnackbar.success(context, 'Photo updated');
       } else {
-        AppSnackbar.error(context,
-            'Photo upload failed. Your previous photo is unchanged. Please retry.');
+        final error = ref.read(editProfileControllerProvider).error;
+        AppSnackbar.error(
+          context,
+          error == null ? 'Photo upload failed. Please retry.' : userMessageFrom(error),
+        );
       }
     } catch (e) {
       if (mounted) AppSnackbar.error(context, userMessageFrom(e));
@@ -101,6 +104,43 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           await File(cropped.path).delete();
         } catch (_) {}
       }
+    }
+  }
+
+  Future<void> _removeAvatar() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remove profile photo?'),
+        content: const Text(
+          'Your default profile avatar will be shown instead.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Remove photo'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final ok = await ref
+        .read(editProfileControllerProvider.notifier)
+        .removeAvatar();
+    if (!mounted) return;
+    if (ok) {
+      AppSnackbar.success(context, 'Profile photo removed');
+    } else {
+      final error = ref.read(editProfileControllerProvider).error;
+      AppSnackbar.error(
+        context,
+        error == null ? 'Could not remove photo. Please retry.' : userMessageFrom(error),
+      );
     }
   }
 
@@ -162,6 +202,27 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       ),
                     ],
                   ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    TextButton.icon(
+                      onPressed: saving ? null : _changeAvatar,
+                      icon: const Icon(Icons.photo_library_outlined),
+                      label: Text(
+                        user.photoUrl == null ? 'Add photo' : 'Change photo',
+                      ),
+                    ),
+                    if (user.photoUrl != null) ...[
+                      const SizedBox(width: AppSpacing.xs),
+                      TextButton.icon(
+                        onPressed: saving ? null : _removeAvatar,
+                        icon: const Icon(Icons.delete_outline_rounded),
+                        label: const Text('Remove photo'),
+                      ),
+                    ],
+                  ],
                 ),
                 const SizedBox(height: AppSpacing.xl),
                 Form(

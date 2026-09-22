@@ -165,7 +165,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
           ),
         ),
         const SizedBox(height: AppSpacing.lg),
-        const TermsAcceptance(),
+        const LegalConsentNotice(),
+        const SizedBox(height: AppSpacing.sm),
         AppButton(
           label: isBusiness ? 'Create business account' : AppStrings.signUp,
           isLoading: authState.isLoading,

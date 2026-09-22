@@ -25,4 +25,16 @@ void main() {
     await tester.pump();
     expect(container.read(termsCheckedProvider), false);
   });
+
+  testWidgets('compact auth notice links legal documents without a checkbox',
+      (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: Scaffold(body: LegalConsentNotice())),
+    );
+
+    expect(find.textContaining('By continuing'), findsOneWidget);
+    expect(find.text('Terms of Use / EULA'), findsOneWidget);
+    expect(find.text('Privacy Policy'), findsOneWidget);
+    expect(find.byType(Checkbox), findsNothing);
+  });
 }

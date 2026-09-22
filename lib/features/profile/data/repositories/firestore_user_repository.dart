@@ -1,6 +1,8 @@
 import '../../../../core/services/content_visibility.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/errors/app_exception.dart';
@@ -358,12 +360,52 @@ class FirestoreUserRepository implements UserRepository {
     final user = _auth.currentUser;
     if (user == null) throw const AppException('Not signed in');
 
+    final profile = await _users.doc(user.uid).get();
+    final previousUrl = profile.data()?['photoUrl'] as String?;
     final url = await _uploads.uploadAvatar(uid: user.uid, file: image);
-    // Cache-bust: Storage keeps the same path, so append a version.
-    final versioned =
-        '$url${url.contains('?') ? '&' : '?'}v=${DateTime.now().millisecondsSinceEpoch}';
     final updates = <String, dynamic>{
-      'photoUrl': versioned,
+      'photoUrl': url,
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+    try {
+      await (_firestore.batch()
+            ..update(_users.doc(user.uid), updates)
+            ..set(
+              _publicProfiles.doc(user.uid),
+              updates,
+              SetOptions(merge: true),
+            ))
+          .commit();
+    } catch (error, stack) {
+      // The new object is not referenced anywhere, so it is safe to remove.
+      try {
+        await _uploads.deleteOwnedAvatar(uid: user.uid, downloadUrl: url);
+      } catch (cleanupError) {
+        debugPrint('Avatar rollback cleanup failed: $cleanupError');
+      }
+      Error.throwWithStackTrace(error, stack);
+    }
+    // Firestore is the profile source of truth; Auth metadata is best effort.
+    try {
+      await user.updatePhotoURL(url);
+    } catch (error) {
+      debugPrint('Firebase Auth avatar sync failed: $error');
+    }
+    await _evictAvatar(previousUrl);
+    return url;
+  }
+
+  @override
+  Future<void> removeAvatar() async {
+    final user = _auth.currentUser;
+    if (user == null) throw const AppException('Not signed in');
+
+    final profile = await _users.doc(user.uid).get();
+    final previousUrl = profile.data()?['photoUrl'] as String?;
+    if (previousUrl == null || previousUrl.isEmpty) return;
+
+    final updates = <String, dynamic>{
+      'photoUrl': FieldValue.delete(),
       'updatedAt': FieldValue.serverTimestamp(),
     };
     await (_firestore.batch()
@@ -374,10 +416,23 @@ class FirestoreUserRepository implements UserRepository {
             SetOptions(merge: true),
           ))
         .commit();
-    // Firestore is the profile source of truth; Auth metadata is best effort.
+
     try {
-      await user.updatePhotoURL(versioned);
-    } catch (_) {}
-    return versioned;
+      await user.updatePhotoURL(null);
+    } catch (error) {
+      debugPrint('Firebase Auth avatar removal sync failed: $error');
+    }
+    await _evictAvatar(previousUrl);
+  }
+
+  Future<void> _evictAvatar(String? url) async {
+    if (url == null || url.isEmpty) return;
+    try {
+      await CachedNetworkImage.evictFromCache(url);
+    } catch (error) {
+      // Firestore already holds the new value. A local cache failure must not
+      // turn a successful profile update into a reported upload failure.
+      debugPrint('Avatar cache eviction failed: $error');
+    }
   }
 }

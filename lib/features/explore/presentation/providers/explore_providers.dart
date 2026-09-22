@@ -17,16 +17,14 @@ final exploreRepositoryProvider = Provider<ExploreRepository>(
 final recentSearchesServiceProvider =
     Provider<RecentSearchesService>((ref) => RecentSearchesService());
 
-final trendingPostsProvider = FutureProvider.autoDispose<List<Post>>(
-  (ref) async {
-    final blocked = await ref.watch(blockedUserIdsProvider.future);
-    final posts =
-        await ref.read(exploreRepositoryProvider).fetchTrendingPosts();
-    final preferences =
-        ref.watch(currentUserProvider)?.dietaryPreferences ?? const [];
-    return DietaryRanking.rankPosts(
-        posts.where((p) => !blocked.contains(p.authorId)).toList(),
-        preferences);
+final trendingPostsProvider = StreamProvider.autoDispose<List<Post>>(
+  (ref) async* {
+    final blockedState = ref.watch(blockedUserIdsProvider);
+    final blocked = blockedState.valueOrNull ??
+        await ref.watch(blockedUserIdsProvider.future);
+    yield* ref.read(exploreRepositoryProvider).watchTrendingPosts().map(
+        (posts) =>
+            posts.where((post) => !blocked.contains(post.authorId)).toList());
   },
 );
 

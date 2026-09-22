@@ -134,11 +134,45 @@ class EditProfileController extends AutoDisposeAsyncNotifier<void> {
   }
 
   Future<bool> uploadAvatar(XFile image) async {
+    final uid = ref.read(currentUserProvider)?.uid;
     state = const AsyncLoading();
     state = await AsyncValue.guard(
       () => ref.read(userRepositoryProvider).updateAvatar(image),
     );
+    if (state.hasError) {
+      debugPrintStack(
+        label: 'Avatar replacement failed: ${state.error}',
+        stackTrace: state.stackTrace,
+      );
+    } else if (uid != null) {
+      _refreshAvatarState(uid);
+    }
     return !state.hasError;
+  }
+
+  Future<bool> removeAvatar() async {
+    final uid = ref.read(currentUserProvider)?.uid;
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(
+      () => ref.read(userRepositoryProvider).removeAvatar(),
+    );
+    if (state.hasError) {
+      debugPrintStack(
+        label: 'Avatar removal failed: ${state.error}',
+        stackTrace: state.stackTrace,
+      );
+    } else if (uid != null) {
+      _refreshAvatarState(uid);
+    }
+    return !state.hasError;
+  }
+
+  void _refreshAvatarState(String uid) {
+    ref.invalidate(userProfileProvider(uid));
+    ref.invalidate(userPostsProvider(uid));
+    for (final tab in FeedTab.values) {
+      ref.invalidate(feedControllerProvider(tab));
+    }
   }
 }
 

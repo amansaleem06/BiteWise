@@ -54,7 +54,8 @@ class WelcomeScreen extends ConsumerWidget {
               ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),
         const SizedBox(height: AppSpacing.xl),
-        const TermsAcceptance(),
+        const LegalConsentNotice(),
+        const SizedBox(height: AppSpacing.md),
         AppButton(
           label: AppStrings.signUp,
           onPressed: () => context.push(Routes.signUp),
@@ -90,22 +91,6 @@ class WelcomeScreen extends ConsumerWidget {
             TextButton(
               onPressed: () => context.push(Routes.signIn),
               child: const Text(AppStrings.signIn),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.md),
-        Wrap(
-          alignment: WrapAlignment.center,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            TextButton(
-              onPressed: () => context.push(Routes.privacyPolicy),
-              child: const Text(AppStrings.privacyPolicy),
-            ),
-            Text('·', style: theme.textTheme.bodySmall),
-            TextButton(
-              onPressed: () => context.push(Routes.termsOfService),
-              child: const Text(AppStrings.termsOfService),
             ),
           ],
         ),

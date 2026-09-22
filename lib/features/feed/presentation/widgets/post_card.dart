@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../domain/entities/post.dart';
 import 'media_carousel.dart';
 
 /// Editorial Taste Stage plate — media hero + score badge + action tray.
-class PostCard extends StatelessWidget {
+class PostCard extends ConsumerWidget {
   const PostCard({
     super.key,
     required this.post,
@@ -33,9 +35,13 @@ class PostCard extends StatelessWidget {
   final VoidCallback? onOpenActions;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final surface = theme.colorScheme.surface;
+    final me = ref.watch(currentUserProvider);
+    final authorPhotoUrl = me?.uid == post.authorId && !post.postedAsRestaurant
+        ? me?.photoUrl
+        : post.authorPhotoUrl;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(
@@ -73,10 +79,10 @@ class PostCard extends StatelessWidget {
                   child: CircleAvatar(
                     radius: 18,
                     backgroundColor: AppColors.primary.withValues(alpha: 0.15),
-                    backgroundImage: post.authorPhotoUrl != null
-                        ? NetworkImage(post.authorPhotoUrl!)
+                    backgroundImage: authorPhotoUrl != null
+                        ? NetworkImage(authorPhotoUrl)
                         : null,
-                    child: post.authorPhotoUrl == null
+                    child: authorPhotoUrl == null
                         ? Text(
                             post.publicAuthorName.isNotEmpty
                                 ? post.publicAuthorName[0].toUpperCase()
@@ -107,7 +113,7 @@ class PostCard extends StatelessWidget {
                           ),
                         ),
                       ),
-          if (post.hasRestaurant && !post.postedAsRestaurant)
+                      if (post.hasRestaurant && !post.postedAsRestaurant)
                         GestureDetector(
                           onTap: onRestaurantTap,
                           child: Text(
@@ -374,7 +380,8 @@ class PostCard extends StatelessWidget {
                         TextSpan(
                           children: [
                             TextSpan(
-                              text: '${post.previewCommentAuthor ?? 'Comment'} ',
+                              text:
+                                  '${post.previewCommentAuthor ?? 'Comment'} ',
                               style: GoogleFonts.sourceSans3(
                                 fontWeight: FontWeight.w800,
                                 fontSize: 13,

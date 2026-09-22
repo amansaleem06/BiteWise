@@ -30,7 +30,7 @@ enum RankingPeriod {
 abstract interface class ExploreRepository {
   /// Most-liked posts. Time-windowed trending scores arrive with the
   /// Cloud Functions milestone; the API shape stays the same.
-  Future<List<Post>> fetchTrendingPosts({int limit});
+  Stream<List<Post>> watchTrendingPosts({int limit});
 
   /// Restaurants ranked by average post rating (min 1 rating).
   Future<List<Restaurant>> fetchTopRatedRestaurants({int limit});

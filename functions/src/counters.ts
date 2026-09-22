@@ -1,7 +1,7 @@
 /**
- * Counter maintenance — the single source of truth for all denormalized
- * counts. Clients only write edge documents (likes, comments, follows);
- * these triggers keep the aggregates consistent.
+ * Counter maintenance for denormalized counts. The mobile client updates post
+ * like/comment counts with each edge write; these triggers reconcile the
+ * aggregate rather than incrementing it a second time.
  */
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import {
@@ -12,30 +12,32 @@ import {
 
 const db = () => getFirestore();
 
-/** posts/{postId}/likes/{uid} → posts.likeCount */
+/** Reconcile the count because the mobile client also updates it atomically. */
 export const onPostLikeWritten = onDocumentWritten(
   "posts/{postId}/likes/{uid}",
   async (event) => {
     const before = event.data?.before.exists ?? false;
     const after = event.data?.after.exists ?? false;
     if (before === after) return;
-    await db()
-      .doc(`posts/${event.params.postId}`)
-      .update({ likeCount: FieldValue.increment(after ? 1 : -1) })
+    const post = db().doc(`posts/${event.params.postId}`);
+    const aggregate = await post.collection("likes").count().get();
+    await post
+      .update({ likeCount: aggregate.data().count })
       .catch(() => undefined); // post may have been deleted
   },
 );
 
-/** posts/{postId}/comments/{commentId} → posts.commentCount */
+/** Reconcile the count because the mobile client also updates it atomically. */
 export const onPostCommentWritten = onDocumentWritten(
   "posts/{postId}/comments/{commentId}",
   async (event) => {
     const before = event.data?.before.exists ?? false;
     const after = event.data?.after.exists ?? false;
     if (before === after) return;
-    await db()
-      .doc(`posts/${event.params.postId}`)
-      .update({ commentCount: FieldValue.increment(after ? 1 : -1) })
+    const post = db().doc(`posts/${event.params.postId}`);
+    const aggregate = await post.collection("comments").count().get();
+    await post
+      .update({ commentCount: aggregate.data().count })
       .catch(() => undefined);
   },
 );

@@ -56,15 +56,11 @@ class AuthController extends AsyncNotifier<void> {
 
   Future<bool> _authenticate(Future<AppUser> Function() action) async {
     if (state.isLoading) return false;
-    if (!ref.read(termsCheckedProvider)) {
-      state = AsyncError(
-          const AppException('Please agree to the Terms of Use / EULA first.'),
-          StackTrace.current);
-      return false;
-    }
     state = const AsyncLoading();
     try {
       final user = await action();
+      // The linked notice shown before every auth action makes continuing the
+      // acceptance action. Existing users keep their original acceptance time.
       await recordTermsAcceptance(ref, user.uid);
       state = const AsyncData(null);
       return true;

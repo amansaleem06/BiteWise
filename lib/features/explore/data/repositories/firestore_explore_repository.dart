@@ -1,5 +1,6 @@
 import '../../../../core/services/content_visibility.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../../auth/data/models/user_model.dart';
 import '../../../auth/domain/entities/app_user.dart';
@@ -8,6 +9,7 @@ import '../../../feed/domain/entities/post.dart';
 import '../../../restaurants/data/models/restaurant_model.dart';
 import '../../../restaurants/domain/entities/restaurant.dart';
 import '../../domain/repositories/explore_repository.dart';
+import '../../domain/services/trending_ranker.dart';
 
 class FirestoreExploreRepository implements ExploreRepository {
   FirestoreExploreRepository({FirebaseFirestore? firestore})
@@ -16,18 +18,51 @@ class FirestoreExploreRepository implements ExploreRepository {
   final FirebaseFirestore _firestore;
 
   @override
-  Future<List<Post>> fetchTrendingPosts({int limit = 30}) async {
-    // trendingScore = time-decayed engagement, recomputed hourly by a
-    // scheduled Cloud Function.
-    final snap = await _firestore
+  Stream<List<Post>> watchTrendingPosts({int limit = 30}) {
+    // A wider newest-first candidate set keeps reads bounded while allowing
+    // the ranker to compare recent content using live engagement counts.
+    return _firestore
         .collection('posts')
-        .orderBy('trendingScore', descending: true)
-        .limit(limit)
-        .get();
-    // Viewer like/bookmark state is skipped here deliberately: trending is
-    // a browse surface; the post detail screen resolves exact state.
-    final visibility = await ContentVisibility.load(_firestore);
-    return snap.docs.where(visibility.allows).map(PostModel.fromDoc).toList();
+        .orderBy('createdAt', descending: true)
+        .limit(200)
+        .snapshots()
+        .asyncMap((snap) async {
+      final visibility = await ContentVisibility.load(_firestore);
+      final visible = snap.docs
+          .where(visibility.allows)
+          .map(PostModel.fromDoc)
+          .toList();
+      final suspended = await _suspendedAuthorIds(visible);
+      final ranked = TrendingRanker.rank(
+        visible.where((post) => !suspended.contains(post.authorId)),
+        now: DateTime.now(),
+      );
+      if (kDebugMode) {
+        debugPrint(
+          '[Trending]\n${ranked.take(limit).map(TrendingRanker.explain).join('\n')}',
+        );
+      }
+      return ranked.take(limit).map((item) => item.post).toList();
+    });
+  }
+
+  Future<Set<String>> _suspendedAuthorIds(List<Post> posts) async {
+    final ids = posts.map((post) => post.authorId).where((id) => id.isNotEmpty).toSet();
+    if (ids.isEmpty) return const {};
+    final suspended = <String>{};
+    final list = ids.toList();
+    for (var i = 0; i < list.length; i += 30) {
+      final end = i + 30 < list.length ? i + 30 : list.length;
+      final chunk = list.sublist(i, end);
+      final profiles = await _firestore
+          .collection('publicProfiles')
+          .where(FieldPath.documentId, whereIn: chunk)
+          .get();
+      for (final profile in profiles.docs) {
+        if (profile.data()['suspended'] == true) suspended.add(profile.id);
+      }
+    }
+    return suspended;
   }
 
   @override

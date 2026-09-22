@@ -30,4 +30,7 @@ abstract interface class UserRepository {
 
   /// Uploads a new avatar and updates Firestore + Auth photoUrl.
   Future<String> updateAvatar(XFile image);
+
+  /// Clears the avatar reference without changing any other profile field.
+  Future<void> removeAvatar();
 }

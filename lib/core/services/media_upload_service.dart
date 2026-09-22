@@ -71,7 +71,10 @@ class MediaUploadService {
   }
 
   /// Uploads a square-ish avatar (small, aggressive compression).
-  /// Path: `avatars/{uid}/avatar.jpg` — overwrites the previous one.
+  ///
+  /// A unique object name makes replacement atomic from the viewer's point of
+  /// view: the previous avatar remains usable until the profile points at the
+  /// newly uploaded object.
   Future<String> uploadAvatar({
     required String uid,
     required XFile file,
@@ -99,7 +102,42 @@ class MediaUploadService {
     } on FirebaseException catch (e) {
       throw AppException('Avatar upload failed.', code: e.code);
     }
-    return ref.getDownloadURL();
+    try {
+      return await ref.getDownloadURL();
+    } catch (_) {
+      // The upload finished, but no profile can reference an object without
+      // its URL. Remove it instead of silently leaving an orphan behind.
+      try {
+        await ref.delete();
+      } catch (_) {}
+      rethrow;
+    }
+  }
+
+  /// Deletes an avatar only when its Storage path belongs to [uid].
+  ///
+  /// This is used to clean up a newly uploaded object if the following profile
+  /// update fails. Previous live avatars are cleaned up by the profile
+  /// denormalization function after copied avatar references are updated.
+  Future<void> deleteOwnedAvatar({
+    required String uid,
+    required String downloadUrl,
+  }) async {
+    Reference ref;
+    try {
+      ref = _storage.refFromURL(downloadUrl);
+    } on Object {
+      throw const AppException('Invalid profile photo reference.');
+    }
+    if (!ref.fullPath.startsWith('avatars/$uid/')) {
+      throw const AppException('This profile photo cannot be removed.');
+    }
+    try {
+      await ref.delete();
+    } on FirebaseException catch (e) {
+      if (e.code == 'object-not-found') return;
+      throw AppException('Avatar cleanup failed.', code: e.code);
+    }
   }
 
   /// Uploads a chat photo. Path: `chats/{chatId}/{uid}/{uuid}.jpg` —

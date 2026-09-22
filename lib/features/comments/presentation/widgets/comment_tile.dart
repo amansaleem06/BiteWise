@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../domain/entities/comment.dart';
 
-class CommentTile extends StatelessWidget {
+class CommentTile extends ConsumerWidget {
   const CommentTile({
     super.key,
     required this.comment,
@@ -22,8 +24,12 @@ class CommentTile extends StatelessWidget {
   final VoidCallback? onReport;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final me = ref.watch(currentUserProvider);
+    final authorPhotoUrl = isMine && !comment.postedAsRestaurant
+        ? me?.photoUrl
+        : comment.authorPhotoUrl;
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
@@ -35,10 +41,9 @@ class CommentTile extends StatelessWidget {
           CircleAvatar(
             radius: 16,
             backgroundColor: AppColors.primaryLight,
-            backgroundImage: comment.authorPhotoUrl != null
-                ? NetworkImage(comment.authorPhotoUrl!)
-                : null,
-            child: comment.authorPhotoUrl == null
+            backgroundImage:
+                authorPhotoUrl != null ? NetworkImage(authorPhotoUrl) : null,
+            child: authorPhotoUrl == null
                 ? Text(
                     comment.authorName.isNotEmpty
                         ? comment.authorName[0].toUpperCase()

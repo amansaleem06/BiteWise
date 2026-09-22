@@ -95,7 +95,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
           ),
         ),
         const SizedBox(height: AppSpacing.md),
-        const TermsAcceptance(),
+        const LegalConsentNotice(),
+        const SizedBox(height: AppSpacing.sm),
         AppButton(
           label: AppStrings.signIn,
           isLoading: authState.isLoading,
