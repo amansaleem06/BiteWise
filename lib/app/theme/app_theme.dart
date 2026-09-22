@@ -13,15 +13,13 @@ abstract final class AppTheme {
   static ThemeData _build(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
     final interactiveColor = isDark ? AppColors.accent : AppColors.primary;
-    final onInteractiveColor =
-        isDark ? AppColors.onAccent : AppColors.cream;
+    final onInteractiveColor = isDark ? AppColors.onAccent : AppColors.cream;
 
     final colorScheme = ColorScheme(
       brightness: brightness,
       primary: interactiveColor,
       onPrimary: onInteractiveColor,
-      primaryContainer:
-          isDark ? AppColors.primaryDark : AppColors.primaryLight,
+      primaryContainer: isDark ? AppColors.primaryDark : AppColors.primaryLight,
       onPrimaryContainer: isDark ? Colors.white : AppColors.secondary,
       secondary: AppColors.secondary,
       onSecondary: Colors.white,
@@ -31,10 +29,12 @@ abstract final class AppTheme {
           isDark ? AppColors.textPrimaryDark : AppColors.secondary,
       tertiary: AppColors.accent,
       onTertiary: AppColors.onAccent,
-      tertiaryContainer: isDark ? AppColors.charcoalLight : AppColors.accentLight,
-      onTertiaryContainer: AppColors.onAccent,
-      error: AppColors.error,
-      onError: Colors.white,
+      tertiaryContainer:
+          isDark ? AppColors.charcoalLight : AppColors.accentLight,
+      onTertiaryContainer:
+          isDark ? AppColors.textPrimaryDark : AppColors.onAccent,
+      error: isDark ? AppColors.errorDark : AppColors.error,
+      onError: isDark ? AppColors.primaryDark : Colors.white,
       surface: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
       onSurface:
           isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
@@ -47,8 +47,9 @@ abstract final class AppTheme {
       inverseSurface: isDark ? AppColors.cream : AppColors.charcoal,
       onInverseSurface: isDark ? AppColors.charcoal : AppColors.cream,
       inversePrimary: isDark ? AppColors.primary : AppColors.primaryLight,
-      surfaceContainerHighest:
-          isDark ? const Color(0xFF2E353D) : AppColors.cream,
+      surfaceContainerHighest: isDark
+          ? AppColors.surfaceElevatedDark
+          : AppColors.surfaceElevatedLight,
     );
 
     final textTheme = AppTypography.textTheme(
@@ -94,10 +95,8 @@ abstract final class AppTheme {
           elevation: 0,
           backgroundColor: colorScheme.primary,
           foregroundColor: colorScheme.onPrimary,
-          disabledBackgroundColor:
-              colorScheme.primary.withValues(alpha: 0.4),
-          disabledForegroundColor:
-              colorScheme.onPrimary.withValues(alpha: 0.5),
+          disabledBackgroundColor: colorScheme.primary.withValues(alpha: 0.4),
+          disabledForegroundColor: colorScheme.onPrimary.withValues(alpha: 0.5),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.pill),
           ),
@@ -125,17 +124,16 @@ abstract final class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: isDark
-            ? colorScheme.surface
-            : Colors.white.withValues(alpha: 0.92),
+        fillColor:
+            isDark ? colorScheme.surface : Colors.white.withValues(alpha: 0.92),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
           vertical: AppSpacing.md + 2,
         ),
-        hintStyle: textTheme.bodyMedium
-            ?.copyWith(color: colorScheme.onSurfaceVariant),
-        labelStyle: textTheme.bodyMedium
-            ?.copyWith(color: colorScheme.onSurfaceVariant),
+        hintStyle:
+            textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+        labelStyle:
+            textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
         prefixIconColor: colorScheme.onSurfaceVariant,
         suffixIconColor: colorScheme.onSurfaceVariant,
         border: OutlineInputBorder(
@@ -154,11 +152,11 @@ abstract final class AppTheme {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          borderSide: const BorderSide(color: AppColors.error),
+          borderSide: BorderSide(color: colorScheme.error),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
+          borderSide: BorderSide(color: colorScheme.error, width: 1.5),
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(
@@ -234,8 +232,8 @@ abstract final class AppTheme {
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         backgroundColor: colorScheme.inverseSurface,
-        contentTextStyle: textTheme.bodyMedium
-            ?.copyWith(color: colorScheme.onInverseSurface),
+        contentTextStyle:
+            textTheme.bodyMedium?.copyWith(color: colorScheme.onInverseSurface),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
         ),

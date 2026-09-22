@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/routes.dart';
-import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/theme_mode_provider.dart';
 import '../../../../core/constants/app_legal.dart';
@@ -99,12 +98,12 @@ class SettingsScreen extends ConsumerWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.delete_forever_outlined,
-                color: AppColors.error),
+            leading: Icon(Icons.delete_forever_outlined,
+                color: theme.colorScheme.error),
             title: Text(
               AppStrings.deleteAccount,
-              style:
-                  theme.textTheme.titleMedium?.copyWith(color: AppColors.error),
+              style: theme.textTheme.titleMedium
+                  ?.copyWith(color: theme.colorScheme.error),
             ),
             enabled: !authState.isLoading,
             onTap: () => _confirmDeleteAccount(context, ref),
@@ -176,9 +175,10 @@ class SettingsScreen extends ConsumerWidget {
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text(
+            child: Text(
               AppStrings.deleteAccountConfirm,
-              style: TextStyle(color: AppColors.error),
+              style:
+                  TextStyle(color: Theme.of(dialogContext).colorScheme.error),
             ),
           ),
         ],

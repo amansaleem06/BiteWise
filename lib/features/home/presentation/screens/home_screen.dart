@@ -291,13 +291,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   tab: FeedTab.forYou,
                   cuisineFilter: _cuisineFilter,
                 ),
-              FeedTab.following => (_followingVisited ||
-                      _tab == FeedTab.following)
-                  ? FeedList(
-                      tab: FeedTab.following,
-                      cuisineFilter: _cuisineFilter,
-                    )
-                  : const SizedBox.shrink(),
+              FeedTab.following =>
+                (_followingVisited || _tab == FeedTab.following)
+                    ? FeedList(
+                        tab: FeedTab.following,
+                        cuisineFilter: _cuisineFilter,
+                      )
+                    : const SizedBox.shrink(),
               FeedTab.palette => (_paletteVisited || _tab == FeedTab.palette)
                   ? FeedList(
                       tab: FeedTab.palette,
@@ -338,7 +338,7 @@ class _ModeTile extends StatelessWidget {
         title: Text(title, style: theme.textTheme.titleMedium),
         subtitle: Text(subtitle),
         trailing: selected
-            ? const Icon(Icons.check_circle, color: AppColors.primary)
+            ? Icon(Icons.check_circle, color: theme.colorScheme.primary)
             : null,
       ),
     );
@@ -369,18 +369,21 @@ class _Chip extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.pill),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Text(
-            label,
-            style: GoogleFonts.sourceSans3(
-              fontWeight: FontWeight.w700,
-              fontSize: 13,
-              color: selected
-                  ? AppColors.cream
-                  : emphasized
-                      ? AppColors.primary
-                      : theme.colorScheme.onSurface,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 44),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: Text(
+              label,
+              style: GoogleFonts.sourceSans3(
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+                color: selected
+                    ? AppColors.cream
+                    : emphasized
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurface,
+              ),
             ),
           ),
         ),

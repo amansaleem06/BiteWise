@@ -11,7 +11,7 @@ abstract final class AppColors {
   static const Color secondaryLight = Color(0xFFEDE4D8);
 
   static const Color accent = Color(0xFFB8956A);
-  static const Color accentDark = Color(0xFF8C6E48);
+  static const Color accentDark = Color(0xFF785C39);
   static const Color accentLight = Color(0xFFF3E8D8);
   static const Color onAccent = Color(0xFF2F0808);
 
@@ -29,19 +29,35 @@ abstract final class AppColors {
 
   // Surfaces — dark
   static const Color surfaceDark = Color(0xFF2A1616);
+  static const Color surfaceElevatedDark = Color(0xFF35201E);
   static const Color backgroundDark = Color(0xFF140A0A);
   static const Color outlineDark = Color(0xFF4A3330);
+  static const Color surfaceElevatedLight = Color(0xFFF6EEE4);
 
   // Text
   static const Color textPrimaryLight = Color(0xFF1A0C0C);
   static const Color textSecondaryLight = Color(0xFF6B5752);
   static const Color textPrimaryDark = Color(0xFFFDF8F1);
   static const Color textSecondaryDark = Color(0xFFC9B8B0);
+  static const Color textTertiaryDark = Color(0xFFB6A39A);
+  static const Color textTertiaryLight = Color(0xFF715E58);
 
   // Semantic
   static const Color error = Color(0xFFDC2626);
+  static const Color errorDark = Color(0xFFFF8A80);
   static const Color success = Color(0xFF15803D);
   static const Color ratingStar = Color(0xFFEAB308);
+  static const Color warningSurfaceLight = Color(0xFFFFF0D6);
+  static const Color warningTextLight = Color(0xFF735018);
+  static const Color warningSurfaceDark = Color(0xFF3B2A1D);
+  static const Color warningTextDark = Color(0xFFF3D6A1);
+  static const Color successSurfaceLight = Color(0xFFE2F0E6);
+  static const Color successTextLight = Color(0xFF1B6337);
+  static const Color successSurfaceDark = Color(0xFF1C392A);
+  static const Color successTextDark = Color(0xFFA4E1B6);
+  static const Color errorSurfaceLight = Color(0xFFFBE9E7);
+  static const Color errorTextLight = Color(0xFFB91C1C);
+  static const Color errorSurfaceDark = Color(0xFF472423);
 
   static const LinearGradient brandGradient = LinearGradient(
     colors: [Color(0xFF5C1616), Color(0xFF3A0A0A)],

@@ -120,8 +120,10 @@ class TasteMatchCard extends ConsumerWidget {
                 ),
                 const SizedBox(height: AppSpacing.md),
                 if (match.sharedCuisines.isNotEmpty) ...[
-                  Text('Cuisines you both love',
-                      style: theme.textTheme.titleSmall,),
+                  Text(
+                    'Cuisines you both love',
+                    style: theme.textTheme.titleSmall,
+                  ),
                   const SizedBox(height: AppSpacing.xs),
                   Wrap(
                     spacing: 6,
@@ -144,18 +146,20 @@ class TasteMatchCard extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.md),
                 ],
                 if (match.sharedRestaurants.isNotEmpty) ...[
-                  Text('Spots you\'ve both plated',
-                      style: theme.textTheme.titleSmall,),
+                  Text(
+                    'Spots you\'ve both plated',
+                    style: theme.textTheme.titleSmall,
+                  ),
                   const SizedBox(height: AppSpacing.xs),
                   for (final r in match.sharedRestaurants.take(5))
                     Padding(
                       padding: const EdgeInsets.only(bottom: 4),
                       child: Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.storefront_outlined,
                             size: 16,
-                            color: AppColors.accentDark,
+                            color: theme.colorScheme.primary,
                           ),
                           const SizedBox(width: 6),
                           Expanded(

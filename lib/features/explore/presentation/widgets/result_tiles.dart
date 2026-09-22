@@ -73,7 +73,7 @@ class RestaurantTile extends StatelessWidget {
                           style: GoogleFonts.sourceSans3(
                             fontSize: 11,
                             fontWeight: FontWeight.w800,
-                            color: AppColors.accentDark,
+                            color: theme.colorScheme.primary,
                           ),
                         ),
                       Text(

@@ -44,8 +44,7 @@ class MyReservationsScreen extends ConsumerWidget {
           data: (all) {
             final upcoming = all.where((r) => r.isUpcoming).toList()
               ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
-            final history =
-                all.where((r) => !r.isUpcoming).toList();
+            final history = all.where((r) => !r.isUpcoming).toList();
             return TabBarView(
               children: [
                 _ReservationList(
@@ -109,25 +108,27 @@ class _ReservationCard extends ConsumerWidget {
   final Reservation reservation;
   final bool canCancel;
 
-  (Color, Color) _statusColors(BuildContext context) =>
-      switch (reservation.status) {
-        ReservationStatus.pending => (
-            AppColors.ratingStar.withValues(alpha: 0.18),
-            const Color(0xFF92600A),
-          ),
-        ReservationStatus.confirmed => (
-            AppColors.accentLight,
-            AppColors.accent,
-          ),
-        ReservationStatus.completed => (
-            Theme.of(context).colorScheme.surfaceContainerHighest,
-            Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        _ => (
-            AppColors.error.withValues(alpha: 0.12),
-            AppColors.error,
-          ),
-      };
+  (Color, Color) _statusColors(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return switch (reservation.status) {
+      ReservationStatus.pending => (
+          dark ? AppColors.warningSurfaceDark : AppColors.warningSurfaceLight,
+          dark ? AppColors.warningTextDark : AppColors.warningTextLight,
+        ),
+      ReservationStatus.confirmed => (
+          dark ? AppColors.successSurfaceDark : AppColors.successSurfaceLight,
+          dark ? AppColors.successTextDark : AppColors.successTextLight,
+        ),
+      ReservationStatus.completed => (
+          Theme.of(context).colorScheme.surfaceContainerHighest,
+          Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      _ => (
+          dark ? AppColors.errorSurfaceDark : AppColors.errorSurfaceLight,
+          dark ? AppColors.errorDark : AppColors.errorTextLight,
+        ),
+    };
+  }
 
   Future<void> _confirmCancel(BuildContext context, WidgetRef ref) async {
     final confirmed = await showDialog<bool>(
@@ -145,9 +146,10 @@ class _ReservationCard extends ConsumerWidget {
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text(
+            child: Text(
               'Cancel reservation',
-              style: TextStyle(color: AppColors.error),
+              style:
+                  TextStyle(color: Theme.of(dialogContext).colorScheme.error),
             ),
           ),
         ],
@@ -178,7 +180,8 @@ class _ReservationCard extends ConsumerWidget {
                     backgroundColor: AppColors.primaryLight,
                     backgroundImage: reservation.restaurantLogoUrl != null
                         ? CachedNetworkImageProvider(
-                            reservation.restaurantLogoUrl!,)
+                            reservation.restaurantLogoUrl!,
+                          )
                         : null,
                     child: reservation.restaurantLogoUrl == null
                         ? const Icon(
@@ -234,8 +237,10 @@ class _ReservationCard extends ConsumerWidget {
                   color: AppColors.primaryDark,
                 ),
                 const SizedBox(width: AppSpacing.xs),
-                Text('${reservation.partySize}',
-                    style: theme.textTheme.bodyMedium,),
+                Text(
+                  '${reservation.partySize}',
+                  style: theme.textTheme.bodyMedium,
+                ),
               ],
             ),
             if (reservation.note != null) ...[
@@ -253,9 +258,10 @@ class _ReservationCard extends ConsumerWidget {
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: () => _confirmCancel(context, ref),
-                  child: const Text(
+                  child: Text(
                     'Cancel',
-                    style: TextStyle(color: AppColors.error),
+                    style:
+                        TextStyle(color: Theme.of(context).colorScheme.error),
                   ),
                 ),
               ),

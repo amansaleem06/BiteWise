@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -59,8 +57,7 @@ class TastePassportScreen extends ConsumerWidget {
         ),
       ),
       body: statsAsync.when(
-        loading: () =>
-            const Center(child: CircularProgressIndicator(strokeWidth: 2.5)),
+        loading: () => const _PassportSkeleton(),
         error: (error, stack) => AsyncErrorView(
           error: error,
           stackTrace: stack,
@@ -69,6 +66,63 @@ class TastePassportScreen extends ConsumerWidget {
         ),
         data: (stats) => _PassportBody(stats: stats),
       ),
+    );
+  }
+}
+
+class _PassportSkeleton extends StatelessWidget {
+  const _PassportSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final fill = Theme.of(context).colorScheme.surfaceContainerHighest;
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      children: [
+        AppContent(
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+              Container(
+                height: 144,
+                decoration: BoxDecoration(
+                  gradient: AppColors.brandGradient,
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Row(children: [
+                for (var i = 0; i < 3; i++) ...[
+                  Expanded(
+                      child: Container(
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: fill,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                  )),
+                  if (i < 2) const SizedBox(width: AppSpacing.xs),
+                ],
+              ]),
+              const SizedBox(height: AppSpacing.lg),
+              for (var row = 0; row < 2; row++) ...[
+                Row(children: [
+                  for (var i = 0; i < 3; i++) ...[
+                    Expanded(
+                        child: Container(
+                      height: 90,
+                      decoration: BoxDecoration(
+                        color: fill,
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
+                    )),
+                    if (i < 2) const SizedBox(width: AppSpacing.xs),
+                  ],
+                ]),
+                const SizedBox(height: AppSpacing.xs),
+              ],
+            ])),
+      ],
     );
   }
 }
@@ -90,141 +144,143 @@ class _PassportBody extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-        // Passport cover.
-        Container(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          decoration: BoxDecoration(
-            gradient: AppColors.brandGradient,
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.28),
-                blurRadius: 22,
-                offset: const Offset(0, 10),
+              // Passport cover.
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                decoration: BoxDecoration(
+                  gradient: AppColors.brandGradient,
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.28),
+                      blurRadius: 22,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.restaurant_menu_rounded,
+                          color: AppColors.accent,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'TASTEWISE · CULINARY PASSPORT',
+                            maxLines: 2,
+                            style: GoogleFonts.sourceSans3(
+                              color: AppColors.accentLight,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Text(
+                      stats.level.title,
+                      style: GoogleFonts.fraunces(
+                        color: AppColors.cream,
+                        fontSize: 34,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -1,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      next == null
+                          ? 'Every cuisine conquered. Take a bow.'
+                          : '${next.requiredStamps - stats.earnedStampCount} more '
+                              'cuisine${next.requiredStamps - stats.earnedStampCount == 1 ? '' : 's'} '
+                              'to reach ${next.title}',
+                      style: GoogleFonts.sourceSans3(
+                        color: AppColors.cream.withValues(alpha: 0.75),
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Semantics(
+                      label: next == null
+                          ? 'Passport complete'
+                          : '${stats.earnedStampCount} of ${next.requiredStamps} cuisines toward ${next.title}',
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(99),
+                        child: LinearProgressIndicator(
+                          value: stats.progressToNext,
+                          minHeight: 6,
+                          backgroundColor:
+                              AppColors.cream.withValues(alpha: 0.16),
+                          color: AppColors.accent,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+              const SizedBox(height: AppSpacing.md),
+
+              // Journey stats.
               Row(
                 children: [
-                  const Icon(
-                    Icons.restaurant_menu_rounded,
-                    color: AppColors.accent,
-                    size: 20,
+                  _StatTile(
+                      value: '${stats.postCount}', label: 'Plates shared'),
+                  const SizedBox(width: AppSpacing.xs),
+                  _StatTile(
+                    value: '${stats.restaurantIds.length}',
+                    label: 'Spots visited',
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'TASTEWISE · CULINARY PASSPORT',
-                    style: GoogleFonts.sourceSans3(
-                      color: AppColors.accentLight,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 2,
-                    ),
+                  const SizedBox(width: AppSpacing.xs),
+                  _StatTile(
+                    value: stats.averageRating == null
+                        ? '—'
+                        : stats.averageRating!.toStringAsFixed(1),
+                    label: 'Avg rating given',
                   ),
                 ],
               ),
               const SizedBox(height: AppSpacing.md),
+              const _DietPlanCard(),
+              const SizedBox(height: AppSpacing.lg),
+
               Text(
-                stats.level.title,
+                'Cuisine stamps  ·  ${stats.earnedStampCount}/${stats.stamps.length}',
                 style: GoogleFonts.fraunces(
-                  color: AppColors.cream,
-                  fontSize: 34,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -1,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSpacing.xs),
               Text(
-                next == null
-                    ? 'Every cuisine conquered. Take a bow.'
-                    : '${next.requiredStamps - stats.earnedStampCount} more '
-                        'cuisine${next.requiredStamps - stats.earnedStampCount == 1 ? '' : 's'} '
-                        'to reach ${next.title}',
-                style: GoogleFonts.sourceSans3(
-                  color: AppColors.cream.withValues(alpha: 0.75),
-                  fontSize: 14,
+                'Tag a cuisine when you post a plate to earn its stamp.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(99),
-                child: TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0, end: stats.progressToNext),
-                  duration: const Duration(milliseconds: 900),
-                  curve: Curves.easeOutCubic,
-                  builder: (context, value, _) => LinearProgressIndicator(
-                    value: value,
-                    minHeight: 6,
-                    backgroundColor: AppColors.cream.withValues(alpha: 0.16),
-                    color: AppColors.accent,
-                  ),
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: MediaQuery.textScalerOf(context).scale(1) >
+                          1.3
+                      ? AppBreakpoints.gridColumns(context, phone: 2, tablet: 4)
+                      : AppBreakpoints.gridColumns(context,
+                          phone: 3, tablet: 5),
+                  mainAxisSpacing: 10,
+                  crossAxisSpacing: 10,
+                  childAspectRatio: 0.92,
                 ),
+                itemCount: stats.stamps.length,
+                itemBuilder: (context, i) => _Stamp(stamp: stats.stamps[i]),
               ),
-            ],
-          ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-
-        // Journey stats.
-        Row(
-          children: [
-            _StatTile(value: '${stats.postCount}', label: 'Plates shared'),
-            const SizedBox(width: AppSpacing.xs),
-            _StatTile(
-              value: '${stats.restaurantIds.length}',
-              label: 'Spots visited',
-            ),
-            const SizedBox(width: AppSpacing.xs),
-            _StatTile(
-              value: stats.averageRating == null
-                  ? '—'
-                  : stats.averageRating!.toStringAsFixed(1),
-              label: 'Avg rating given',
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.md),
-        const _DietPlanCard(),
-        const SizedBox(height: AppSpacing.lg),
-
-        Text(
-          'Cuisine stamps  ·  ${stats.earnedStampCount}/${stats.stamps.length}',
-          style: GoogleFonts.fraunces(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          'Tag a cuisine when you post a plate to earn its stamp.',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: AppBreakpoints.gridColumns(
-              context,
-              phone: 4,
-              tablet: 6,
-            ),
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-            childAspectRatio: 0.86,
-          ),
-          itemCount: stats.stamps.length,
-          itemBuilder: (context, i) => _Stamp(
-            stamp: stats.stamps[i],
-            order: i,
-          ),
-        ),
             ],
           ),
         ),
@@ -257,9 +313,9 @@ class _DietPlanCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.auto_awesome_rounded,
-                    color: AppColors.accentDark,
+                    color: theme.colorScheme.primary,
                     size: 20,
                   ),
                   const SizedBox(width: AppSpacing.xs),
@@ -313,14 +369,14 @@ class _StatTile extends StatelessWidget {
               style: GoogleFonts.fraunces(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
-                color: AppColors.primary,
+                color: theme.colorScheme.primary,
               ),
             ),
             const SizedBox(height: 2),
             Text(
               label,
               textAlign: TextAlign.center,
-              style: theme.textTheme.labelSmall?.copyWith(
+              style: theme.textTheme.labelMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
@@ -331,84 +387,77 @@ class _StatTile extends StatelessWidget {
   }
 }
 
-/// One passport stamp — earned stamps pop in with a slight rotation,
-/// like a rubber stamp pressed onto the page.
+/// Readable earned and undiscovered cuisine states.
 class _Stamp extends StatelessWidget {
-  const _Stamp({required this.stamp, required this.order});
+  const _Stamp({required this.stamp});
 
   final CuisineStamp stamp;
-  final int order;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // Deterministic tilt per cuisine so the page looks hand-stamped.
-    final tilt = ((stamp.cuisine.hashCode % 9) - 4) * (math.pi / 180) * 2;
-
-    final content = Container(
-      decoration: BoxDecoration(
-        color: stamp.earned
-            ? AppColors.accentLight
-            : theme.colorScheme.surface.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(
+    return Semantics(
+      label:
+          '${stamp.cuisine}, ${stamp.earned ? 'earned, ${stamp.count} plates' : 'not yet discovered'}',
+      child: Container(
+        decoration: BoxDecoration(
           color: stamp.earned
-              ? AppColors.accentDark.withValues(alpha: 0.6)
-              : theme.colorScheme.outline.withValues(alpha: 0.5),
-          width: stamp.earned ? 1.6 : 1,
+              ? AppColors.accentLight
+              : theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(
+            color:
+                stamp.earned ? AppColors.accentDark : theme.colorScheme.outline,
+            width: stamp.earned ? 1.5 : 1,
+          ),
         ),
-      ),
-      padding: const EdgeInsets.all(6),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            _cuisineGlyphs[stamp.cuisine] ?? '🍽️',
-            style: TextStyle(
-              fontSize: 24,
-              color: stamp.earned ? null : Colors.grey,
+        padding: const EdgeInsets.all(6),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color:
+                    stamp.earned ? AppColors.cream : theme.colorScheme.surface,
+                border: Border.all(
+                  color: stamp.earned
+                      ? AppColors.accentDark
+                      : theme.colorScheme.outline,
+                ),
+              ),
+              child: Text(_cuisineGlyphs[stamp.cuisine] ?? '🍽️',
+                  style: const TextStyle(fontSize: 22)),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            stamp.cuisine,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.sourceSans3(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: stamp.earned
-                  ? AppColors.primary
-                  : theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          if (stamp.earned)
+            const SizedBox(height: 4),
             Text(
-              '×${stamp.count}',
+              stamp.cuisine,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
               style: GoogleFonts.sourceSans3(
-                fontSize: 9,
+                fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: AppColors.accentDark,
+                color: stamp.earned
+                    ? AppColors.primary
+                    : theme.colorScheme.onSurface,
               ),
             ),
-        ],
+            if (stamp.earned)
+              Text(
+                '×${stamp.count}',
+                style: GoogleFonts.sourceSans3(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.accentDark,
+                ),
+              ),
+          ],
+        ),
       ),
-    );
-
-    if (!stamp.earned) {
-      return Opacity(opacity: 0.55, child: content);
-    }
-
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: 1),
-      duration: Duration(milliseconds: 350 + order * 40),
-      curve: Curves.elasticOut,
-      builder: (context, t, child) => Transform.rotate(
-        angle: tilt * t,
-        child: Transform.scale(scale: 0.6 + 0.4 * t, child: child),
-      ),
-      child: content,
     );
   }
 }

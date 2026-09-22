@@ -112,62 +112,60 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.md,
                     ),
-                      children: [
-                        FilterChip(
-                          label: const Text('All'),
-                          selected: _cuisineFilter == null,
-                          onSelected: (_) =>
-                              setState(() => _cuisineFilter = null),
-                        ),
-                        for (final cuisine in Cuisines.all.take(3))
-                          Padding(
-                            padding:
-                                const EdgeInsets.only(left: AppSpacing.xs),
-                            child: FilterChip(
-                              label: Text(cuisine),
-                              selected: _cuisineFilter == cuisine,
-                              onSelected: (_) => setState(
-                                () => _cuisineFilter =
-                                    _cuisineFilter == cuisine ? null : cuisine,
-                              ),
-                            ),
-                          ),
+                    children: [
+                      FilterChip(
+                        label: const Text('All'),
+                        selected: _cuisineFilter == null,
+                        onSelected: (_) =>
+                            setState(() => _cuisineFilter = null),
+                      ),
+                      for (final cuisine in Cuisines.all.take(3))
                         Padding(
                           padding: const EdgeInsets.only(left: AppSpacing.xs),
-                          child: ActionChip(
-                            label: const Text('See more'),
-                            onPressed: () {
-                              showModalBottomSheet<void>(
-                                context: context,
-                                showDragHandle: true,
-                                builder: (ctx) => SafeArea(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(AppSpacing.md),
-                                    child: Wrap(
-                                      spacing: AppSpacing.xs,
-                                      runSpacing: AppSpacing.xs,
-                                      children: [
-                                        for (final cuisine in Cuisines.all)
-                                          ChoiceChip(
-                                            label: Text(cuisine),
-                                            selected:
-                                                _cuisineFilter == cuisine,
-                                            onSelected: (_) {
-                                              setState(() {
-                                                _cuisineFilter = cuisine;
-                                              });
-                                              Navigator.pop(ctx);
-                                            },
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
+                          child: FilterChip(
+                            label: Text(cuisine),
+                            selected: _cuisineFilter == cuisine,
+                            onSelected: (_) => setState(
+                              () => _cuisineFilter =
+                                  _cuisineFilter == cuisine ? null : cuisine,
+                            ),
                           ),
                         ),
-                      ],
+                      Padding(
+                        padding: const EdgeInsets.only(left: AppSpacing.xs),
+                        child: ActionChip(
+                          label: const Text('See more'),
+                          onPressed: () {
+                            showModalBottomSheet<void>(
+                              context: context,
+                              showDragHandle: true,
+                              builder: (ctx) => SafeArea(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(AppSpacing.md),
+                                  child: Wrap(
+                                    spacing: AppSpacing.xs,
+                                    runSpacing: AppSpacing.xs,
+                                    children: [
+                                      for (final cuisine in Cuisines.all)
+                                        ChoiceChip(
+                                          label: Text(cuisine),
+                                          selected: _cuisineFilter == cuisine,
+                                          onSelected: (_) {
+                                            setState(() {
+                                              _cuisineFilter = cuisine;
+                                            });
+                                            Navigator.pop(ctx);
+                                          },
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               TabBar(
@@ -274,49 +272,59 @@ class _TrendingTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final media = post.media.isNotEmpty ? post.media.first : null;
-    return GestureDetector(
-      onTap: () => context.push(Routes.postPath(post.id)),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (media != null)
-            CachedNetworkImage(
-              imageUrl: media.type == MediaType.video
-                  ? (media.thumbnailUrl ?? media.url)
-                  : media.url,
-              fit: BoxFit.cover,
-              placeholder: (_, __) => Container(
-                color: AppColors.primaryLight.withValues(alpha: 0.3),
-              ),
-            )
-          else
-            const ColoredBox(color: AppColors.primaryLight),
-          if (post.likeCount > 0)
-            Positioned(
-              bottom: 4,
-              left: 6,
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.favorite_rounded,
-                    size: 13,
-                    color: Colors.white,
-                    shadows: [Shadow(color: Colors.black54, blurRadius: 6)],
-                  ),
-                  const SizedBox(width: 3),
-                  Text(
-                    '${post.likeCount}',
-                    style: const TextStyle(
+    final scheme = Theme.of(context).colorScheme;
+    return Semantics(
+      button: true,
+      label: 'Open trending post',
+      child: GestureDetector(
+        onTap: () => context.push(Routes.postPath(post.id)),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (media != null)
+              CachedNetworkImage(
+                imageUrl: media.type == MediaType.video
+                    ? (media.thumbnailUrl ?? media.url)
+                    : media.url,
+                fit: BoxFit.cover,
+                placeholder: (_, __) => ColoredBox(
+                  color: scheme.surfaceContainerHighest,
+                ),
+                errorWidget: (_, __, ___) => ColoredBox(
+                  color: scheme.surfaceContainerHighest,
+                  child: Icon(Icons.broken_image_outlined,
+                      color: scheme.onSurfaceVariant),
+                ),
+              )
+            else
+              ColoredBox(color: scheme.surfaceContainerHighest),
+            if (post.likeCount > 0)
+              Positioned(
+                bottom: 4,
+                left: 6,
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.favorite_rounded,
+                      size: 13,
                       color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
                       shadows: [Shadow(color: Colors.black54, blurRadius: 6)],
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 3),
+                    Text(
+                      '${post.likeCount}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        shadows: [Shadow(color: Colors.black54, blurRadius: 6)],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -359,43 +367,45 @@ class _TopRatedTabState extends ConsumerState<_TopRatedTab> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                child: Row(
-                  children: [
-                    for (final period in RankingPeriod.values) ...[
-                      if (period != RankingPeriod.values.first)
-                        const SizedBox(width: 8),
-                      ChoiceChip(
-                        label: Text(period.label),
-                        selected: _period == period,
-                        onSelected: (_) => setState(() => _period = period),
+                    Padding(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                      child: Row(
+                        children: [
+                          for (final period in RankingPeriod.values) ...[
+                            if (period != RankingPeriod.values.first)
+                              const SizedBox(width: 8),
+                            ChoiceChip(
+                              label: Text(period.label),
+                              selected: _period == period,
+                              onSelected: (_) =>
+                                  setState(() => _period = period),
+                            ),
+                          ],
+                        ],
                       ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              if (restaurants.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.all(AppSpacing.xl),
-                  child: Text(
-                    'No ratings in this window yet.\nRate a dish when you post!',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
                     ),
-                  ),
-                )
-              else ...[
-                _ChampionCard(
-                  restaurant: restaurants.first,
-                  title: _period.championTitle,
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                for (var i = 1; i < restaurants.length; i++)
-                  RestaurantTile(restaurant: restaurants[i], rank: i + 1),
-              ],
+                    const SizedBox(height: AppSpacing.sm),
+                    if (restaurants.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(AppSpacing.xl),
+                        child: Text(
+                          'No ratings in this window yet.\nRate a dish when you post!',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      )
+                    else ...[
+                      _ChampionCard(
+                        restaurant: restaurants.first,
+                        title: _period.championTitle,
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      for (var i = 1; i < restaurants.length; i++)
+                        RestaurantTile(restaurant: restaurants[i], rank: i + 1),
+                    ],
                   ],
                 ),
               ),

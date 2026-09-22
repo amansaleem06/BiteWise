@@ -148,10 +148,22 @@ class _FeedListState extends ConsumerState<FeedList> {
                                 : 'Be the first to share a delicious bite.',
                     actionLabel: widget.tab == FeedTab.palette && !paletteReady
                         ? PaletteCopy.emptyFeedAction
-                        : null,
+                        : widget.cuisineFilter == null &&
+                                widget.tab == FeedTab.following
+                            ? 'Explore food lovers'
+                            : widget.cuisineFilter == null &&
+                                    widget.tab == FeedTab.forYou
+                                ? 'Share a plate'
+                                : null,
                     onAction: widget.tab == FeedTab.palette && !paletteReady
                         ? () => context.push(Routes.dietPlan)
-                        : null,
+                        : widget.cuisineFilter == null &&
+                                widget.tab == FeedTab.following
+                            ? () => context.go(Routes.explore)
+                            : widget.cuisineFilter == null &&
+                                    widget.tab == FeedTab.forYou
+                                ? () => context.go(Routes.create)
+                                : null,
                   ),
                 ),
               ],
@@ -185,35 +197,35 @@ class _FeedListState extends ConsumerState<FeedList> {
                   final post = posts[index];
                   return AppContent(
                     child: PostCard(
-                    post: post,
-                    onLike: () => controller.toggleLike(post.id),
-                    onBookmark: () {
-                      final wasSaved = post.isBookmarkedByMe;
-                      controller.toggleBookmark(post.id);
-                      if (wasSaved && context.mounted) {
-                        AppSnackbar.undo(
-                          context,
-                          'Removed from saved',
-                          onUndo: () => controller.toggleBookmark(post.id),
-                        );
-                      }
-                    },
-                    onRepost: () => controller.toggleRepost(post.id),
-                    onComment: () => context.push(Routes.postPath(post.id)),
-                    onShare: () => _share(
-                      post.id,
-                      post.restaurantName,
-                      post.caption,
-                    ),
-                    onAuthorTap: () => openPostAuthor(context, post),
-                    onRestaurantTap: () => context.push(
-                      Routes.restaurantPath(post.restaurantId),
-                    ),
-                    onOpenActions: () => PostActionsSheet.show(
-                      context,
                       post: post,
-                      feedTab: widget.tab,
-                    ),
+                      onLike: () => controller.toggleLike(post.id),
+                      onBookmark: () {
+                        final wasSaved = post.isBookmarkedByMe;
+                        controller.toggleBookmark(post.id);
+                        if (wasSaved && context.mounted) {
+                          AppSnackbar.undo(
+                            context,
+                            'Removed from saved',
+                            onUndo: () => controller.toggleBookmark(post.id),
+                          );
+                        }
+                      },
+                      onRepost: () => controller.toggleRepost(post.id),
+                      onComment: () => context.push(Routes.postPath(post.id)),
+                      onShare: () => _share(
+                        post.id,
+                        post.restaurantName,
+                        post.caption,
+                      ),
+                      onAuthorTap: () => openPostAuthor(context, post),
+                      onRestaurantTap: () => context.push(
+                        Routes.restaurantPath(post.restaurantId),
+                      ),
+                      onOpenActions: () => PostActionsSheet.show(
+                        context,
+                        post: post,
+                        feedTab: widget.tab,
+                      ),
                     ),
                   );
                 },
@@ -236,4 +248,3 @@ class _FeedListState extends ConsumerState<FeedList> {
     );
   }
 }
-

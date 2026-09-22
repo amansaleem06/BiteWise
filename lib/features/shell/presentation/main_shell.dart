@@ -24,7 +24,6 @@ class _MainShellState extends ConsumerState<MainShell>
 
   var _menuOpen = false;
   late final AnimationController _fan;
-  late final AnimationController _pulse;
 
   static const _courses = <_Course>[
     _Course(0, 'Feed', Icons.home_outlined),
@@ -41,10 +40,6 @@ class _MainShellState extends ConsumerState<MainShell>
       vsync: this,
       duration: const Duration(milliseconds: 320),
     );
-    _pulse = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2200),
-    )..repeat(reverse: true);
     Future<void>.microtask(() async {
       try {
         await ref
@@ -59,18 +54,19 @@ class _MainShellState extends ConsumerState<MainShell>
   @override
   void dispose() {
     _fan.dispose();
-    _pulse.dispose();
     super.dispose();
   }
 
   void _toggleMenu() {
     setState(() => _menuOpen = !_menuOpen);
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _fan.value = _menuOpen ? 1 : 0;
+      return;
+    }
     if (_menuOpen) {
       _fan.forward();
-      _pulse.stop();
     } else {
       _fan.reverse();
-      _pulse.repeat(reverse: true);
     }
   }
 
@@ -131,12 +127,9 @@ class _MainShellState extends ConsumerState<MainShell>
                 right: 0,
                 bottom: stageBottom,
                 child: AnimatedBuilder(
-                  animation: Listenable.merge([_fan, _pulse]),
+                  animation: _fan,
                   builder: (context, _) {
                     final t = Curves.easeOutCubic.transform(_fan.value);
-                    final pulse = (!_menuOpen && index == 0)
-                        ? 0.96 + (_pulse.value * 0.08)
-                        : 1.0;
                     return Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -190,11 +183,14 @@ class _MainShellState extends ConsumerState<MainShell>
                             ),
                           ),
                         Center(
-                          child: GestureDetector(
-                            onTap: _toggleMenu,
-                            onLongPress: () => _goCourse(2),
-                            child: Transform.scale(
-                              scale: _menuOpen ? 1 : pulse,
+                          child: Semantics(
+                            button: true,
+                            label: _menuOpen
+                                ? 'Close navigation'
+                                : 'Open navigation',
+                            child: GestureDetector(
+                              onTap: _toggleMenu,
+                              onLongPress: () => _goCourse(2),
                               child: Container(
                                 width: 62,
                                 height: 62,
@@ -203,14 +199,9 @@ class _MainShellState extends ConsumerState<MainShell>
                                   color: AppColors.primary,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: AppColors.primary.withValues(
-                                        alpha: _menuOpen
-                                            ? 0.22
-                                            : 0.18 + _pulse.value * 0.12,
-                                      ),
-                                      blurRadius: _menuOpen
-                                          ? 12
-                                          : 16 + _pulse.value * 8,
+                                      color: AppColors.primary
+                                          .withValues(alpha: 0.22),
+                                      blurRadius: 14,
                                       offset: const Offset(0, 6),
                                     ),
                                   ],
@@ -222,7 +213,10 @@ class _MainShellState extends ConsumerState<MainShell>
                                 ),
                                 alignment: Alignment.center,
                                 child: AnimatedSwitcher(
-                                  duration: AppDurations.fast,
+                                  duration:
+                                      MediaQuery.disableAnimationsOf(context)
+                                          ? Duration.zero
+                                          : AppDurations.fast,
                                   child: Icon(
                                     _menuOpen
                                         ? Icons.close_rounded
@@ -271,38 +265,44 @@ class _CourseChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: AnimatedContainer(
-          duration: AppDurations.fast,
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            color: selected
-                ? AppColors.primary.withValues(alpha: 0.1)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(AppRadius.pill),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 18,
-                color: AppColors.primary,
-              ),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.sourceSans3(
-                  fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                  fontSize: 10,
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: label,
+        child: GestureDetector(
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
+          child: AnimatedContainer(
+            duration: AppDurations.fast,
+            constraints: const BoxConstraints(minHeight: 44),
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: selected
+                  ? AppColors.primary.withValues(alpha: 0.1)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: 18,
                   color: AppColors.primary,
                 ),
-              ),
-            ],
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.sourceSans3(
+                    fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                    fontSize: 10,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

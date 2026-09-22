@@ -8,13 +8,13 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../core/layout/app_breakpoints.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/errors/error_text.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/services/media_upload_service.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
-import '../../../feed/presentation/widgets/feed_shimmer.dart';
 import '../../../reservations/presentation/widgets/booking_sheet.dart';
 import '../../../stories/presentation/screens/story_edit_screen.dart';
 import '../../domain/entities/restaurant.dart';
@@ -40,7 +40,7 @@ class RestaurantScreen extends ConsumerWidget {
 
     return Scaffold(
       body: restaurantAsync.when(
-        loading: () => const FeedShimmer(itemCount: 2),
+        loading: () => const _RestaurantSkeleton(),
         error: (_, __) => _ErrorView(
           onRetry: () =>
               ref.invalidate(restaurantControllerProvider(restaurantId)),
@@ -51,6 +51,72 @@ class RestaurantScreen extends ConsumerWidget {
               .read(restaurantControllerProvider(restaurantId).notifier)
               .toggleFollow(),
         ),
+      ),
+    );
+  }
+}
+
+class _RestaurantSkeleton extends StatelessWidget {
+  const _RestaurantSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final fill = scheme.surfaceContainerHighest;
+    Widget bar(double width, double height) => Container(
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            color: fill,
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+          ),
+        );
+    return SafeArea(
+      child: ListView(
+        children: [
+          SizedBox(
+            height: 120,
+            child: Stack(children: [
+              const Positioned.fill(
+                child: DecoratedBox(
+                    decoration:
+                        BoxDecoration(gradient: AppColors.brandGradient)),
+              ),
+              const Positioned(
+                  top: 8, left: 8, child: BackButton(color: AppColors.cream)),
+            ]),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Row(children: [
+              CircleAvatar(radius: 32, backgroundColor: fill),
+              const SizedBox(width: AppSpacing.md),
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                bar(160, 20),
+                const SizedBox(height: AppSpacing.xs),
+                bar(110, 13),
+              ]),
+            ]),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: bar(double.infinity, 44),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: bar(double.infinity, 3),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          AspectRatio(
+              aspectRatio: 3,
+              child: Row(children: [
+                for (var i = 0; i < 3; i++) ...[
+                  Expanded(child: ColoredBox(color: fill)),
+                  if (i < 2) const SizedBox(width: 2),
+                ],
+              ])),
+        ],
       ),
     );
   }
@@ -73,9 +139,11 @@ class _RestaurantBody extends StatelessWidget {
         headerSliverBuilder: (context, _) => [
           _CoverAppBar(restaurant: restaurant),
           SliverToBoxAdapter(
-            child: _IdentitySection(
-              restaurant: restaurant,
-              onToggleFollow: onToggleFollow,
+            child: AppContent(
+              child: _IdentitySection(
+                restaurant: restaurant,
+                onToggleFollow: onToggleFollow,
+              ),
             ),
           ),
           SliverPersistentHeader(
@@ -83,9 +151,7 @@ class _RestaurantBody extends StatelessWidget {
             delegate: _TabBarDelegate(
               TabBar(
                 labelStyle: Theme.of(context).textTheme.titleSmall,
-                indicatorSize: TabBarIndicatorSize.label,
-                isScrollable: true,
-                tabAlignment: TabAlignment.start,
+                indicatorSize: TabBarIndicatorSize.tab,
                 tabs: const [
                   Tab(text: 'Posts'),
                   Tab(text: 'Mentions'),
@@ -117,15 +183,45 @@ class _CoverAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasCover =
+        restaurant.coverUrl != null && restaurant.coverUrl!.isNotEmpty;
     return SliverAppBar(
-      expandedHeight: 180,
+      expandedHeight: hasCover ? 220 : 120,
       pinned: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: AppColors.primaryDark,
+      foregroundColor: AppColors.cream,
       flexibleSpace: FlexibleSpaceBar(
-        background: restaurant.coverUrl != null
-            ? CachedNetworkImage(
-                imageUrl: restaurant.coverUrl!,
-                fit: BoxFit.cover,
+        background: hasCover
+            ? Stack(
+                fit: StackFit.expand,
+                children: [
+                  CachedNetworkImage(
+                    imageUrl: restaurant.coverUrl!,
+                    fit: BoxFit.cover,
+                    fadeInDuration: AppDurations.normal,
+                    placeholder: (_, __) => const DecoratedBox(
+                      decoration:
+                          BoxDecoration(gradient: AppColors.brandGradient),
+                    ),
+                    errorWidget: (_, __, ___) => const DecoratedBox(
+                      decoration:
+                          BoxDecoration(gradient: AppColors.brandGradient),
+                      child: Center(
+                          child: Icon(Icons.restaurant_rounded,
+                              size: 40, color: AppColors.accentLight)),
+                    ),
+                  ),
+                  const DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Color(0x99000000), Colors.transparent],
+                        stops: [0, 0.55],
+                      ),
+                    ),
+                  ),
+                ],
               )
             : Container(
                 decoration: const BoxDecoration(
@@ -134,8 +230,8 @@ class _CoverAppBar extends StatelessWidget {
                 child: const Center(
                   child: Icon(
                     Icons.restaurant_rounded,
-                    size: 56,
-                    color: Colors.white54,
+                    size: 40,
+                    color: AppColors.accentLight,
                   ),
                 ),
               ),
@@ -158,8 +254,8 @@ class _IdentitySection extends ConsumerWidget {
     final theme = Theme.of(context);
     final rating = restaurant.averageRating;
     final me = ref.watch(currentUserProvider);
-    final pendingHere = me != null &&
-        me.pendingClaimRestaurantId == restaurant.id;
+    final pendingHere =
+        me != null && me.pendingClaimRestaurantId == restaurant.id;
     final canClaim = me != null &&
         me.isBusiness &&
         restaurant.isUnclaimed &&
@@ -169,7 +265,8 @@ class _IdentitySection extends ConsumerWidget {
         me != null && restaurant.ownerId == me.uid && restaurant.isClaimed;
 
     return Padding(
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md, AppSpacing.lg, AppSpacing.md, AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -195,13 +292,18 @@ class _IdentitySection extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(restaurant.name,
-                        style: theme.textTheme.headlineMedium,),
+                    Text(
+                      restaurant.name,
+                      style: theme.textTheme.headlineMedium,
+                    ),
                     const SizedBox(height: AppSpacing.xxs),
                     ClaimStatusBadge(restaurant: restaurant),
                     if (restaurant.city != null) ...[
                       const SizedBox(height: AppSpacing.xxs),
-                      Text(restaurant.city!, style: theme.textTheme.bodySmall),
+                      Text(restaurant.city!,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          )),
                     ],
                     const SizedBox(height: AppSpacing.xxs),
                     Wrap(
@@ -225,12 +327,14 @@ class _IdentitySection extends ConsumerWidget {
                           Text(
                             restaurant.priceLevelDisplay!,
                             style: theme.textTheme.titleSmall?.copyWith(
-                              color: AppColors.accent,
+                              color: theme.colorScheme.primary,
                             ),
                           ),
                         Text(
                           '${Formatters.compactCount(restaurant.followerCount)} followers',
-                          style: theme.textTheme.bodySmall,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ],
                     ),
@@ -247,110 +351,14 @@ class _IdentitySection extends ConsumerWidget {
                 for (final cuisine in restaurant.cuisines.take(4))
                   Chip(
                     label: Text(cuisine),
-                    labelStyle: theme.textTheme.labelMedium,
                     backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                    side: BorderSide.none,
+                    side: BorderSide(color: theme.colorScheme.outline),
                     visualDensity: VisualDensity.compact,
                   ),
               ],
             ),
           ],
           const SizedBox(height: AppSpacing.md),
-          if (isVerifiedOwner) ...[
-            const PageIdentityBar(),
-            const SizedBox(height: AppSpacing.sm),
-            Row(
-              children: [
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: () {
-                      ref
-                          .read(pageIdentityProvider.notifier)
-                          .setPreferPersonal(false);
-                      context.go(Routes.create);
-                    },
-                    icon: const Icon(Icons.campaign_outlined, size: 18),
-                    label: const Text('Post'),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.xs),
-                OutlinedButton(
-                  onPressed: () async {
-                    final image = await ImagePicker().pickImage(
-                      source: ImageSource.gallery,
-                      imageQuality: 90,
-                    );
-                    if (image == null || !context.mounted) return;
-                    await context.push(
-                      Routes.storyEdit,
-                      extra: StoryEditArgs(image),
-                    );
-                  },
-                  child: const Icon(Icons.auto_awesome_outlined),
-                ),
-                const SizedBox(width: AppSpacing.xs),
-                OutlinedButton(
-                  onPressed: () => context.push(
-                    Routes.restaurantEditPath(restaurant.id),
-                  ),
-                  child: const Icon(Icons.edit_outlined),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.sm),
-          ],
-          if (pendingHere && (me.pendingClaimCode ?? '').isNotEmpty) ...[
-            ClaimPendingCard(
-              restaurantName: restaurant.name,
-              claimCode: me.pendingClaimCode!,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-          ],
-          if (canClaim) ...[
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: () async {
-                  if (me.needsBusinessDetails) {
-                    context.push(Routes.businessSetup);
-                    return;
-                  }
-                  try {
-                    final image = await ImagePicker().pickImage(
-                      source: ImageSource.gallery,
-                      imageQuality: 85,
-                    );
-                    if (image == null || !context.mounted) return;
-                    final proofUrl = await MediaUploadService()
-                        .uploadRestaurantImage(
-                      uid: me.uid,
-                      file: image,
-                      kind: 'claim-proof',
-                    );
-                    await ref
-                        .read(restaurantRepositoryProvider)
-                        .claimRestaurant(restaurant.id, proofUrl: proofUrl);
-                    ref.invalidate(authStateProvider);
-                    ref.invalidate(
-                      restaurantControllerProvider(restaurant.id),
-                    );
-                    if (!context.mounted) return;
-                    AppSnackbar.success(
-                      context,
-                      'Claim submitted. Email your code to TasteWise support '
-                      'to finish verification.',
-                    );
-                  } catch (e) {
-                    if (!context.mounted) return;
-                    AppSnackbar.error(context, userMessageFrom(e));
-                  }
-                },
-                icon: const Icon(Icons.storefront_rounded),
-                label: const Text('This is my restaurant'),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-          ],
           Row(
             children: [
               Expanded(
@@ -382,6 +390,104 @@ class _IdentitySection extends ConsumerWidget {
               ),
             ],
           ),
+          if (isVerifiedOwner) ...[
+            const SizedBox(height: AppSpacing.md),
+            const PageIdentityBar(),
+            const SizedBox(height: AppSpacing.sm),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      ref
+                          .read(pageIdentityProvider.notifier)
+                          .setPreferPersonal(false);
+                      context.go(Routes.create);
+                    },
+                    icon: const Icon(Icons.campaign_outlined, size: 18),
+                    label: const Text('Post'),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                OutlinedButton(
+                  onPressed: () async {
+                    final image = await ImagePicker().pickImage(
+                      source: ImageSource.gallery,
+                      imageQuality: 90,
+                    );
+                    if (image == null || !context.mounted) return;
+                    await context.push(
+                      Routes.storyEdit,
+                      extra: StoryEditArgs(image),
+                    );
+                  },
+                  child: const Icon(Icons.auto_awesome_outlined,
+                      semanticLabel: 'Add story'),
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                OutlinedButton(
+                  onPressed: () => context.push(
+                    Routes.restaurantEditPath(restaurant.id),
+                  ),
+                  child: const Icon(Icons.edit_outlined,
+                      semanticLabel: 'Edit restaurant'),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+          if (pendingHere && (me.pendingClaimCode ?? '').isNotEmpty) ...[
+            ClaimPendingCard(
+              restaurantName: restaurant.name,
+              claimCode: me.pendingClaimCode!,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+          if (canClaim) ...[
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () async {
+                  if (me.needsBusinessDetails) {
+                    context.push(Routes.businessSetup);
+                    return;
+                  }
+                  try {
+                    final image = await ImagePicker().pickImage(
+                      source: ImageSource.gallery,
+                      imageQuality: 85,
+                    );
+                    if (image == null || !context.mounted) return;
+                    final proofUrl =
+                        await MediaUploadService().uploadRestaurantImage(
+                      uid: me.uid,
+                      file: image,
+                      kind: 'claim-proof',
+                    );
+                    await ref
+                        .read(restaurantRepositoryProvider)
+                        .claimRestaurant(restaurant.id, proofUrl: proofUrl);
+                    ref.invalidate(authStateProvider);
+                    ref.invalidate(
+                      restaurantControllerProvider(restaurant.id),
+                    );
+                    if (!context.mounted) return;
+                    AppSnackbar.success(
+                      context,
+                      'Claim submitted. Email your code to TasteWise support '
+                      'to finish verification.',
+                    );
+                  } catch (e) {
+                    if (!context.mounted) return;
+                    AppSnackbar.error(context, userMessageFrom(e));
+                  }
+                },
+                icon: const Icon(Icons.storefront_rounded),
+                label: const Text('This is my restaurant'),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
         ],
       ),
     );
@@ -507,7 +613,7 @@ class _InfoRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: AppColors.primaryDark),
+          Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(text, style: Theme.of(context).textTheme.bodyMedium),

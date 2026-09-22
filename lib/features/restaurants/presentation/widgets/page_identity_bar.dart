@@ -16,7 +16,8 @@ class PageIdentityBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final identity = ref.watch(pageIdentityProvider);
     if (!identity.hasPage) return const SizedBox.shrink();
-    final page = ref.watch(restaurantControllerProvider(identity.ownedRestaurantId!))
+    final page = ref
+        .watch(restaurantControllerProvider(identity.ownedRestaurantId!))
         .valueOrNull;
     final pageName = page?.name ?? 'your restaurant';
     final asPage = identity.actingAsPage;
@@ -25,7 +26,10 @@ class PageIdentityBar extends ConsumerWidget {
       color: asPage
           ? AppColors.primary.withValues(alpha: 0.1)
           : Theme.of(context).colorScheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Theme.of(context).colorScheme.outline),
+      ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
         child: Row(
@@ -37,18 +41,21 @@ class PageIdentityBar extends ConsumerWidget {
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(
-                asPage
-                    ? (compact
-                        ? 'As $pageName'
-                        : 'Acting as $pageName — posts and comments use the restaurant name and logo, not your personal profile.')
-                    : (compact
-                        ? 'As your personal account'
-                        : 'Acting as yourself. Switch to the restaurant page to post as the business.'),
-                style: GoogleFonts.sourceSans3(
-                  fontWeight: FontWeight.w600,
-                  fontSize: compact ? 13 : 13.5,
-                  height: 1.3,
+              child: Semantics(
+                liveRegion: true,
+                child: Text(
+                  asPage
+                      ? (compact
+                          ? 'As $pageName'
+                          : 'Acting as $pageName — posts and comments use the restaurant name and logo, not your personal profile.')
+                      : (compact
+                          ? 'As your personal account'
+                          : 'Acting as yourself. Switch to the restaurant page to post as the business.'),
+                  style: GoogleFonts.sourceSans3(
+                    fontWeight: FontWeight.w600,
+                    fontSize: compact ? 13 : 14,
+                    height: 1.3,
+                  ),
                 ),
               ),
             ),

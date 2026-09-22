@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -165,6 +166,7 @@ class PostCard extends ConsumerWidget {
                   ),
                 IconButton(
                   onPressed: onOpenActions,
+                  tooltip: 'Post options',
                   icon: Icon(
                     Icons.more_horiz_rounded,
                     color: theme.colorScheme.onSurfaceVariant,
@@ -191,29 +193,32 @@ class PostCard extends ConsumerWidget {
                     child: InkWell(
                       onTap: onRestaurantTap,
                       borderRadius: BorderRadius.circular(AppRadius.pill),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.link_rounded,
-                              color: AppColors.cream,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Get yours here',
-                              style: GoogleFonts.sourceSans3(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(minHeight: 44),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.link_rounded,
                                 color: AppColors.cream,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 13,
+                                size: 16,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 6),
+                              Text(
+                                'Get yours here',
+                                style: GoogleFonts.sourceSans3(
+                                  color: AppColors.cream,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -260,18 +265,23 @@ class PostCard extends ConsumerWidget {
             child: Row(
               children: [
                 _TrayAction(
+                  semanticLabel: post.isLikedByMe ? 'Unlike post' : 'Like post',
                   icon: post.isLikedByMe
                       ? Icons.favorite_rounded
                       : Icons.favorite_border_rounded,
                   color: post.isLikedByMe
-                      ? AppColors.primary
+                      ? theme.colorScheme.primary
                       : theme.colorScheme.onSurface,
                   label: post.likeCount > 0
                       ? Formatters.compactCount(post.likeCount)
                       : null,
-                  onTap: onLike,
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    onLike();
+                  },
                 ),
                 _TrayAction(
+                  semanticLabel: 'Comments',
                   icon: Icons.mode_comment_outlined,
                   color: theme.colorScheme.onSurface,
                   label: post.commentCount > 0
@@ -280,6 +290,7 @@ class PostCard extends ConsumerWidget {
                   onTap: onComment,
                 ),
                 _TrayAction(
+                  semanticLabel: 'Share post',
                   icon: Icons.ios_share_rounded,
                   color: theme.colorScheme.onSurface,
                   label: post.shareCount > 0
@@ -288,6 +299,7 @@ class PostCard extends ConsumerWidget {
                   onTap: onShare,
                 ),
                 _TrayAction(
+                  semanticLabel: post.isRepostedByMe ? 'Undo repost' : 'Repost',
                   icon: post.isRepostedByMe
                       ? Icons.repeat_on_rounded
                       : Icons.repeat_rounded,
@@ -298,13 +310,18 @@ class PostCard extends ConsumerWidget {
                 ),
                 const Spacer(),
                 _TrayAction(
+                  semanticLabel:
+                      post.isBookmarkedByMe ? 'Remove saved post' : 'Save post',
                   icon: post.isBookmarkedByMe
                       ? Icons.bookmark_rounded
                       : Icons.bookmark_border_rounded,
                   color: post.isBookmarkedByMe
-                      ? AppColors.accentDark
+                      ? theme.colorScheme.primary
                       : theme.colorScheme.onSurface,
-                  onTap: onBookmark,
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    onBookmark();
+                  },
                 ),
               ],
             ),
@@ -483,6 +500,7 @@ class _TagPill extends StatelessWidget {
 
 class _TrayAction extends StatelessWidget {
   const _TrayAction({
+    required this.semanticLabel,
     required this.icon,
     required this.color,
     this.label,
@@ -490,32 +508,40 @@ class _TrayAction extends StatelessWidget {
   });
 
   final IconData icon;
+  final String semanticLabel;
   final Color color;
   final String? label;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.pill),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        child: Row(
-          children: [
-            Icon(icon, size: 24, color: color),
-            if (label != null) ...[
-              const SizedBox(width: 4),
-              Text(
-                label!,
-                style: GoogleFonts.sourceSans3(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-            ],
-          ],
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Row(
+              children: [
+                Icon(icon, size: 24, color: color),
+                if (label != null) ...[
+                  const SizedBox(width: 4),
+                  Text(
+                    label!,
+                    style: GoogleFonts.sourceSans3(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
         ),
       ),
     );

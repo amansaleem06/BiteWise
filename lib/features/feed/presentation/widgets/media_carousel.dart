@@ -28,7 +28,9 @@ class _MediaCarouselState extends State<MediaCarousel> {
   bool _showHeart = false;
 
   void _handleDoubleTap() {
-    widget.onDoubleTap?.call();
+    if (widget.onDoubleTap == null) return;
+    widget.onDoubleTap!();
+    if (MediaQuery.disableAnimationsOf(context)) return;
     setState(() => _showHeart = true);
     Future.delayed(const Duration(milliseconds: 700), () {
       if (mounted) setState(() => _showHeart = false);
@@ -58,7 +60,9 @@ class _MediaCarouselState extends State<MediaCarousel> {
             Center(
               child: AnimatedScale(
                 scale: _showHeart ? 1 : 0,
-                duration: AppDurations.normal,
+                duration: MediaQuery.disableAnimationsOf(context)
+                    ? Duration.zero
+                    : AppDurations.normal,
                 curve: Curves.easeOutBack,
                 child: Icon(
                   Icons.favorite_rounded,
@@ -135,6 +139,7 @@ class _MediaItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final imageUrl =
         item.type == MediaType.video ? (item.thumbnailUrl ?? '') : item.url;
+    final placeholder = Theme.of(context).colorScheme.surfaceContainerHighest;
 
     return Stack(
       fit: StackFit.expand,
@@ -144,13 +149,12 @@ class _MediaItem extends StatelessWidget {
             imageUrl: imageUrl,
             fit: BoxFit.cover,
             fadeInDuration: AppDurations.normal,
-            placeholder: (_, __) =>
-                Container(color: AppColors.primaryLight.withValues(alpha: 0.4)),
+            placeholder: (_, __) => ColoredBox(color: placeholder),
             errorWidget: (_, __, ___) => Container(
-              color: AppColors.primaryLight.withValues(alpha: 0.4),
-              child: const Icon(
+              color: placeholder,
+              child: Icon(
                 Icons.broken_image_outlined,
-                color: AppColors.primaryDark,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           )

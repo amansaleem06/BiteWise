@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/routes.dart';
-import '../../../../app/theme/app_colors.dart';
+import '../../../../core/layout/app_breakpoints.dart';
 import '../../../../core/widgets/app_empty_state.dart';
 import '../../../feed/domain/entities/post.dart';
 import '../providers/restaurant_providers.dart';
@@ -41,8 +41,7 @@ class RestaurantPostsGrid extends ConsumerWidget {
           );
         }
 
-        final official =
-            feed.posts.where((p) => p.postedAsRestaurant).toList();
+        final official = feed.posts.where((p) => p.postedAsRestaurant).toList();
         if (official.isEmpty) {
           if (feed.hasMore) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -69,14 +68,17 @@ class RestaurantPostsGrid extends ConsumerWidget {
           },
           child: GridView.builder(
             padding: const EdgeInsets.fromLTRB(2, 2, 2, 160),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: AppBreakpoints.gridColumns(
+                context,
+                phone: 3,
+                tablet: 5,
+              ),
               mainAxisSpacing: 2,
               crossAxisSpacing: 2,
             ),
             itemCount: official.length,
-            itemBuilder: (context, index) =>
-                _GridTile(post: official[index]),
+            itemBuilder: (context, index) => _GridTile(post: official[index]),
           ),
         );
       },
@@ -92,13 +94,18 @@ class _GridTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final media = post.media.isNotEmpty ? post.media.first : null;
-    return GestureDetector(
-      onTap: () => context.push(Routes.postPath(post.id)),
-      child: _buildTile(media),
+    return Semantics(
+      button: true,
+      label: 'Open restaurant post',
+      child: GestureDetector(
+        onTap: () => context.push(Routes.postPath(post.id)),
+        child: _buildTile(context, media),
+      ),
     );
   }
 
-  Widget _buildTile(PostMedia? media) {
+  Widget _buildTile(BuildContext context, PostMedia? media) {
+    final scheme = Theme.of(context).colorScheme;
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -108,14 +115,14 @@ class _GridTile extends StatelessWidget {
                 ? (media.thumbnailUrl ?? media.url)
                 : media.url,
             fit: BoxFit.cover,
-            placeholder: (_, __) => Container(
-              color: AppColors.primaryLight.withValues(alpha: 0.3),
+            placeholder: (_, __) => ColoredBox(
+              color: scheme.surfaceContainerHighest,
             ),
-            errorWidget: (_, __, ___) => const ColoredBox(
-              color: AppColors.primaryLight,
+            errorWidget: (_, __, ___) => ColoredBox(
+              color: scheme.surfaceContainerHighest,
               child: Icon(
                 Icons.broken_image_outlined,
-                color: AppColors.primaryDark,
+                color: scheme.onSurfaceVariant,
               ),
             ),
           ),

@@ -146,10 +146,8 @@ class _PlateRouletteSheetState extends ConsumerState<PlateRouletteSheet>
                     child: AnimatedBuilder(
                       animation: _spin,
                       builder: (context, _) {
-                        final t =
-                            Curves.easeOutQuart.transform(_spin.value);
-                        final angle =
-                            _fromAngle + (_toAngle - _fromAngle) * t;
+                        final t = Curves.easeOutQuart.transform(_spin.value);
+                        final angle = _fromAngle + (_toAngle - _fromAngle) * t;
                         return Transform.rotate(
                           angle: angle,
                           child: CustomPaint(
@@ -218,12 +216,12 @@ class _PlateRouletteSheetState extends ConsumerState<PlateRouletteSheet>
               ),
             ),
           ] else
-            const Padding(
+            Padding(
               padding: EdgeInsets.all(AppSpacing.xl),
               child: Icon(
                 Icons.casino_outlined,
                 size: 56,
-                color: AppColors.accentDark,
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
         ],
@@ -264,7 +262,7 @@ class _WinnerCard extends StatelessWidget {
             style: GoogleFonts.fraunces(
               fontSize: 22,
               fontWeight: FontWeight.w800,
-              color: AppColors.primary,
+              color: theme.colorScheme.primary,
             ),
           ),
           if (rating != null) ...[
@@ -311,8 +309,7 @@ class _WheelPainter extends CustomPainter {
     final wedge = 2 * math.pi / names.length;
 
     for (var i = 0; i < names.length; i++) {
-      final paint = Paint()
-        ..color = _wedgeColors[i % _wedgeColors.length];
+      final paint = Paint()..color = _wedgeColors[i % _wedgeColors.length];
       canvas.drawArc(
         Rect.fromCircle(center: center, radius: radius),
         i * wedge,
@@ -338,12 +335,12 @@ class _WheelPainter extends CustomPainter {
       canvas.save();
       canvas.translate(center.dx, center.dy);
       canvas.rotate(angle);
-      final label = names[i].length > 14
-          ? '${names[i].substring(0, 13)}…'
-          : names[i];
+      final label =
+          names[i].length > 14 ? '${names[i].substring(0, 13)}…' : names[i];
       // The champagne wedge needs dark text for contrast.
-      final onWedge =
-          i % _wedgeColors.length == 1 ? AppColors.primaryDark : AppColors.cream;
+      final onWedge = i % _wedgeColors.length == 1
+          ? AppColors.primaryDark
+          : AppColors.cream;
       final painter = TextPainter(
         text: TextSpan(
           text: label,
@@ -361,6 +358,5 @@ class _WheelPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_WheelPainter oldDelegate) =>
-      oldDelegate.names != names;
+  bool shouldRepaint(_WheelPainter oldDelegate) => oldDelegate.names != names;
 }

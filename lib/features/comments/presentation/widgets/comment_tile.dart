@@ -127,7 +127,7 @@ class CommentTile extends ConsumerWidget {
                           'Delete',
                           style: theme.textTheme.bodySmall?.copyWith(
                             fontWeight: FontWeight.w600,
-                            color: AppColors.error,
+                            color: theme.colorScheme.error,
                           ),
                         ),
                       ),

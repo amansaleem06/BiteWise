@@ -24,10 +24,15 @@ abstract final class AppTypography {
       titleSmall: body.copyWith(fontSize: 14, fontWeight: FontWeight.w700),
       bodyLarge: body.copyWith(fontSize: 16),
       bodyMedium: body.copyWith(fontSize: 14),
-      bodySmall: body.copyWith(fontSize: 12, color: secondary),
+      bodySmall: body.copyWith(fontSize: 13, color: secondary),
       labelLarge: body.copyWith(fontSize: 15, fontWeight: FontWeight.w700),
       labelMedium: body.copyWith(
         fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: secondary,
+      ),
+      labelSmall: body.copyWith(
+        fontSize: 12,
         fontWeight: FontWeight.w600,
         color: secondary,
       ),
