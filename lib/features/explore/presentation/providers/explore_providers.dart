@@ -1,3 +1,4 @@
+import '../../../safety/presentation/providers/safety_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/services/recent_searches_service.dart';
@@ -18,11 +19,14 @@ final recentSearchesServiceProvider =
 
 final trendingPostsProvider = FutureProvider.autoDispose<List<Post>>(
   (ref) async {
+    final blocked = await ref.watch(blockedUserIdsProvider.future);
     final posts =
         await ref.read(exploreRepositoryProvider).fetchTrendingPosts();
     final preferences =
         ref.watch(currentUserProvider)?.dietaryPreferences ?? const [];
-    return DietaryRanking.rankPosts(posts, preferences);
+    return DietaryRanking.rankPosts(
+        posts.where((p) => !blocked.contains(p.authorId)).toList(),
+        preferences);
   },
 );
 
@@ -63,6 +67,7 @@ class SearchResults {
 final searchResultsProvider =
     FutureProvider.autoDispose.family<SearchResults, String>(
   (ref, query) async {
+    final blocked = await ref.watch(blockedUserIdsProvider.future);
     final q = query.trim();
     if (q.length < 2) return const SearchResults();
 
@@ -85,17 +90,19 @@ final searchResultsProvider =
 
     return SearchResults(
       restaurants: settled[0] as List<Restaurant>,
-      users: settled[1] as List<AppUser>,
-      tagPosts: settled[2] as List<Post>,
+      users: (settled[1] as List<AppUser>)
+          .where((u) => !blocked.contains(u.uid))
+          .toList(),
+      tagPosts: (settled[2] as List<Post>)
+          .where((p) => !blocked.contains(p.authorId))
+          .toList(),
     );
   },
 );
 
 /// Recent search history with mutation helpers.
-class RecentSearchesController
-    extends AutoDisposeAsyncNotifier<List<String>> {
-  RecentSearchesService get _service =>
-      ref.read(recentSearchesServiceProvider);
+class RecentSearchesController extends AutoDisposeAsyncNotifier<List<String>> {
+  RecentSearchesService get _service => ref.read(recentSearchesServiceProvider);
 
   @override
   Future<List<String>> build() => _service.load();

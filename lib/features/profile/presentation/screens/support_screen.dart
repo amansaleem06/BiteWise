@@ -56,7 +56,7 @@ class SupportScreen extends StatelessWidget {
           const _Faq(
             question: 'How do I report or block someone?',
             answer:
-                'On a post, tap ••• then Report or Block. The same menu is on profiles, chats, stories, and comments.',
+                'On a post, profile, story, or chat, tap ••• to report or block. On a comment, tap Report; open the author’s profile to block that account.',
           ),
           const _Faq(
             question: 'Where are my saved plates?',
@@ -75,7 +75,7 @@ class SupportScreen extends StatelessWidget {
             'On a post, tap the ••• menu, then Report post or Block user.\n'
             'On a profile or chat, tap ••• in the top-right.\n'
             'On a story that is not yours, tap ••• next to the progress bar.\n'
-            'On a comment, tap Report.\n\n'
+            'On a comment, tap Report; open the author’s profile to block that account.\n\n'
             'Reports are saved for review. Email ${AppLegal.supportEmail} if you need a faster reply.',
             style: theme.textTheme.bodyMedium,
           ),

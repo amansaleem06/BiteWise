@@ -98,133 +98,151 @@ class _MainShellState extends ConsumerState<MainShell>
       });
     }
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          Positioned.fill(child: navigationShell),
-          if (index == 0 && _menuOpen)
-            Positioned.fill(
-              child: GestureDetector(
-                onTap: _toggleMenu,
-                child: AnimatedOpacity(
-                  duration: AppDurations.fast,
-                  opacity: 1,
-                  child: ColoredBox(
-                    color: AppColors.charcoal.withValues(alpha: 0.28),
+    return PopScope(
+      canPop: !_menuOpen && index == 0,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_menuOpen) {
+          _toggleMenu();
+        } else if (index != 0) {
+          navigationShell.goBranch(0);
+        }
+      },
+      child: Scaffold(
+        body: Stack(
+          children: [
+            Positioned.fill(child: navigationShell),
+            if (index == 0 && _menuOpen)
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: _toggleMenu,
+                  child: AnimatedOpacity(
+                    duration: AppDurations.fast,
+                    opacity: 1,
+                    child: ColoredBox(
+                      color: AppColors.charcoal.withValues(alpha: 0.28),
+                    ),
                   ),
                 ),
               ),
-            ),
-          if (index == 0)
-            Positioned(
-            left: 0,
-            right: 0,
-            bottom: stageBottom,
-            child: AnimatedBuilder(
-              animation: Listenable.merge([_fan, _pulse]),
-              builder: (context, _) {
-                final t = Curves.easeOutCubic.transform(_fan.value);
-                final pulse = (!_menuOpen && index == 0)
-                    ? 0.96 + (_pulse.value * 0.08)
-                    : 1.0;
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (t > 0.02)
-                      Opacity(
-                        opacity: t.clamp(0.0, 1.0),
-                        child: Transform.translate(
-                          offset: Offset(0, (1 - t) * 14),
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                color: AppColors.cream.withValues(alpha: 0.97),
-                                borderRadius:
-                                    BorderRadius.circular(AppRadius.pill),
-                                border: Border.all(
-                                  color: AppColors.primary
-                                      .withValues(alpha: 0.08),
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.charcoal
-                                        .withValues(alpha: 0.1),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 8),
-                                  ),
-                                ],
-                              ),
+            if (index == 0)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: stageBottom,
+                child: AnimatedBuilder(
+                  animation: Listenable.merge([_fan, _pulse]),
+                  builder: (context, _) {
+                    final t = Curves.easeOutCubic.transform(_fan.value);
+                    final pulse = (!_menuOpen && index == 0)
+                        ? 0.96 + (_pulse.value * 0.08)
+                        : 1.0;
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (t > 0.02)
+                          Opacity(
+                            opacity: t.clamp(0.0, 1.0),
+                            child: Transform.translate(
+                              offset: Offset(0, (1 - t) * 14),
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 6,
-                                ),
-                                child: Row(
-                                  children: [
-                                    for (final course in _courses)
-                                      _CourseChip(
-                                        label: course.label,
-                                        icon: course.icon,
-                                        selected: index == course.index,
-                                        onTap: () =>
-                                            _goCourse(course.index),
+                                padding:
+                                    const EdgeInsets.fromLTRB(20, 0, 20, 14),
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    color:
+                                        AppColors.cream.withValues(alpha: 0.97),
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.pill),
+                                    border: Border.all(
+                                      color: AppColors.primary
+                                          .withValues(alpha: 0.08),
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppColors.charcoal
+                                            .withValues(alpha: 0.1),
+                                        blurRadius: 20,
+                                        offset: const Offset(0, 8),
                                       ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    Center(
-                      child: GestureDetector(
-                        onTap: _toggleMenu,
-                        onLongPress: () => _goCourse(2),
-                        child: Transform.scale(
-                          scale: _menuOpen ? 1 : pulse,
-                          child: Container(
-                            width: 62,
-                            height: 62,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.primary,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.primary.withValues(
-                                    alpha: _menuOpen ? 0.22 : 0.18 + _pulse.value * 0.12,
+                                    ],
                                   ),
-                                  blurRadius: _menuOpen ? 12 : 16 + _pulse.value * 8,
-                                  offset: const Offset(0, 6),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 6,
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        for (final course in _courses)
+                                          _CourseChip(
+                                            label: course.label,
+                                            icon: course.icon,
+                                            selected: index == course.index,
+                                            onTap: () =>
+                                                _goCourse(course.index),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
-                              ],
-                              border: Border.all(
-                                color: AppColors.cream.withValues(alpha: 0.9),
-                                width: 2,
                               ),
                             ),
-                            alignment: Alignment.center,
-                            child: AnimatedSwitcher(
-                              duration: AppDurations.fast,
-                              child: Icon(
-                                _menuOpen
-                                    ? Icons.close_rounded
-                                    : Icons.restaurant_menu_rounded,
-                                key: ValueKey(_menuOpen),
-                                color: AppColors.cream,
-                                size: 26,
+                          ),
+                        Center(
+                          child: GestureDetector(
+                            onTap: _toggleMenu,
+                            onLongPress: () => _goCourse(2),
+                            child: Transform.scale(
+                              scale: _menuOpen ? 1 : pulse,
+                              child: Container(
+                                width: 62,
+                                height: 62,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: AppColors.primary,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.primary.withValues(
+                                        alpha: _menuOpen
+                                            ? 0.22
+                                            : 0.18 + _pulse.value * 0.12,
+                                      ),
+                                      blurRadius: _menuOpen
+                                          ? 12
+                                          : 16 + _pulse.value * 8,
+                                      offset: const Offset(0, 6),
+                                    ),
+                                  ],
+                                  border: Border.all(
+                                    color:
+                                        AppColors.cream.withValues(alpha: 0.9),
+                                    width: 2,
+                                  ),
+                                ),
+                                alignment: Alignment.center,
+                                child: AnimatedSwitcher(
+                                  duration: AppDurations.fast,
+                                  child: Icon(
+                                    _menuOpen
+                                        ? Icons.close_rounded
+                                        : Icons.restaurant_menu_rounded,
+                                    key: ValueKey(_menuOpen),
+                                    color: AppColors.cream,
+                                    size: 26,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-        ],
+                      ],
+                    );
+                  },
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

@@ -34,10 +34,15 @@ import '../../features/stories/presentation/screens/story_viewer_screen.dart';
 import '../../features/taste/presentation/screens/diet_plan_screen.dart';
 import '../../features/taste/presentation/screens/taste_passport_screen.dart';
 import 'routes.dart';
+import '../../features/safety/presentation/screens/moderation_screen.dart';
+import '../../features/safety/presentation/screens/blocked_users_screen.dart';
+import '../../features/auth/presentation/providers/consent_providers.dart';
+import '../../features/auth/presentation/screens/terms_acceptance_screen.dart';
 
 /// Notifies [GoRouter] whenever [authStateProvider] changes.
 class _AuthRefresh extends ChangeNotifier {
   _AuthRefresh(Ref ref) {
+    ref.listen(termsAcceptedProvider, (_, __) => notifyListeners());
     ref.listen<AsyncValue<dynamic>>(authStateProvider, (_, __) {
       notifyListeners();
     });
@@ -58,8 +63,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           loc == Routes.signIn ||
           loc == Routes.signUp ||
           loc == Routes.forgotPassword;
-      final onLegalScreen =
-          loc == Routes.privacyPolicy ||
+      final onLegalScreen = loc == Routes.privacyPolicy ||
           loc == Routes.termsOfService ||
           loc == Routes.support;
 
@@ -80,8 +84,15 @@ final routerProvider = Provider<GoRouter>((ref) {
         return Routes.welcome;
       }
 
+      if (onLegalScreen) return null;
+      if (ref.read(termsAcceptedProvider).valueOrNull != true) {
+        return loc == '/accept-terms' ? null : '/accept-terms';
+      }
+      if (user.needsEmailVerification) {
+        return loc == Routes.verifyEmail ? null : Routes.verifyEmail;
+      }
       // Signed in — leave the auth funnel.
-      if (onAuthScreen || loc == Routes.verifyEmail) {
+      if (onAuthScreen || loc == Routes.verifyEmail || loc == '/accept-terms') {
         if (user.needsBusinessDetails) return Routes.businessSetup;
         return Routes.home;
       }
@@ -91,6 +102,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(
+          path: '/moderation', builder: (_, __) => const ModerationScreen()),
+      GoRoute(
+          path: '/blocked-accounts',
+          builder: (_, __) => const BlockedUsersScreen()),
+      GoRoute(
+          path: '/accept-terms',
+          builder: (_, __) => const TermsAcceptanceScreen()),
       GoRoute(
         path: Routes.welcome,
         builder: (_, __) => const WelcomeScreen(),
@@ -170,8 +189,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: Routes.chat,
-        builder: (_, state) =>
-            ChatScreen(chatId: state.pathParameters['id']!),
+        builder: (_, state) => ChatScreen(chatId: state.pathParameters['id']!),
       ),
       GoRoute(
         path: Routes.reservations,

@@ -56,8 +56,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final postAsync = ref.watch(postDetailProvider(widget.postId));
-    final commentsAsync =
-        ref.watch(commentsControllerProvider(widget.postId));
+    final commentsAsync = ref.watch(commentsControllerProvider(widget.postId));
     final commentsController =
         ref.read(commentsControllerProvider(widget.postId).notifier);
     final me = ref.watch(currentUserProvider);
@@ -143,7 +142,8 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                             onPressed: () => ref.invalidate(
                               commentsControllerProvider(widget.postId),
                             ),
-                            child: const Text('Couldn\'t load comments — retry'),
+                            child:
+                                const Text('Couldn\'t load comments — retry'),
                           ),
                         ),
                       ),
@@ -179,7 +179,8 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                                         context,
                                         ref,
                                         type: ReportTargetType.comment,
-                                        targetId: comment.id,
+                                        targetId:
+                                            'posts/${widget.postId}/comments/${comment.id}',
                                         targetUserId: comment.authorId,
                                       ),
                             ),

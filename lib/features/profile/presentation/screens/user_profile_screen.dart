@@ -64,6 +64,8 @@ class UserProfileScreen extends ConsumerWidget {
     final isSelf = ref.watch(currentUserProvider)?.uid == uid;
     final blocked = ref.watch(blockedUserIdsProvider).valueOrNull ?? {};
     final isBlocked = blocked.contains(uid);
+    final blockedByMe =
+        ref.watch(myBlockedUserIdsProvider).valueOrNull?.contains(uid) ?? false;
 
     return Scaffold(
       appBar: AppBar(
@@ -98,7 +100,7 @@ class UserProfileScreen extends ConsumerWidget {
                   value: 'report',
                   child: Text('Report user'),
                 ),
-                if (isBlocked)
+                if (blockedByMe)
                   const PopupMenuItem(
                     value: 'unblock',
                     child: Text('Unblock'),
@@ -112,75 +114,85 @@ class UserProfileScreen extends ConsumerWidget {
             ),
         ],
       ),
-      body: profileAsync.when(
-        loading: () =>
-            const Center(child: CircularProgressIndicator(strokeWidth: 2.5)),
-        error: (error, stack) => AsyncErrorView(
-          error: error,
-          stackTrace: stack,
-          title: 'Couldn\'t load this profile',
-          onRetry: () => ref.invalidate(userProfileProvider(uid)),
-        ),
-        data: (profile) => Column(
-          children: [
-            ProfileHeader(
-              user: profile.user,
-              trailing: isSelf
-                  ? null
-                  : Row(
-                      children: [
-                        Expanded(
-                          child: profile.isFollowedByMe
-                              ? OutlinedButton(
-                                  onPressed: () => _toggleFollow(context, ref),
+      body: isBlocked
+          ? const Center(
+              child: Text(
+                  'This account is blocked. Posts and interactions are unavailable.'))
+          : profileAsync.when(
+              loading: () => const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2.5)),
+              error: (error, stack) => AsyncErrorView(
+                error: error,
+                stackTrace: stack,
+                title: 'Couldn\'t load this profile',
+                onRetry: () => ref.invalidate(userProfileProvider(uid)),
+              ),
+              data: (profile) => Column(
+                children: [
+                  ProfileHeader(
+                    user: profile.user,
+                    trailing: isSelf || isBlocked
+                        ? null
+                        : Row(
+                            children: [
+                              Expanded(
+                                child: profile.isFollowedByMe
+                                    ? OutlinedButton(
+                                        onPressed: () =>
+                                            _toggleFollow(context, ref),
+                                        style: OutlinedButton.styleFrom(
+                                          minimumSize:
+                                              const Size.fromHeight(40),
+                                        ),
+                                        child: const Text('Following'),
+                                      )
+                                    : FilledButton(
+                                        onPressed: () =>
+                                            _toggleFollow(context, ref),
+                                        style: FilledButton.styleFrom(
+                                          minimumSize:
+                                              const Size.fromHeight(40),
+                                        ),
+                                        child: const Text('Follow'),
+                                      ),
+                              ),
+                              const SizedBox(width: AppSpacing.xs),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () => _openMessage(context, ref),
                                   style: OutlinedButton.styleFrom(
                                     minimumSize: const Size.fromHeight(40),
                                   ),
-                                  child: const Text('Following'),
-                                )
-                              : FilledButton(
-                                  onPressed: () => _toggleFollow(context, ref),
-                                  style: FilledButton.styleFrom(
-                                    minimumSize: const Size.fromHeight(40),
+                                  icon: const Icon(
+                                    Icons.chat_bubble_outline_rounded,
+                                    size: 18,
                                   ),
-                                  child: const Text('Follow'),
+                                  label: const Text('Message'),
                                 ),
-                        ),
-                        const SizedBox(width: AppSpacing.xs),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () => _openMessage(context, ref),
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size.fromHeight(40),
-                            ),
-                            icon: const Icon(Icons.chat_bubble_outline_rounded,
-                                size: 18,),
-                            label: const Text('Message'),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
+                  ),
+                  if (!isSelf && isBlocked)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.md,
+                        0,
+                        AppSpacing.md,
+                        AppSpacing.sm,
+                      ),
+                      child: Text(
+                        'This account is blocked. Posts and interactions are unavailable.',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
                     ),
-            ),
-            if (!isSelf && isBlocked)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.md,
-                  0,
-                  AppSpacing.md,
-                  AppSpacing.sm,
-                ),
-                child: Text(
-                  'You blocked this user. Their posts are hidden from your feed.',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
+                  if (!isSelf && !isBlocked)
+                    TasteMatchCard(uid: uid, name: profile.user.displayName),
+                  const Divider(height: 1),
+                  Expanded(child: UserPostsGrid(uid: uid)),
+                ],
               ),
-            if (!isSelf)
-              TasteMatchCard(uid: uid, name: profile.user.displayName),
-            const Divider(height: 1),
-            Expanded(child: UserPostsGrid(uid: uid)),
-          ],
-        ),
-      ),
+            ),
     );
   }
 }

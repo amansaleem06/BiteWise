@@ -42,10 +42,12 @@ class FirestoreChatRepository implements ChatRepository {
         .orderBy('updatedAt', descending: true)
         .limit(30)
         .snapshots()
-        .map((snap) => snap.docs
-            .map((d) => _chatFromDoc(d, me))
-            .whereType<Chat>()
-            .toList(),);
+        .map(
+          (snap) => snap.docs
+              .map((d) => _chatFromDoc(d, me))
+              .whereType<Chat>()
+              .toList(),
+        );
   }
 
   @override
@@ -84,15 +86,18 @@ class FirestoreChatRepository implements ChatRepository {
       if (e.code != 'permission-denied') rethrow;
     }
     if (existing != null && existing.exists) {
-      await _chats.doc(chatId).set({
-        'participantInfo': {
-          user.uid: {
-            'name': user.displayName ?? '',
-            'photoUrl': user.photoURL,
+      await _chats.doc(chatId).set(
+        {
+          'participantInfo': {
+            user.uid: {
+              'name': user.displayName ?? '',
+              'photoUrl': user.photoURL,
+            },
+            peerUid: {'name': peerName, 'photoUrl': peerPhotoUrl},
           },
-          peerUid: {'name': peerName, 'photoUrl': peerPhotoUrl},
         },
-      }, SetOptions(merge: true),);
+        SetOptions(merge: true),
+      );
       return chatId;
     }
 
@@ -114,7 +119,8 @@ class FirestoreChatRepository implements ChatRepository {
   }
 
   Future<void> _assertCanMessage(String peerUid) async {
-    final peerDoc = await _firestore.collection('users').doc(peerUid).get();
+    final peerDoc =
+        await _firestore.collection('publicProfiles').doc(peerUid).get();
     final privacy = MessagePrivacy.fromKey(
       peerDoc.data()?['messagePrivacy'] as String?,
     );

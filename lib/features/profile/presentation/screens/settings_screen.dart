@@ -35,6 +35,17 @@ class SettingsScreen extends ConsumerWidget {
       body: ListView(
         children: [
           const _SectionHeader(AppStrings.account),
+          if (ref.watch(currentUserProvider)?.role == UserRole.admin)
+            ListTile(
+              leading: const Icon(Icons.admin_panel_settings_outlined),
+              title: const Text('Moderation reports'),
+              onTap: () => context.push('/moderation'),
+            ),
+          ListTile(
+            leading: const Icon(Icons.block),
+            title: const Text('Blocked accounts'),
+            onTap: () => context.push('/blocked-accounts'),
+          ),
           ListTile(
             leading: const Icon(Icons.person_outline_rounded),
             title: const Text('Edit profile'),
@@ -88,11 +99,12 @@ class SettingsScreen extends ConsumerWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.delete_forever_outlined, color: AppColors.error),
+            leading: const Icon(Icons.delete_forever_outlined,
+                color: AppColors.error),
             title: Text(
               AppStrings.deleteAccount,
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(color: AppColors.error),
+              style:
+                  theme.textTheme.titleMedium?.copyWith(color: AppColors.error),
             ),
             enabled: !authState.isLoading,
             onTap: () => _confirmDeleteAccount(context, ref),
@@ -222,8 +234,8 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Future<void> _pickMessagePrivacy(BuildContext context, WidgetRef ref) async {
-    final current =
-        ref.read(currentUserProvider)?.messagePrivacy ?? MessagePrivacy.everyone;
+    final current = ref.read(currentUserProvider)?.messagePrivacy ??
+        MessagePrivacy.everyone;
     final chosen = await showModalBottomSheet<MessagePrivacy>(
       context: context,
       showDragHandle: true,

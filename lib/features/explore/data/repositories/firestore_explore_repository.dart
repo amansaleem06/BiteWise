@@ -1,3 +1,4 @@
+import '../../../../core/services/content_visibility.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../../auth/data/models/user_model.dart';
@@ -25,7 +26,8 @@ class FirestoreExploreRepository implements ExploreRepository {
         .get();
     // Viewer like/bookmark state is skipped here deliberately: trending is
     // a browse surface; the post detail screen resolves exact state.
-    return snap.docs.map(PostModel.fromDoc).toList();
+    final visibility = await ContentVisibility.load(_firestore);
+    return snap.docs.where(visibility.allows).map(PostModel.fromDoc).toList();
   }
 
   @override
@@ -190,8 +192,9 @@ class FirestoreExploreRepository implements ExploreRepository {
     if (q.startsWith('@')) q = q.substring(1);
     if (q.isEmpty) return const [];
 
-    final users = _firestore.collection('users');
+    final users = _firestore.collection('publicProfiles');
     final byId = <String, AppUser>{};
+    final visibility = await ContentVisibility.load(_firestore);
 
     Future<void> addPrefix(String field) async {
       try {
@@ -201,7 +204,7 @@ class FirestoreExploreRepository implements ExploreRepository {
             .limit(limit)
             .get();
         for (final doc in snap.docs) {
-          byId[doc.id] = UserModel.fromDoc(doc);
+          if (visibility.allows(doc)) byId[doc.id] = UserModel.fromDoc(doc);
         }
       } catch (_) {
         // A missing index or older docs without the field must not

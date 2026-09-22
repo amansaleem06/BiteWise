@@ -55,6 +55,7 @@ class FirestoreStoryRepository implements StoryRepository {
     final byRing = <String, List<Story>>{};
     final meta = <String, Story>{};
     for (final doc in snap.docs) {
+      if (doc.data()['moderationHidden'] == true) continue;
       final story = _fromDoc(doc);
       if (!story.isLive) continue;
       final key = _ringKey(story);
@@ -62,12 +63,11 @@ class FirestoreStoryRepository implements StoryRepository {
       meta.putIfAbsent(key, () => story);
     }
     final rings = byRing.entries.map((e) {
-      final stories = [...e.value]
-        ..sort(
-          (a, b) => (a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0))
-              .compareTo(
-                b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0),
-              ),
+      final stories = [...e.value]..sort(
+          (a, b) =>
+              (a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0)).compareTo(
+            b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0),
+          ),
         );
       final head = meta[e.key]!;
       return StoryRing(
@@ -112,8 +112,7 @@ class FirestoreStoryRepository implements StoryRepository {
     String? authorPhotoUrl = user.photoURL;
     String? asRestaurantId;
     if (asRestaurant) {
-      final userSnap =
-          await _firestore.collection('users').doc(user.uid).get();
+      final userSnap = await _firestore.collection('users').doc(user.uid).get();
       final owned = userSnap.data()?['ownedRestaurantId'] as String?;
       if (owned != null && owned.isNotEmpty) {
         final rest =
@@ -173,7 +172,10 @@ class FirestoreStoryRepository implements StoryRepository {
         .orderBy('createdAt', descending: false)
         .limit(80)
         .snapshots()
-        .map((snap) => snap.docs.map(_commentFromDoc).toList());
+        .map((snap) => snap.docs
+            .where((doc) => doc.data()['moderationHidden'] != true)
+            .map(_commentFromDoc)
+            .toList());
   }
 
   @override

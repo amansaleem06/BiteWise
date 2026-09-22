@@ -1,3 +1,4 @@
+import '../../../safety/presentation/providers/safety_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -11,16 +12,31 @@ final chatRepositoryProvider = Provider<ChatRepository>(
 );
 
 final chatsProvider = StreamProvider.autoDispose<List<Chat>>(
-  (ref) => ref.read(chatRepositoryProvider).watchChats(),
+  (ref) async* {
+    final blocked = await ref.watch(blockedUserIdsProvider.future);
+    yield* ref.read(chatRepositoryProvider).watchChats().map(
+        (chats) => chats.where((c) => !blocked.contains(c.peer.uid)).toList());
+  },
 );
 
 final chatProvider = StreamProvider.autoDispose.family<Chat?, String>(
-  (ref, chatId) => ref.read(chatRepositoryProvider).watchChat(chatId),
+  (ref, chatId) async* {
+    final blocked = await ref.watch(blockedUserIdsProvider.future);
+    yield* ref.read(chatRepositoryProvider).watchChat(chatId).map((chat) =>
+        chat != null && blocked.contains(chat.peer.uid) ? null : chat);
+  },
 );
 
 final chatMessagesProvider =
     StreamProvider.autoDispose.family<List<Message>, String>(
-  (ref, chatId) => ref.read(chatRepositoryProvider).watchMessages(chatId),
+  (ref, chatId) async* {
+    final chat = await ref.watch(chatProvider(chatId).future);
+    if (chat == null) {
+      yield [];
+      return;
+    }
+    yield* ref.read(chatRepositoryProvider).watchMessages(chatId);
+  },
 );
 
 /// Send actions with throttled typing signal.

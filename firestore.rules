@@ -1,11 +1,37 @@
 rules_version = '2';
 
+// Assumed data model (default Firestore database):
+// - users/{uid}: private account/contact/preferences; owner + admin read only.
+// - publicProfiles/{uid}: validated, non-sensitive profile projection.
+// - users/{uid}/{legal,bookmarks,reposts,following,followers,tokens,aiPlans,
+//   private,notifications,blocked,blockedBy}: per-user state with explicit rules.
+// - posts, stories, restaurants, chats: signed-in product content.
+// - reports, moderationAudit: reporter writes; moderators read/resolve.
+// Cloud Functions use the Admin SDK and maintain counters/public projections.
 service cloud.firestore {
   match /databases/{database}/documents {
 
     // ---------- Helpers ----------
     function isSignedIn() {
       return request.auth != null;
+    }
+
+    // Blocks are bilateral for interaction permission. Public feed queries
+    // remain readable; presentation/data providers filter blocked authors.
+    function canInteract(uid) {
+      return isSignedIn()
+        && !exists(/databases/$(database)/documents/users/$(request.auth.uid)/blocked/$(uid))
+        && !exists(/databases/$(database)/documents/users/$(uid)/blocked/$(request.auth.uid));
+    }
+
+    function hasAcceptedTerms() {
+      return isSignedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)/legal/current).data.version == '2026-09-21';
+    }
+
+    function canParticipate() {
+      return hasAcceptedTerms()
+        && !get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('suspended', false);
     }
 
     function isSelf(uid) {
@@ -21,11 +47,11 @@ service cloud.firestore {
     }
 
     function canMessageUser(uid) {
-      let peer = get(/databases/$(database)/documents/users/$(uid)).data;
+      let peer = get(/databases/$(database)/documents/publicProfiles/$(uid)).data;
       let privacy = peer.get('messagePrivacy', 'everyone');
-      return privacy == 'everyone'
+      return canInteract(uid) && (privacy == 'everyone'
         || (privacy == 'followers'
-          && exists(/databases/$(database)/documents/users/$(uid)/followers/$(request.auth.uid)));
+          && exists(/databases/$(database)/documents/users/$(uid)/followers/$(request.auth.uid))));
     }
 
     function isRestaurantOwner() {
@@ -48,13 +74,135 @@ service cloud.firestore {
         == resource.data.get('ownedRestaurantId', '');
     }
 
+    function validOptionalString(data, field, maxLength) {
+      return !(field in data)
+        || data[field] == null
+        || (data[field] is string && data[field].size() <= maxLength);
+    }
+
+    function isValidPrivateUser(data) {
+      return data.keys().hasOnly([
+          'email', 'displayName', 'displayNameLower', 'username',
+          'usernameLower', 'photoUrl', 'bio', 'phone', 'role',
+          'businessName', 'businessAddress', 'businessPhone',
+          'businessEmail', 'businessVerificationStatus',
+          'ownedRestaurantId', 'pendingClaimRestaurantId',
+          'pendingClaimCode', 'messagePrivacy', 'dietaryPreferences',
+          'emailVerified', 'followerCount', 'followingCount', 'postCount',
+          'suspended', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasAll([
+          'email', 'displayName', 'displayNameLower', 'role',
+          'messagePrivacy', 'emailVerified', 'followerCount',
+          'followingCount', 'postCount', 'createdAt', 'updatedAt'
+        ])
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 254
+        && data.displayName is string
+        && data.displayName.size() >= 1 && data.displayName.size() <= 50
+        && data.displayNameLower is string && data.displayNameLower.size() <= 50
+        && data.role in ['user', 'restaurantOwner', 'admin']
+        && data.messagePrivacy in ['everyone', 'followers', 'nobody']
+        && data.emailVerified is bool
+        && data.followerCount is int && data.followerCount >= 0
+        && data.followingCount is int && data.followingCount >= 0
+        && data.postCount is int && data.postCount >= 0
+        && data.get('suspended', false) is bool
+        && data.createdAt is timestamp && data.updatedAt is timestamp
+        && validOptionalString(data, 'username', 30)
+        && validOptionalString(data, 'usernameLower', 30)
+        && validOptionalString(data, 'photoUrl', 2048)
+        && validOptionalString(data, 'bio', 160)
+        && validOptionalString(data, 'phone', 40)
+        && validOptionalString(data, 'businessName', 80)
+        && validOptionalString(data, 'businessAddress', 240)
+        && validOptionalString(data, 'businessPhone', 40)
+        && validOptionalString(data, 'businessEmail', 254)
+        && validOptionalString(data, 'ownedRestaurantId', 200)
+        && validOptionalString(data, 'pendingClaimRestaurantId', 200)
+        && validOptionalString(data, 'pendingClaimCode', 80)
+        && (!( 'businessVerificationStatus' in data)
+          || data.businessVerificationStatus in ['pending', 'verified', 'rejected'])
+        && (!( 'dietaryPreferences' in data)
+          || (data.dietaryPreferences is list && data.dietaryPreferences.size() <= 20));
+    }
+
+    function isValidPublicProfile(data) {
+      return data.keys().hasOnly([
+          'displayName', 'displayNameLower', 'username', 'usernameLower',
+          'photoUrl', 'bio', 'role', 'businessName',
+          'businessVerificationStatus', 'ownedRestaurantId',
+          'messagePrivacy', 'followerCount', 'followingCount', 'postCount',
+          'suspended', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasAll([
+          'displayName', 'displayNameLower', 'role', 'messagePrivacy',
+          'followerCount', 'followingCount', 'postCount', 'createdAt',
+          'updatedAt'
+        ])
+        && data.displayName is string
+        && data.displayName.size() >= 1 && data.displayName.size() <= 50
+        && data.displayNameLower is string && data.displayNameLower.size() <= 50
+        && data.role in ['user', 'restaurantOwner', 'admin']
+        && data.messagePrivacy in ['everyone', 'followers', 'nobody']
+        && data.followerCount is int && data.followerCount >= 0
+        && data.followingCount is int && data.followingCount >= 0
+        && data.postCount is int && data.postCount >= 0
+        && data.get('suspended', false) is bool
+        && data.createdAt is timestamp && data.updatedAt is timestamp
+        && validOptionalString(data, 'username', 30)
+        && validOptionalString(data, 'usernameLower', 30)
+        && validOptionalString(data, 'photoUrl', 2048)
+        && validOptionalString(data, 'bio', 160)
+        && validOptionalString(data, 'businessName', 80)
+        && validOptionalString(data, 'ownedRestaurantId', 200)
+        && (!( 'businessVerificationStatus' in data)
+          || data.businessVerificationStatus in ['pending', 'verified', 'rejected']);
+    }
+
+    function publicMatchesPrivate(publicData, privateData) {
+      return publicData.displayName == privateData.displayName
+        && publicData.displayNameLower == privateData.displayNameLower
+        && publicData.get('username', null) == privateData.get('username', null)
+        && publicData.get('usernameLower', null) == privateData.get('usernameLower', null)
+        && publicData.get('photoUrl', null) == privateData.get('photoUrl', null)
+        && publicData.get('bio', null) == privateData.get('bio', null)
+        && publicData.role == privateData.role
+        && publicData.get('businessName', null) == privateData.get('businessName', null)
+        && publicData.get('businessVerificationStatus', null)
+          == privateData.get('businessVerificationStatus', null)
+        && publicData.get('ownedRestaurantId', null)
+          == privateData.get('ownedRestaurantId', null)
+        && publicData.messagePrivacy == privateData.messagePrivacy
+        && publicData.followerCount == privateData.followerCount
+        && publicData.followingCount == privateData.followingCount
+        && publicData.postCount == privateData.postCount
+        && publicData.get('suspended', false) == privateData.get('suspended', false)
+        && publicData.createdAt == privateData.createdAt
+        && publicData.updatedAt == privateData.updatedAt;
+    }
+
+    function publicProfileIsSynced(uid) {
+      return existsAfter(/databases/$(database)/documents/publicProfiles/$(uid))
+        && publicMatchesPrivate(
+          getAfter(/databases/$(database)/documents/publicProfiles/$(uid)).data,
+          request.resource.data
+        );
+    }
+
     // ---------- Users ----------
     match /users/{uid} {
-      // Public profiles: any signed-in user can read.
-      allow read: if isSignedIn();
+      // Account/contact/preferences are private. Other users read the safe
+      // projection at publicProfiles/{uid}.
+      allow read: if isSelf(uid) || isAdmin();
 
       // Self-serve signup: foodie (`user`) or business (`restaurantOwner`).
       allow create: if isSelf(uid)
+        && isValidPrivateUser(request.resource.data)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time
+        && !request.resource.data.get('suspended', false)
+        && request.resource.data.get('ownedRestaurantId', '') == ''
+        && request.resource.data.get('businessVerificationStatus', 'pending') == 'pending'
         && request.resource.data.email is string
         && request.resource.data.displayName is string
         && request.resource.data.displayName.size() <= 50
@@ -64,25 +212,79 @@ service cloud.firestore {
             && request.resource.data.businessName is string
             && request.resource.data.businessName.size() >= 2
             && request.resource.data.businessName.size() <= 80)
-        );
+        )
+        && publicProfileIsSynced(uid);
 
       // A user may update their own profile but never role or counters.
       // Business owners may attach verification details and a claimed restaurant.
-      allow update: if isAdmin()
+      allow update: if isValidPrivateUser(request.resource.data)
+        && (isAdmin()
         || (isSelf(uid)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'displayName', 'displayNameLower', 'username', 'usernameLower',
+            'photoUrl', 'bio', 'phone', 'businessName', 'businessAddress',
+            'businessPhone', 'businessEmail', 'businessVerificationStatus',
+            'pendingClaimRestaurantId', 'pendingClaimCode', 'messagePrivacy',
+            'dietaryPreferences', 'emailVerified', 'updatedAt'
+          ])
+          && request.resource.data.email == resource.data.email
           && request.resource.data.role == resource.data.role
           && request.resource.data.followerCount == resource.data.followerCount
           && request.resource.data.followingCount == resource.data.followingCount
           && request.resource.data.postCount == resource.data.postCount
           && verificationNotSelfGranted()
           && ownedRestaurantUnchanged()
+          && request.resource.data.get('suspended', false) == resource.data.get('suspended', false)
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.updatedAt == request.time
+          && (request.resource.data.emailVerified == resource.data.emailVerified
+            || (request.resource.data.emailVerified == true
+              && request.auth.token.email_verified == true))
           && request.resource.data.get('businessVerificationStatus', 'pending')
             != 'rejected'
-        );
+          && publicProfileIsSynced(uid)
+        ));
 
       // Self-delete required for App Store account deletion (Guideline 5.1.1).
       // Cascade cleanup of posts/follows continues in Cloud Functions.
       allow delete: if isAdmin() || isSelf(uid);
+    }
+
+    match /publicProfiles/{uid} {
+      allow read: if isSignedIn();
+
+      // New accounts and profile edits write private + public documents in
+      // one atomic operation. The projection must exactly match the private
+      // source for every public field.
+      allow create: if isSelf(uid)
+        && isValidPublicProfile(request.resource.data)
+        && existsAfter(/databases/$(database)/documents/users/$(uid))
+        && publicMatchesPrivate(
+          request.resource.data,
+          getAfter(/databases/$(database)/documents/users/$(uid)).data
+        );
+      allow update: if isSelf(uid)
+        && isValidPublicProfile(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'displayName', 'displayNameLower', 'username', 'usernameLower',
+          'photoUrl', 'bio', 'businessName', 'businessVerificationStatus',
+          'messagePrivacy', 'updatedAt'
+        ])
+        && existsAfter(/databases/$(database)/documents/users/$(uid))
+        && publicMatchesPrivate(
+          request.resource.data,
+          getAfter(/databases/$(database)/documents/users/$(uid)).data
+        );
+      allow delete: if false;
+    }
+
+    match /users/{uid}/legal/current {
+      allow read: if isSelf(uid);
+      allow create, update: if isSelf(uid)
+        && request.resource.data.keys().hasOnly(['version', 'acceptedAt'])
+        && request.resource.data.version == '2026-09-21'
+        && request.resource.data.acceptedAt == request.time;
+      allow delete: if false;
     }
 
     // ---------- User subcollections ----------
@@ -97,13 +299,15 @@ service cloud.firestore {
 
     match /users/{uid}/following/{targetUid} {
       allow read: if isSignedIn();
-      allow create, delete: if isSelf(uid) && uid != targetUid;
+      allow create: if isSelf(uid) && uid != targetUid && canParticipate() && canInteract(targetUid);
+      allow delete: if isSelf(uid);
     }
 
     match /users/{uid}/followers/{followerUid} {
       allow read: if isSignedIn();
       // Follower may create/delete their own reverse edge (same as following).
-      allow create, delete: if isSelf(followerUid) && uid != followerUid;
+      allow create: if isSelf(followerUid) && uid != followerUid && canParticipate() && canInteract(uid);
+      allow delete: if isSelf(followerUid);
     }
 
     // FCM device tokens — private to their owner.
@@ -125,6 +329,7 @@ service cloud.firestore {
     match /users/{uid}/notifications/{notificationId} {
       allow read, delete: if isSelf(uid);
       allow create: if isSignedIn()
+        && canParticipate() && canInteract(uid)
         && request.resource.data.actorId == request.auth.uid
         && request.resource.data.actorId != uid
         && request.resource.data.type in ['like', 'comment', 'follow', 'repost']
@@ -147,7 +352,8 @@ service cloud.firestore {
     match /posts/{postId} {
       allow read: if isSignedIn();
 
-      allow create: if isSignedIn()
+      allow create: if canParticipate()
+        && !request.resource.data.get('moderationHidden', false)
         && request.resource.data.authorId == request.auth.uid
         && request.resource.data.restaurantId is string
         && request.resource.data.restaurantName is string
@@ -166,7 +372,9 @@ service cloud.firestore {
                 && request.resource.data.rating <= 5.0
                 && request.resource.data.restaurantId.size() >= 1));
 
-      allow update: if isSignedIn() && (
+      allow update: if canParticipate() && canInteract(resource.data.authorId)
+        && !resource.data.get('moderationHidden', false)
+        && request.resource.data.get('moderationHidden', false) == resource.data.get('moderationHidden', false) && (
         (request.auth.uid == resource.data.authorId
           && request.resource.data.authorId == resource.data.authorId
           && request.resource.data.likeCount == resource.data.likeCount
@@ -209,12 +417,16 @@ service cloud.firestore {
 
       match /likes/{uid} {
         allow read: if isSignedIn();
-        allow create, delete: if isSelf(uid);
+        allow create: if isSelf(uid) && canParticipate()
+          && canInteract(get(/databases/$(database)/documents/posts/$(postId)).data.authorId);
+        allow delete: if isSelf(uid);
       }
 
       match /comments/{commentId} {
         allow read: if isSignedIn();
-        allow create: if isSignedIn()
+        allow create: if canParticipate()
+          && canInteract(get(/databases/$(database)/documents/posts/$(postId)).data.authorId)
+          && !request.resource.data.get('moderationHidden', false)
           && request.resource.data.authorId == request.auth.uid
           && request.resource.data.text is string
           && request.resource.data.text.size() >= 1
@@ -292,6 +504,11 @@ service cloud.firestore {
         return isSignedIn() && request.auth.uid in resource.data.participants;
       }
 
+      function chatAllowed() {
+        return isParticipant() && canInteract(resource.data.participants[0] == request.auth.uid
+          ? resource.data.participants[1] : resource.data.participants[0]);
+      }
+
       // Missing docs have no resource. A get() used to check "does this
       // chat exist?" must be allowed, or starting a first conversation
       // fails with permission-denied.
@@ -303,7 +520,7 @@ service cloud.firestore {
       // Creating a chat: exactly two participants including yourself,
       // the doc id must be the sorted uid pair, and the other person
       // must allow new messages (everyone / followers).
-      allow create: if isSignedIn()
+      allow create: if canParticipate()
         && request.resource.data.participants is list
         && request.resource.data.participants.size() == 2
         && request.auth.uid in request.resource.data.participants
@@ -319,7 +536,7 @@ service cloud.firestore {
 
       // Participants may update receipts/typing/lastMessage/info but never
       // the participant list itself.
-      allow update: if isParticipant()
+      allow update: if chatAllowed() && canParticipate()
         && request.resource.data.participants == resource.data.participants;
 
       allow delete: if false;
@@ -332,7 +549,9 @@ service cloud.firestore {
         allow read: if isSignedIn()
           && request.auth.uid in parentChat().participants;
 
-        allow create: if isSignedIn()
+        allow create: if canParticipate()
+          && canInteract(parentChat().participants[0] == request.auth.uid
+            ? parentChat().participants[1] : parentChat().participants[0])
           && request.resource.data.senderId == request.auth.uid
           && request.auth.uid in parentChat().participants
           && (
@@ -400,7 +619,8 @@ service cloud.firestore {
     // ---------- Stories (24h photos) ----------
     match /stories/{storyId} {
       allow read: if isSignedIn();
-      allow create: if isSignedIn()
+      allow create: if canParticipate()
+        && !request.resource.data.get('moderationHidden', false)
         && request.resource.data.authorId == request.auth.uid
         && request.resource.data.mediaUrl is string
         && request.resource.data.authorName is string
@@ -409,19 +629,23 @@ service cloud.firestore {
         && request.resource.data.commentCount == 0;
       allow delete: if isSignedIn()
         && request.auth.uid == resource.data.authorId;
-      allow update: if isSignedIn()
+      allow update: if canParticipate() && canInteract(resource.data.authorId)
         && request.resource.data.diff(resource.data).affectedKeys()
             .hasOnly(['likeCount', 'commentCount'])
         && request.resource.data.authorId == resource.data.authorId;
 
       match /likes/{uid} {
         allow read: if isSignedIn();
-        allow create, delete: if isSelf(uid);
+        allow create: if isSelf(uid) && canParticipate()
+          && canInteract(get(/databases/$(database)/documents/stories/$(storyId)).data.authorId);
+        allow delete: if isSelf(uid);
       }
 
       match /comments/{commentId} {
         allow read: if isSignedIn();
-        allow create: if isSignedIn()
+        allow create: if canParticipate()
+          && !request.resource.data.get('moderationHidden', false)
+          && canInteract(get(/databases/$(database)/documents/stories/$(storyId)).data.authorId)
           && request.resource.data.authorId == request.auth.uid
           && request.resource.data.text is string
           && request.resource.data.text.size() >= 1
@@ -437,14 +661,21 @@ service cloud.firestore {
 
     // Content reports — signed-in users may file; only admins read.
     match /reports/{reportId} {
-      allow read: if isAdmin();
-      allow create: if isSignedIn()
+      allow get: if isAdmin() || (isSignedIn()
+        && (resource == null || resource.data.reporterId == request.auth.uid));
+      allow list: if isAdmin();
+      allow create: if canParticipate()
+        && request.resource.data.keys().hasOnly(['reporterId', 'targetType', 'targetId', 'targetUserId', 'reason', 'status', 'createdAt'])
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.targetUserId != request.auth.uid
         && request.resource.data.reporterId == request.auth.uid
         && request.resource.data.targetType in
           ['post', 'user', 'message', 'story', 'comment']
         && request.resource.data.targetId is string
         && request.resource.data.targetId.size() > 0
+        && request.resource.data.targetId.size() <= 500
         && request.resource.data.targetUserId is string
+        && request.resource.data.reason in ['Spam', 'Harassment', 'Hate or abuse', 'Sexual or inappropriate content', 'Impersonation', 'Other']
         && request.resource.data.reason is string
         && request.resource.data.reason.size() >= 2
         && request.resource.data.reason.size() <= 80
@@ -454,7 +685,27 @@ service cloud.firestore {
 
     match /users/{uid}/blocked/{targetUid} {
       allow read: if isSelf(uid);
-      allow create, delete: if isSelf(uid) && uid != targetUid;
+      allow create, update: if isSelf(uid) && uid != targetUid
+        && request.resource.data.keys().hasOnly(['createdAt'])
+        && request.resource.data.createdAt == request.time
+        && existsAfter(/databases/$(database)/documents/users/$(targetUid)/blockedBy/$(uid));
+      allow delete: if isSelf(uid)
+        && !existsAfter(/databases/$(database)/documents/users/$(targetUid)/blockedBy/$(uid));
+    }
+
+    match /users/{uid}/blockedBy/{blockerUid} {
+      allow read: if isSelf(uid);
+      allow create, update: if isSelf(blockerUid) && uid != blockerUid
+        && request.resource.data.keys().hasOnly(['createdAt'])
+        && request.resource.data.createdAt == request.time
+        && existsAfter(/databases/$(database)/documents/users/$(blockerUid)/blocked/$(uid));
+      allow delete: if isSelf(blockerUid)
+        && !existsAfter(/databases/$(database)/documents/users/$(blockerUid)/blocked/$(uid));
+    }
+
+    match /moderationAudit/{id} {
+      allow read: if isAdmin();
+      allow write: if false;
     }
 
     match /{document=**} {

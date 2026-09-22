@@ -86,7 +86,11 @@ class MediaUploadService {
         ) ??
         await file.readAsBytes();
 
-    final ref = _storage.ref('avatars/$uid/avatar.jpg');
+    if (compressed.length >= 2 * 1024 * 1024) {
+      throw const AppException(
+          'Photo is too large. Please choose another image.');
+    }
+    final ref = _storage.ref('avatars/$uid/${_uuid.v4()}.jpg');
     try {
       await ref.putData(
         compressed,
@@ -160,6 +164,7 @@ class MediaUploadService {
     }
     return ref.getDownloadURL();
   }
+
   Future<String> uploadStoryImage({
     required String uid,
     required XFile file,

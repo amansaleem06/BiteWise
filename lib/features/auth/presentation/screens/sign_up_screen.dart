@@ -1,3 +1,4 @@
+import '../widgets/terms_acceptance.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -164,6 +165,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
           ),
         ),
         const SizedBox(height: AppSpacing.lg),
+        const TermsAcceptance(),
         AppButton(
           label: isBusiness ? 'Create business account' : AppStrings.signUp,
           isLoading: authState.isLoading,

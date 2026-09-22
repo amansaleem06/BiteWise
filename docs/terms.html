@@ -4,37 +4,35 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>TasteWise — Terms of Service</title>
-  <style>
-    :root { color-scheme: light; }
-    body {
-      margin: 0;
-      font-family: "Segoe UI", system-ui, sans-serif;
-      line-height: 1.55;
-      color: #1c1917;
-      background: #fdf8f3;
-    }
-    main {
-      max-width: 42rem;
-      margin: 0 auto;
-      padding: 2rem 1.25rem 4rem;
-    }
-    h1 { font-size: 1.75rem; margin-bottom: 0.25rem; }
-    h2 { font-size: 1.15rem; margin-top: 1.75rem; }
-    .meta { color: #78716c; font-size: 0.95rem; }
-    a { color: #ea580c; }
-    nav { margin-bottom: 1.5rem; font-size: 0.95rem; }
-  </style>
+  <meta name="description" content="Terms of Service for TasteWise." />
+  <meta name="theme-color" content="#4A0E0E" />
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/tastewise.css" />
 </head>
 <body>
-  <main>
-    <nav>
-      <a href="index.html">TasteWise</a> ·
-      <a href="privacy.html">Privacy</a> ·
-      <a href="terms.html">Terms</a>
-    </nav>
+  <a class="skip" href="#content">Skip to content</a>
+  <header class="tw-nav">
+    <div class="wrap" style="display:flex;align-items:center;width:100%;position:relative">
+      <a class="tw-brand" href="index.html"><img src="assets/logo.svg" alt="" width="32" height="32" />TasteWise</a>
+      <ul id="site-nav" class="tw-nav__links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="privacy.html">Privacy</a></li>
+        <li><a href="terms.html" aria-current="page">Terms</a></li>
+        <li><a href="support.html">Support</a></li>
+      </ul>
+      <div class="tw-nav__actions">
+        <button class="tw-icon-btn" type="button" data-theme-toggle aria-label="Switch to dark mode">◐</button>
+        <button class="tw-icon-btn" type="button" data-nav-open aria-expanded="false" aria-controls="site-nav" aria-label="Open menu">☰</button>
+      </div>
+    </div>
+  </header>
+  <main id="content" class="legal">
     <h1>Terms of Service</h1>
-    <p class="meta">Last updated: August 10, 2026</p>
-    <p>By using TasteWise you agree to these terms.</p>
+    <p class="meta">Last updated: September 21, 2026</p>
+    <p>By creating an account, signing in, or continuing to use TasteWise, you agree to these Terms of Use / End User License Agreement (EULA).</p>
 
     <h2>Eligibility</h2>
     <p>You must be able to form a binding contract in your country. If you are under 13 (or the digital-consent age where you live), you may not use the app.</p>
@@ -43,7 +41,8 @@
     <p>You are responsible for your login and for content you post. Do not share your password. You may delete your account at any time in Settings.</p>
 
     <h2>Acceptable use</h2>
-    <p>Do not post illegal, hateful, harassing, or infringing content. Do not spam, scrape, or attempt to disrupt TasteWise. You can report content or block another user in the app. We review reports and may remove content or suspend accounts that violate these terms.</p>
+    <p>TasteWise has zero tolerance for objectionable content or abusive users. Do not post illegal, hateful, harassing, sexually explicit, threatening, or infringing content. Do not spam, impersonate others, scrape, or attempt to disrupt TasteWise.</p>
+    <p>You can report content or block another user from a post, profile, story, comment, or chat. We review reports and may remove content, restrict access, or suspend accounts that violate these terms.</p>
 
     <h2>Content license</h2>
     <p>You keep ownership of your content. You grant TasteWise a non-exclusive license to host and display it so the service can function. You can remove content or delete your account to stop ongoing display of personal profile data.</p>
@@ -60,5 +59,15 @@
     <h2>Contact</h2>
     <p><a href="mailto:tastewise2026@gmail.com">tastewise2026@gmail.com</a></p>
   </main>
+  <footer class="tw-footer">
+    <div class="wrap cluster-md">
+      <a href="index.html">Home</a>
+      <a href="design-system.html">Design</a>
+      <a href="privacy.html">Privacy</a>
+      <a href="terms.html">Terms</a>
+      <a href="support.html">Support</a>
+    </div>
+  </footer>
+  <script src="assets/site.js"></script>
 </body>
 </html>

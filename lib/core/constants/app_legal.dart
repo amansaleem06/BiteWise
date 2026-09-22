@@ -2,8 +2,8 @@
 ///
 /// Hosted via GitHub Pages from `/docs` (see NO_MAC_RELEASE.md).
 abstract final class AppLegal {
-  static const _pagesBase =
-      'https://amansaleem06.github.io/BiteWise';
+  static const termsVersion = '2026-09-21';
+  static const _pagesBase = 'https://amansaleem06.github.io/BiteWise';
 
   static const privacyPolicyUrl = '$_pagesBase/privacy.html';
   static const termsOfServiceUrl = '$_pagesBase/terms.html';
@@ -15,7 +15,7 @@ abstract final class AppLegal {
   static const privacyPolicyMarkdown = '''
 # Privacy Policy
 
-**Last updated:** August 10, 2026
+**Last updated:** September 21, 2026
 
 TasteWise ("we", "our") helps you discover restaurants and share food experiences. This policy explains what we collect and why.
 
@@ -47,7 +47,7 @@ Questions about privacy or support: tastewise2026@gmail.com
 
 **Last updated:** August 10, 2026
 
-By using TasteWise you agree to these terms.
+By creating an account, signing in, or continuing to use TasteWise, you agree to these Terms of Use / End User License Agreement (EULA).
 
 ## Eligibility
 You must be able to form a binding contract in your country. If you are under 13 (or the digital-consent age where you live), you may not use the app.
@@ -56,7 +56,7 @@ You must be able to form a binding contract in your country. If you are under 13
 You are responsible for your login and for content you post. Do not share your password. You may delete your account at any time in Settings.
 
 ## Acceptable use
-Do not post illegal, hateful, harassing, or infringing content. Do not spam, scrape, or attempt to disrupt TasteWise. You can report content or block another user from a post, profile, or chat. We review reports and may remove content or suspend accounts that violate these terms.
+TasteWise has zero tolerance for objectionable content or abusive users. Do not post illegal, hateful, harassing, sexually explicit, threatening, or infringing content. Do not spam, scrape, or attempt to disrupt TasteWise. You can report content or block another user from a post, profile, or chat. We review reports and may remove content or suspend accounts that violate these terms.
 
 ## Content license
 You keep ownership of your content. You grant TasteWise a non-exclusive license to host and display it so the service can function. You can remove content or delete your account to stop ongoing display of personal profile data.

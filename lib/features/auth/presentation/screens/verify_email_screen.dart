@@ -41,12 +41,18 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
   Future<void> _check({bool manual = false}) async {
     if (_checking) return;
     _checking = true;
-    final verified =
-        await ref.read(authControllerProvider.notifier).checkVerified();
-    _checking = false;
-    // On success the auth stream re-emits and the router redirects to Home.
-    if (!verified && manual && mounted) {
-      AppSnackbar.show(context, 'Not verified yet — check your inbox.');
+    try {
+      final verified =
+          await ref.read(authControllerProvider.notifier).checkVerified();
+      if (!verified && manual && mounted) {
+        AppSnackbar.show(context, 'Not verified yet — check your inbox.');
+      }
+    } catch (_) {
+      if (manual && mounted)
+        AppSnackbar.error(
+            context, 'Could not check verification. Please retry.');
+    } finally {
+      _checking = false;
     }
   }
 
@@ -102,8 +108,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
         AppOutlinedButton(label: AppStrings.resendEmail, onPressed: _resend),
         const SizedBox(height: AppSpacing.lg),
         TextButton(
-          onPressed: () =>
-              ref.read(authControllerProvider.notifier).signOut(),
+          onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
           child: const Text(AppStrings.signOut),
         ),
       ],

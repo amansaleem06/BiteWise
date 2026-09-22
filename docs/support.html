@@ -4,44 +4,37 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>TasteWise — Support</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: "Segoe UI", system-ui, sans-serif;
-      color: #1c1917;
-      background: #fdf8f3;
-      line-height: 1.55;
-    }
-    main {
-      max-width: 40rem;
-      margin: 0 auto;
-      padding: 2.5rem 1.25rem 4rem;
-    }
-    h1 { font-size: 1.75rem; margin-bottom: 0.35rem; }
-    a { color: #ea580c; }
-    nav { margin-bottom: 1.5rem; font-size: 0.95rem; }
-    .card {
-      background: #fff;
-      border: 1px solid #e7e0d8;
-      border-radius: 12px;
-      padding: 1.25rem;
-      margin-top: 1.25rem;
-    }
-  </style>
+  <meta name="description" content="Help and support for TasteWise." />
+  <meta name="theme-color" content="#4A0E0E" />
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/tastewise.css" />
 </head>
 <body>
-  <main>
-    <nav>
-      <a href="index.html">Home</a> ·
-      <a href="privacy.html">Privacy</a> ·
-      <a href="terms.html">Terms</a> ·
-      <a href="support.html">Support</a>
-    </nav>
+  <a class="skip" href="#content">Skip to content</a>
+  <header class="tw-nav">
+    <div class="wrap" style="display:flex;align-items:center;width:100%;position:relative">
+      <a class="tw-brand" href="index.html"><img src="assets/logo.svg" alt="" width="32" height="32" />TasteWise</a>
+      <ul id="site-nav" class="tw-nav__links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="privacy.html">Privacy</a></li>
+        <li><a href="terms.html">Terms</a></li>
+        <li><a href="support.html" aria-current="page">Support</a></li>
+      </ul>
+      <div class="tw-nav__actions">
+        <button class="tw-icon-btn" type="button" data-theme-toggle aria-label="Switch to dark mode">◐</button>
+        <button class="tw-icon-btn" type="button" data-nav-open aria-expanded="false" aria-controls="site-nav" aria-label="Open menu">☰</button>
+      </div>
+    </div>
+  </header>
+  <main id="content" class="legal">
     <h1>TasteWise Support</h1>
-    <p>Need help with TasteWise? We’re here.</p>
+    <p class="meta">Need help with TasteWise? We’re here.</p>
 
-    <div class="card">
-      <h2>Contact</h2>
+    <div class="tw-card stack" style="margin-top:24px">
+      <h2 class="t-title">Contact</h2>
       <p>
         Email:
         <a href="mailto:tastewise2026@gmail.com">tastewise2026@gmail.com</a>
@@ -49,8 +42,8 @@
       <p>We usually reply within 1–2 business days. This is also where report follow-ups go.</p>
     </div>
 
-    <div class="card">
-      <h2>Report or block</h2>
+    <div class="tw-card stack" style="margin-top:16px">
+      <h2 class="t-title">Report or block</h2>
       <p>In the app you can report a post, comment, story, profile, or chat, and you can block a user. Reports are reviewed from this inbox.</p>
       <ul>
         <li>Post: tap ••• then Report post or Block user</li>
@@ -60,8 +53,8 @@
       </ul>
     </div>
 
-    <div class="card">
-      <h2>Common topics</h2>
+    <div class="tw-card stack" style="margin-top:16px">
+      <h2 class="t-title">Common topics</h2>
       <ul>
         <li>Account, sign-in, and password reset</li>
         <li>Posts, photos, and restaurant profiles</li>
@@ -70,5 +63,15 @@
       </ul>
     </div>
   </main>
+  <footer class="tw-footer">
+    <div class="wrap cluster-md">
+      <a href="index.html">Home</a>
+      <a href="design-system.html">Design</a>
+      <a href="privacy.html">Privacy</a>
+      <a href="terms.html">Terms</a>
+      <a href="support.html">Support</a>
+    </div>
+  </footer>
+  <script src="assets/site.js"></script>
 </body>
 </html>

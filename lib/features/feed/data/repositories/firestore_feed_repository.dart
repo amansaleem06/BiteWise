@@ -1,3 +1,4 @@
+import '../../../../core/services/content_visibility.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:firebase_storage/firebase_storage.dart';
@@ -51,7 +52,9 @@ class FirestoreFeedRepository implements FeedRepository {
           .doc(postId)
           .get(),
     ]);
-    if (!results[0].exists) throw const AppException('Post not found');
+    final visibility = await ContentVisibility.load(_firestore);
+    if (!visibility.allows(results[0]))
+      throw const AppException('Post not found');
     return PostModel.fromDoc(
       results[0],
       isLikedByMe: results[1].exists,
@@ -69,7 +72,8 @@ class FirestoreFeedRepository implements FeedRepository {
   }
 
   @override
-  Future<FeedPage> fetchFollowing({Object? cursor, int limit = _pageSize}) async {
+  Future<FeedPage> fetchFollowing(
+      {Object? cursor, int limit = _pageSize}) async {
     final following = await _firestore
         .collection('users')
         .doc(_uid)
@@ -89,7 +93,8 @@ class FirestoreFeedRepository implements FeedRepository {
   }
 
   @override
-  Future<FeedPage> fetchBookmarks({Object? cursor, int limit = _pageSize}) async {
+  Future<FeedPage> fetchBookmarks(
+      {Object? cursor, int limit = _pageSize}) async {
     Query<Map<String, dynamic>> query = _firestore
         .collection('users')
         .doc(_uid)
@@ -100,10 +105,11 @@ class FirestoreFeedRepository implements FeedRepository {
     final snap = await query.get();
     if (snap.docs.isEmpty) return const FeedPage(posts: [], hasMore: false);
 
+    final visibility = await ContentVisibility.load(_firestore);
     final posts = <Post>[];
     for (final edge in snap.docs) {
       final postSnap = await _posts.doc(edge.id).get();
-      if (!postSnap.exists) continue;
+      if (!visibility.allows(postSnap)) continue;
       posts.add(
         PostModel.fromDoc(
           postSnap,
@@ -157,8 +163,10 @@ class FirestoreFeedRepository implements FeedRepository {
     final bookmarkDocs = results[1];
     final repostDocs = results[2];
 
+    final visibility = await ContentVisibility.load(_firestore);
     final posts = <Post>[];
     for (var i = 0; i < snap.docs.length; i++) {
+      if (!visibility.allows(snap.docs[i])) continue;
       posts.add(
         PostModel.fromDoc(
           snap.docs[i],

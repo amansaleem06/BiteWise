@@ -53,9 +53,8 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
   @override
   void initState() {
     super.initState();
-    _authorIndex = _rings.isEmpty
-        ? 0
-        : widget.args.startIndex.clamp(0, _rings.length - 1);
+    _authorIndex =
+        _rings.isEmpty ? 0 : widget.args.startIndex.clamp(0, _rings.length - 1);
     _authorPages = PageController(initialPage: _authorIndex);
     _likeCount = _rings.isEmpty ? 0 : _story.likeCount;
     _progress = AnimationController(
@@ -401,7 +400,8 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.cream.withValues(alpha: 0.16),
+                                  color:
+                                      AppColors.cream.withValues(alpha: 0.16),
                                   borderRadius: BorderRadius.circular(99),
                                 ),
                                 child: Text(
@@ -559,6 +559,17 @@ class _StoryCommentsSheetState extends ConsumerState<_StoryCommentsSheet> {
                     itemBuilder: (context, i) {
                       final c = items[i];
                       return ListTile(
+                        onLongPress:
+                            c.authorId == ref.read(currentUserProvider)?.uid
+                                ? null
+                                : () => SafetyActions.report(
+                                      context,
+                                      ref,
+                                      type: ReportTargetType.comment,
+                                      targetId:
+                                          'stories/${widget.storyId}/comments/${c.id}',
+                                      targetUserId: c.authorId,
+                                    ),
                         contentPadding: EdgeInsets.zero,
                         leading: CircleAvatar(
                           radius: 16,

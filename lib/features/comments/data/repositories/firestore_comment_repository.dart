@@ -44,7 +44,10 @@ class FirestoreCommentRepository implements CommentRepository {
 
     final snap = await query.get();
     return CommentPage(
-      comments: snap.docs.map(_fromDoc).toList(),
+      comments: snap.docs
+          .where((doc) => doc.data()['moderationHidden'] != true)
+          .map(_fromDoc)
+          .toList(),
       cursor: snap.docs.isEmpty ? null : snap.docs.last,
       hasMore: snap.docs.length == limit,
     );
@@ -81,9 +84,8 @@ class FirestoreCommentRepository implements CommentRepository {
       }
     }
 
-    final preview = trimmed.length > 140
-        ? '${trimmed.substring(0, 140)}…'
-        : trimmed;
+    final preview =
+        trimmed.length > 140 ? '${trimmed.substring(0, 140)}…' : trimmed;
     final batch = _firestore.batch()
       ..set(commentRef, {
         'authorId': user.uid,

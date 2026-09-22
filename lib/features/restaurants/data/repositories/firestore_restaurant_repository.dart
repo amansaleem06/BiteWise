@@ -1,3 +1,4 @@
+import '../../../../core/services/content_visibility.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 
@@ -82,8 +83,10 @@ class FirestoreRestaurantRepository implements RestaurantRepository {
       ),
     ]);
 
+    final visibility = await ContentVisibility.load(_firestore);
     final posts = <Post>[];
     for (var i = 0; i < snap.docs.length; i++) {
+      if (!visibility.allows(snap.docs[i])) continue;
       posts.add(
         PostModel.fromDoc(
           snap.docs[i],
@@ -122,15 +125,29 @@ class FirestoreRestaurantRepository implements RestaurantRepository {
     String? businessEmail,
   }) async {
     final uid = _uid;
-    await _firestore.collection('users').doc(uid).update({
+    final updatedAt = FieldValue.serverTimestamp();
+    final privateUpdates = <String, dynamic>{
       'businessName': businessName.trim(),
       'businessAddress': address.trim(),
       'businessPhone': phone.trim(),
       if (businessEmail != null && businessEmail.trim().isNotEmpty)
         'businessEmail': businessEmail.trim(),
       'businessVerificationStatus': BusinessVerificationStatus.pending.name,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+      'updatedAt': updatedAt,
+    };
+    await (_firestore.batch()
+          ..update(_firestore.collection('users').doc(uid), privateUpdates)
+          ..set(
+            _firestore.collection('publicProfiles').doc(uid),
+            {
+              'businessName': businessName.trim(),
+              'businessVerificationStatus':
+                  BusinessVerificationStatus.pending.name,
+              'updatedAt': updatedAt,
+            },
+            SetOptions(merge: true),
+          ))
+        .commit();
   }
 
   @override
@@ -163,7 +180,8 @@ class FirestoreRestaurantRepository implements RestaurantRepository {
     final userSnap = await _firestore.collection('users').doc(uid).get();
     final user = userSnap.data() ?? {};
     if ((user['role'] as String?) != UserRole.restaurantOwner.name) {
-      throw const AppException('Only business accounts can claim a restaurant.');
+      throw const AppException(
+          'Only business accounts can claim a restaurant.');
     }
 
     final owned = user['ownedRestaurantId'] as String?;
@@ -210,22 +228,17 @@ class FirestoreRestaurantRepository implements RestaurantRepository {
       );
     }
 
-    final listingName =
-        (details?.name.isNotEmpty == true
+    final listingName = (details?.name.isNotEmpty == true
             ? details!.name
             : data['name'] as String?) ??
         '';
     final listingAddress = details?.address ?? data['address'] as String?;
     final listingPhone = details?.phone ?? data['phone'] as String?;
 
-    final businessName =
-        ((user['businessName'] as String?) ?? '').trim();
-    final businessAddress =
-        ((user['businessAddress'] as String?) ?? '').trim();
-    final businessPhone =
-        ((user['businessPhone'] as String?) ?? '').trim();
-    final businessEmail =
-        ((user['businessEmail'] as String?) ?? '').trim();
+    final businessName = ((user['businessName'] as String?) ?? '').trim();
+    final businessAddress = ((user['businessAddress'] as String?) ?? '').trim();
+    final businessPhone = ((user['businessPhone'] as String?) ?? '').trim();
+    final businessEmail = ((user['businessEmail'] as String?) ?? '').trim();
 
     if (businessName.isNotEmpty &&
         listingName.isNotEmpty &&
@@ -277,13 +290,25 @@ class FirestoreRestaurantRepository implements RestaurantRepository {
       'updatedAt': FieldValue.serverTimestamp(),
     });
 
-    await _firestore.collection('users').doc(uid).update({
-      'pendingClaimRestaurantId': restaurantId,
-      'pendingClaimCode': claimCode,
-      'businessVerificationStatus':
-          BusinessVerificationStatus.pending.name,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    final updatedAt = FieldValue.serverTimestamp();
+    await (_firestore.batch()
+          ..update(_firestore.collection('users').doc(uid), {
+            'pendingClaimRestaurantId': restaurantId,
+            'pendingClaimCode': claimCode,
+            'businessVerificationStatus':
+                BusinessVerificationStatus.pending.name,
+            'updatedAt': updatedAt,
+          })
+          ..set(
+            _firestore.collection('publicProfiles').doc(uid),
+            {
+              'businessVerificationStatus':
+                  BusinessVerificationStatus.pending.name,
+              'updatedAt': updatedAt,
+            },
+            SetOptions(merge: true),
+          ))
+        .commit();
 
     return ClaimResult(
       restaurantId: restaurantId,

@@ -1,3 +1,5 @@
+import '../../../safety/presentation/providers/safety_providers.dart';
+import '../../../../core/errors/app_exception.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../feed/domain/entities/post.dart';
@@ -15,8 +17,13 @@ final commentRepositoryProvider = Provider<CommentRepository>(
 class PostDetailController
     extends AutoDisposeFamilyAsyncNotifier<Post, String> {
   @override
-  Future<Post> build(String postId) =>
-      ref.read(feedRepositoryProvider).getPostById(postId);
+  Future<Post> build(String postId) async {
+    final blocked = await ref.watch(blockedUserIdsProvider.future);
+    final post = await ref.read(feedRepositoryProvider).getPostById(postId);
+    if (blocked.contains(post.authorId))
+      throw const AppException('This content is unavailable.');
+    return post;
+  }
 
   Future<void> toggleLike() => _toggle(
         apply: (p) => p.copyWith(
@@ -110,9 +117,10 @@ class CommentsController
 
   @override
   Future<CommentsState> build(String postId) async {
+    await ref.watch(blockedUserIdsProvider.future);
     final page = await _repo.fetchComments(postId);
     return CommentsState(
-      comments: page.comments,
+      comments: _visible(page.comments),
       cursor: page.cursor,
       hasMore: page.hasMore,
     );
@@ -126,7 +134,7 @@ class CommentsController
       final page = await _repo.fetchComments(arg, cursor: current.cursor);
       state = AsyncData(
         current.copyWith(
-          comments: [...current.comments, ...page.comments],
+          comments: _visible([...current.comments, ...page.comments]),
           cursor: page.cursor ?? current.cursor,
           hasMore: page.hasMore,
           isLoadingMore: false,
@@ -137,12 +145,21 @@ class CommentsController
     }
   }
 
-  void startReply(String authorName) =>
-      state = AsyncData((state.valueOrNull ?? const CommentsState())
-          .copyWith(replyToName: authorName),);
+  List<Comment> _visible(List<Comment> comments) {
+    final ids = ref.read(blockedUserIdsProvider).valueOrNull;
+    if (ids == null) return [];
+    return comments.where((c) => !ids.contains(c.authorId)).toList();
+  }
+
+  void startReply(String authorName) => state = AsyncData(
+        (state.valueOrNull ?? const CommentsState())
+            .copyWith(replyToName: authorName),
+      );
 
   void cancelReply() => state = AsyncData(
-      (state.valueOrNull ?? const CommentsState()).copyWith(clearReplyTo: true),);
+        (state.valueOrNull ?? const CommentsState())
+            .copyWith(clearReplyTo: true),
+      );
 
   /// Returns true on success.
   Future<bool> send(String text) async {

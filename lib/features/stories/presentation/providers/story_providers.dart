@@ -1,3 +1,4 @@
+import '../../../safety/presentation/providers/safety_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -10,12 +11,20 @@ final storyRepositoryProvider = Provider<StoryRepository>(
 );
 
 final storyRingsProvider = StreamProvider.autoDispose<List<StoryRing>>(
-  (ref) => ref.watch(storyRepositoryProvider).watchRings(),
+  (ref) async* {
+    final blocked = await ref.watch(blockedUserIdsProvider.future);
+    yield* ref.watch(storyRepositoryProvider).watchRings().map(
+        (rings) => rings.where((r) => !blocked.contains(r.authorId)).toList());
+  },
 );
 
 final storyCommentsProvider =
     StreamProvider.autoDispose.family<List<StoryComment>, String>(
-  (ref, storyId) => ref.watch(storyRepositoryProvider).watchComments(storyId),
+  (ref, storyId) async* {
+    final blocked = await ref.watch(blockedUserIdsProvider.future);
+    yield* ref.watch(storyRepositoryProvider).watchComments(storyId).map(
+        (items) => items.where((c) => !blocked.contains(c.authorId)).toList());
+  },
 );
 
 class StoryActions {

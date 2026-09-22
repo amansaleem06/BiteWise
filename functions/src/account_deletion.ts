@@ -44,6 +44,7 @@ async function deleteSubcollections(uid: string): Promise<void> {
   if (userSnap.exists) {
     await userRef.delete();
   }
+  await db().doc(`publicProfiles/${uid}`).delete().catch(() => undefined);
 }
 
 async function anonymizePosts(uid: string): Promise<void> {

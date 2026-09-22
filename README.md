@@ -26,6 +26,9 @@ secrets needed.
 | [SETUP.md](SETUP.md) | Firebase / Google Cloud console setup, milestone history |
 | [NO_MAC_RELEASE.md](NO_MAC_RELEASE.md) | Ship to the App Store without a Mac (Codemagic + TestFlight) |
 | [docs/APP_STORE_LISTING.md](docs/APP_STORE_LISTING.md) | Store listing copy |
+| [docs/index.html](docs/index.html) | Marketing landing (GitHub Pages) |
+| [docs/design-system.html](docs/design-system.html) | TasteWise design system |
+| [docs/DESIGN.md](docs/DESIGN.md) | Principles, tokens, do’s/don’ts, dev guide |
 | [docs/APP_REVIEW_CHECKLIST.md](docs/APP_REVIEW_CHECKLIST.md) | Release testing, App Store Connect, privacy, and review checklist |
 
 ## Stack

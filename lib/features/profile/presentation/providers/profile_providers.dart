@@ -1,3 +1,4 @@
+import '../../../safety/presentation/providers/safety_providers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -63,6 +64,9 @@ class UserPostsController
 
   @override
   Future<FeedState> build(String uid) async {
+    final blocked = await ref.watch(blockedUserIdsProvider.future);
+    if (blocked.contains(uid))
+      return const FeedState(posts: [], hasMore: false);
     final page = await _repo.fetchUserPosts(uid);
     return FeedState(
       posts: page.posts,
@@ -99,8 +103,6 @@ class EditProfileController extends AutoDisposeAsyncNotifier<void> {
   @override
   Future<void> build() async {}
 
-  final _picker = ImagePicker();
-
   /// Returns true on success.
   Future<bool> save({
     required String displayName,
@@ -131,12 +133,7 @@ class EditProfileController extends AutoDisposeAsyncNotifier<void> {
     return !state.hasError;
   }
 
-  Future<bool> pickAndUploadAvatar() async {
-    final image = await _picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 95,
-    );
-    if (image == null) return false;
+  Future<bool> uploadAvatar(XFile image) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
       () => ref.read(userRepositoryProvider).updateAvatar(image),

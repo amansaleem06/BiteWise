@@ -1,3 +1,4 @@
+import '../widgets/terms_acceptance.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -53,6 +54,7 @@ class WelcomeScreen extends ConsumerWidget {
               ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),
         const SizedBox(height: AppSpacing.xl),
+        const TermsAcceptance(),
         AppButton(
           label: AppStrings.signUp,
           onPressed: () => context.push(Routes.signUp),
@@ -78,11 +80,13 @@ class WelcomeScreen extends ConsumerWidget {
           ),
         ],
         const SizedBox(height: AppSpacing.lg),
-		Row(
+        Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(AppStrings.hasAccountPrompt,
-                style: theme.textTheme.bodyMedium,),
+            Text(
+              AppStrings.hasAccountPrompt,
+              style: theme.textTheme.bodyMedium,
+            ),
             TextButton(
               onPressed: () => context.push(Routes.signIn),
               child: const Text(AppStrings.signIn),

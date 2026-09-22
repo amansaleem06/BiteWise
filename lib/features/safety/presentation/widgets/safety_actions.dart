@@ -133,7 +133,7 @@ abstract final class SafetyActions {
       builder: (ctx) => AlertDialog(
         title: const Text('Block this user?'),
         content: Text(
-          'You won’t see $name’s posts or messages. You can unblock them later from their profile.',
+          'You won’t see $name’s posts or messages. You can unblock them later in Settings → Blocked accounts.',
         ),
         actions: [
           TextButton(

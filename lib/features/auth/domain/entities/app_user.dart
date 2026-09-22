@@ -20,7 +20,8 @@ enum MessagePrivacy {
 
   String get subtitle => switch (this) {
         MessagePrivacy.everyone => 'Anyone on TasteWise can send you a message',
-        MessagePrivacy.followers => 'Only people who follow you can start a chat',
+        MessagePrivacy.followers =>
+          'Only people who follow you can start a chat',
         MessagePrivacy.none =>
           'New chats are closed. Existing conversations stay open',
       };
@@ -97,6 +98,7 @@ class AppUser extends Equatable {
     this.messagePrivacy = MessagePrivacy.everyone,
     this.dietaryPreferences = const [],
     this.emailVerified = false,
+    this.needsEmailVerification = false,
     this.followerCount = 0,
     this.followingCount = 0,
     this.postCount = 0,
@@ -124,6 +126,7 @@ class AppUser extends Equatable {
   final MessagePrivacy messagePrivacy;
   final List<DietaryPreference> dietaryPreferences;
   final bool emailVerified;
+  final bool needsEmailVerification;
   final int followerCount;
   final int followingCount;
   final int postCount;
@@ -165,6 +168,7 @@ class AppUser extends Equatable {
     MessagePrivacy? messagePrivacy,
     List<DietaryPreference>? dietaryPreferences,
     bool? emailVerified,
+    bool? needsEmailVerification,
   }) =>
       AppUser(
         uid: uid,
@@ -191,6 +195,8 @@ class AppUser extends Equatable {
         messagePrivacy: messagePrivacy ?? this.messagePrivacy,
         dietaryPreferences: dietaryPreferences ?? this.dietaryPreferences,
         emailVerified: emailVerified ?? this.emailVerified,
+        needsEmailVerification:
+            needsEmailVerification ?? this.needsEmailVerification,
         followerCount: followerCount,
         followingCount: followingCount,
         postCount: postCount,
@@ -223,6 +229,7 @@ class AppUser extends Equatable {
         messagePrivacy: messagePrivacy,
         dietaryPreferences: dietaryPreferences,
         emailVerified: emailVerified,
+        needsEmailVerification: needsEmailVerification,
         followerCount: followerCount ?? this.followerCount,
         followingCount: followingCount ?? this.followingCount,
         postCount: postCount ?? this.postCount,
@@ -250,6 +257,7 @@ class AppUser extends Equatable {
         messagePrivacy,
         dietaryPreferences,
         emailVerified,
+        needsEmailVerification,
         followerCount,
         followingCount,
         postCount,

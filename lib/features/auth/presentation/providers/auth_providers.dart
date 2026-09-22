@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'consent_providers.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -30,8 +31,8 @@ class AuthController extends AsyncNotifier<void> {
 
   AuthRepository get _repo => ref.read(authRepositoryProvider);
 
-  Future<bool> signIn(String email, String password) =>
-      _run(() => _repo.signInWithEmail(email: email, password: password));
+  Future<bool> signIn(String email, String password) => _authenticate(
+      () => _repo.signInWithEmail(email: email, password: password));
 
   Future<bool> signUp(
     String name,
@@ -40,7 +41,7 @@ class AuthController extends AsyncNotifier<void> {
     UserRole role = UserRole.user,
     String? businessName,
   }) =>
-      _run(
+      _authenticate(
         () => _repo.signUpWithEmail(
           displayName: name,
           email: email,
@@ -50,24 +51,42 @@ class AuthController extends AsyncNotifier<void> {
         ),
       );
 
-  Future<bool> signInWithGoogle() => _run(() async {
-        try {
-          await _repo.signInWithGoogle();
-        } on AppException catch (e) {
-          if (e.code == 'cancelled') return; // user dismissed, not an error
-          rethrow;
-        }
-      });
+  Future<bool> signInWithGoogle() => _authenticate(_repo.signInWithGoogle);
+  Future<bool> signInWithApple() => _authenticate(_repo.signInWithApple);
 
-  Future<bool> signInWithApple() => _run(() async {
-        try {
-          await _repo.signInWithApple();
-        } on AppException catch (e) {
-          if (e.code == 'canceled' || e.code == 'web-context-canceled') {
-            return; // user dismissed the sheet
-          }
-          rethrow;
-        }
+  Future<bool> _authenticate(Future<AppUser> Function() action) async {
+    if (state.isLoading) return false;
+    if (!ref.read(termsCheckedProvider)) {
+      state = AsyncError(
+          const AppException('Please agree to the Terms of Use / EULA first.'),
+          StackTrace.current);
+      return false;
+    }
+    state = const AsyncLoading();
+    try {
+      final user = await action();
+      await recordTermsAcceptance(ref, user.uid);
+      state = const AsyncData(null);
+      return true;
+    } on AppException catch (e, st) {
+      if (['cancelled', 'canceled', 'web-context-canceled'].contains(e.code)) {
+        state = const AsyncData(null);
+      } else {
+        state = AsyncError(e, st);
+      }
+      return false;
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      return false;
+    }
+  }
+
+  Future<bool> acceptTerms() => _run(() async {
+        if (!ref.read(termsCheckedProvider))
+          throw const AppException('Please agree to the terms first.');
+        final user = ref.read(currentUserProvider);
+        if (user == null) throw const AppException('Please sign in again.');
+        await recordTermsAcceptance(ref, user.uid);
       });
 
   Future<bool> sendPasswordReset(String email) =>
@@ -95,6 +114,7 @@ class AuthController extends AsyncNotifier<void> {
         }
       }());
       await _repo.signOut();
+      ref.read(termsCheckedProvider.notifier).state = false;
       // Drop cached signed-in trees so the next session starts clean.
       ref.invalidate(authStateProvider);
       state = const AsyncData(null);

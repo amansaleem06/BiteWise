@@ -7,6 +7,33 @@ import '../../domain/entities/app_user.dart';
 ///
 /// Document path: `users/{uid}`
 abstract final class UserModel {
+  static const publicFields = <String>{
+    'displayName',
+    'displayNameLower',
+    'username',
+    'usernameLower',
+    'photoUrl',
+    'bio',
+    'role',
+    'businessName',
+    'businessVerificationStatus',
+    'ownedRestaurantId',
+    'messagePrivacy',
+    'followerCount',
+    'followingCount',
+    'postCount',
+    'suspended',
+    'createdAt',
+    'updatedAt',
+  };
+
+  /// Safe subset copied to `publicProfiles/{uid}`. Account and contact data
+  /// stays in the owner-only `users/{uid}` document.
+  static Map<String, dynamic> publicProfile(Map<String, dynamic> user) => {
+        for (final entry in user.entries)
+          if (publicFields.contains(entry.key)) entry.key: entry.value,
+      };
+
   static AppUser fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data() ?? const <String, dynamic>{};
     final role = UserRole.fromKey(data['role'] as String?);

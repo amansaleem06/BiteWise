@@ -121,8 +121,8 @@ workflows:
       - name: Resolve next Android version code
         script: |
           set -euo pipefail
-          latest="${PROJECT_BUILD_NUMBER:-22}"
-          if [ "$latest" -le 21 ]; then latest=22; fi
+          latest="${PROJECT_BUILD_NUMBER:-49}"
+          if [ "$latest" -le 48 ]; then latest=49; fi
           echo "ANDROID_VERSION_CODE=$latest" >> "$CM_ENV"
           echo "Using versionCode=$latest"
       - name: Build app bundle

@@ -3,35 +3,215 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>TasteWise</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: "Segoe UI", system-ui, sans-serif;
-      color: #1c1917;
-      background: #fdf8f3;
-      line-height: 1.55;
-    }
-    main {
-      max-width: 36rem;
-      margin: 0 auto;
-      padding: 3rem 1.25rem;
-      text-align: center;
-    }
-    h1 { margin-bottom: 0.25rem; }
-    .tag { color: #78716c; margin-bottom: 2rem; }
-    a { color: #ea580c; margin: 0 0.5rem; }
-  </style>
+  <title>TasteWise — Discover. Taste. Share.</title>
+  <meta name="description" content="See what people actually eat nearby. Share plates, follow restaurants, and collect Taste Passport stamps." />
+  <meta name="theme-color" content="#4A0E0E" />
+  <link rel="canonical" href="https://amansaleem06.github.io/BiteWise/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="TasteWise — Discover. Taste. Share." />
+  <meta property="og:description" content="A food-focused social app for discovering restaurants and sharing what you love to eat." />
+  <meta property="og:url" content="https://amansaleem06.github.io/BiteWise/" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,800&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/tastewise.css" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "TasteWise",
+    "applicationCategory": "LifestyleApplication",
+    "operatingSystem": "iOS, Android",
+    "description": "Discover restaurants, share plates, and collect Taste Passport stamps.",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "url": "https://amansaleem06.github.io/BiteWise/"
+  }
+  </script>
 </head>
 <body>
-  <main>
-    <h1>TasteWise</h1>
-    <p class="tag">Discover. Taste. Share.</p>
-    <p>
-      <a href="privacy.html">Privacy Policy</a>
-      <a href="terms.html">Terms of Service</a>
-      <a href="support.html">Support</a>
-    </p>
+  <a class="skip" href="#content">Skip to content</a>
+  <header class="tw-nav">
+    <div class="wrap" style="display:flex;align-items:center;width:100%;position:relative">
+      <a class="tw-brand" href="index.html">
+        <img src="assets/logo.svg" alt="" width="32" height="32" />
+        TasteWise
+      </a>
+      <ul id="site-nav" class="tw-nav__links">
+        <li><a href="#product">Product</a></li>
+        <li><a href="#palette">Palette</a></li>
+        <li><a href="#restaurants">Restaurants</a></li>
+        <li><a href="design-system.html">Design</a></li>
+        <li><a href="support.html">Support</a></li>
+      </ul>
+      <div class="tw-nav__actions">
+        <button class="tw-icon-btn" type="button" data-theme-toggle aria-pressed="false" aria-label="Switch to dark mode">◐</button>
+        <button class="tw-icon-btn" type="button" data-nav-open aria-expanded="false" aria-controls="site-nav" aria-label="Open menu">☰</button>
+        <a class="tw-btn tw-btn--primary tw-btn--sm" href="#download">Get the app</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="content">
+    <section class="hero">
+      <div class="wrap grid">
+        <div class="span-7 hero__copy stack-lg">
+          <p class="t-overline kicker">Discover. Taste. Share.</p>
+          <h1 class="t-display">Taste is a place you can return to.</h1>
+          <p class="t-lede" style="max-width:36rem">See what people actually eat nearby. Share plates, follow restaurants, and collect Taste Passport stamps — without the noise of a generic feed.</p>
+          <div class="cluster-md">
+            <a class="tw-btn tw-btn--primary" href="#download">Get TasteWise</a>
+            <a class="tw-btn tw-btn--secondary" href="#product">See the product</a>
+          </div>
+          <p class="t-caption">Free on iOS and Android. Account deletion anytime in Settings.</p>
+        </div>
+        <div class="span-5">
+          <div class="device" aria-hidden="true">
+            <div class="device__notch"></div>
+            <div class="device__screen">
+              <div style="display:flex;justify-content:space-between;align-items:baseline">
+                <strong style="font-family:var(--font-display);font-size:22px">For You</strong>
+                <span style="font-size:12px;font-weight:700;color:#6B5752">Palette</span>
+              </div>
+              <div class="stories">
+                <div class="story"></div>
+                <div class="story"></div>
+                <div class="story"></div>
+                <div class="story"></div>
+              </div>
+              <article class="mini-plate">
+                <div class="mini-media"></div>
+                <div style="padding:12px 14px 16px">
+                  <div style="font-weight:800;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#8C6E48">Italian</div>
+                  <div style="font-family:var(--font-display);font-size:20px;font-weight:700">Agnolotti</div>
+                  <div style="font-size:13px;color:#6B5752">Osteria · ★ 4.8</div>
+                </div>
+              </article>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="product">
+      <div class="wrap grid">
+        <div class="span-4 stack">
+          <p class="t-overline">Discover</p>
+          <h2 class="t-headline">Plates, not posters.</h2>
+          <p class="t-lede">For You, Following, and Palette — three ways to find the next table. Nearby lives on a map, not a list of ads.</p>
+        </div>
+        <div class="span-4 stack">
+          <p class="t-overline">Taste</p>
+          <h2 class="t-headline">Your Palette remembers.</h2>
+          <p class="t-lede">Cuisines you love, dishes you skip, a week plated around how you actually eat. Allergy chips stay in the brief.</p>
+        </div>
+        <div class="span-4 stack">
+          <p class="t-overline">Share</p>
+          <h2 class="t-headline">Every dish, a story.</h2>
+          <p class="t-lede">Photos, captions, ratings, tags, and stories. Like, comment, bookmark, message — then stamp the Taste Passport.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section--wash" id="features">
+      <div class="wrap stack-lg">
+        <div class="stack" style="max-width:40rem">
+          <p class="t-overline kicker">The table</p>
+          <h2 class="t-headline">Built for diners. Ready for kitchens.</h2>
+        </div>
+        <div class="grid">
+          <article class="tw-card span-4 stack">
+            <div class="feature-icon" aria-hidden="true">1</div>
+            <h3 class="t-title">For You feed</h3>
+            <p class="t-body">An editorial course of plates ranked for your tastes, with cuisine chips and a quiet chrome that steps aside when you scroll.</p>
+          </article>
+          <article class="tw-card span-4 stack">
+            <div class="feature-icon" aria-hidden="true">2</div>
+            <h3 class="t-title">Nearby map</h3>
+            <p class="t-body">Discover restaurants around you. Search when you allow location — or enter a place by hand if you prefer not to.</p>
+          </article>
+          <article class="tw-card span-4 stack">
+            <div class="feature-icon" aria-hidden="true">3</div>
+            <h3 class="t-title">Taste Passport</h3>
+            <p class="t-body">Collect stamps as you eat. A quiet record of where your palate has been — not a leaderboard.</p>
+          </article>
+          <article class="tw-card span-4 stack" id="palette">
+            <div class="feature-icon" aria-hidden="true">4</div>
+            <h3 class="t-title">Your Palette</h3>
+            <p class="t-body">Pick cuisines, dishes, and anything to skip. We’ll plate a week around you, and serve matching posts in Palette.</p>
+          </article>
+          <article class="tw-card span-4 stack">
+            <div class="feature-icon" aria-hidden="true">5</div>
+            <h3 class="t-title">Reservations</h3>
+            <p class="t-body">Request a table from a restaurant page. Track pending, confirmed, and cancelled bookings in one list.</p>
+          </article>
+          <article class="tw-card span-4 stack">
+            <div class="feature-icon" aria-hidden="true">6</div>
+            <h3 class="t-title">Messages &amp; safety</h3>
+            <p class="t-body">Chat with people you follow. Report a post, comment, story, or profile — and block anyone, anytime.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="restaurants">
+      <div class="wrap grid" style="align-items:center">
+        <div class="span-6 stack-lg">
+          <p class="t-overline kicker">For restaurants</p>
+          <h2 class="t-headline">A page that speaks in your voice.</h2>
+          <p class="t-lede">Claim your restaurant, post as the business, and review diner mentions. TasteWise is a table for both sides of the pass.</p>
+          <ul class="stack" style="padding-left:1.1rem">
+            <li>Claim a page — pending until support approves</li>
+            <li>Post as the kitchen, not a personal profile</li>
+            <li>Moderate mentions of your rooms and plates</li>
+          </ul>
+          <a class="tw-btn tw-btn--secondary" href="mailto:tastewise2026@gmail.com">Talk to us</a>
+        </div>
+        <div class="span-6">
+          <div class="tw-card stack" style="max-width:28rem;margin-inline:auto">
+            <span class="tw-badge">Pending claim</span>
+            <h3 class="t-title">Barolo Room</h3>
+            <p class="t-caption">North End · Italian</p>
+            <p class="t-body">Your page is in review. You can still browse mentions; posting as the business unlocks after approval.</p>
+            <div class="cluster">
+              <span class="tw-chip is-selected" aria-pressed="true">Pasta</span>
+              <span class="tw-chip">Wine</span>
+              <span class="tw-chip">Prix fixe</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta-band" id="download">
+      <div class="wrap stack" style="align-items:center">
+        <p class="t-overline" style="color:#B8956A">Now serving</p>
+        <h2 class="t-headline">Bring the table with you.</h2>
+        <p class="t-lede" style="max-width:32rem">TasteWise is free. Sign in with Google or Apple, or create an account. Need the listing? We’ll send TestFlight or Play access when you write.</p>
+        <div class="cluster-md">
+          <a class="tw-btn tw-btn--primary" href="mailto:tastewise2026@gmail.com?subject=TasteWise%20iOS">App Store</a>
+          <a class="tw-btn tw-btn--secondary" href="mailto:tastewise2026@gmail.com?subject=TasteWise%20Android">Google Play</a>
+        </div>
+      </div>
+    </section>
   </main>
+
+  <footer class="tw-footer">
+    <div class="wrap grid">
+      <div class="span-6 stack">
+        <a class="tw-brand" href="index.html"><img src="assets/logo.svg" alt="" width="28" height="28" />TasteWise</a>
+        <p class="t-caption">Discover. Taste. Share.</p>
+      </div>
+      <div class="span-6 cluster-md" style="justify-content:flex-end">
+        <a href="design-system.html">Design system</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="terms.html">Terms</a>
+        <a href="support.html">Support</a>
+        <a href="mailto:tastewise2026@gmail.com">Contact</a>
+      </div>
+    </div>
+  </footer>
+  <script src="assets/site.js"></script>
 </body>
 </html>

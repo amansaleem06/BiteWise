@@ -10,13 +10,15 @@ import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/async_error_view.dart';
 import '../../../feed/domain/entities/post.dart';
+import '../../../safety/presentation/providers/safety_providers.dart';
 import '../../../feed/presentation/providers/feed_providers.dart';
 import '../../../feed/presentation/widgets/feed_shimmer.dart';
 import '../../../feed/presentation/widgets/post_card.dart';
 
-final savedPlatesProvider =
-    FutureProvider.autoDispose<List<Post>>((ref) async {
-  final page = await ref.watch(feedRepositoryProvider).fetchBookmarks(limit: 40);
+final savedPlatesProvider = FutureProvider.autoDispose<List<Post>>((ref) async {
+  await ref.watch(blockedUserIdsProvider.future);
+  final page =
+      await ref.watch(feedRepositoryProvider).fetchBookmarks(limit: 40);
   return page.posts;
 });
 

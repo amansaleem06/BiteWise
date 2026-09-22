@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
-import 'package:flutter/foundation.dart';
+import 'dart:convert';
+import 'dart:async';
 
 import '../../../../core/errors/app_exception.dart';
 import '../../domain/repositories/safety_repository.dart';
@@ -35,14 +36,19 @@ class FirestoreSafetyRepository implements SafetyRepository {
     if (targetUserId == uid) {
       throw const AppException('You cannot report your own account.');
     }
-    await _firestore.collection('reports').add({
-      'reporterId': uid,
-      'targetType': type.name,
-      'targetId': targetId,
-      'targetUserId': targetUserId,
-      'reason': reason,
-      'status': 'open',
-      'createdAt': FieldValue.serverTimestamp(),
+    final id = base64Url.encode(utf8.encode('${type.name}:$targetId'));
+    final report = _firestore.collection('reports').doc('${uid}_$id');
+    await _firestore.runTransaction((transaction) async {
+      if ((await transaction.get(report)).exists) return;
+      transaction.set(report, {
+        'reporterId': uid,
+        'targetType': type.name,
+        'targetId': targetId,
+        'targetUserId': targetUserId,
+        'reason': reason,
+        'status': 'open',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
     });
   }
 
@@ -52,14 +58,19 @@ class FirestoreSafetyRepository implements SafetyRepository {
     if (uid == me) {
       throw const AppException('You cannot block yourself.');
     }
-    await _blocked.doc(uid).set({
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+    final batch = _firestore.batch();
+    batch.set(_blocked.doc(uid), {'createdAt': FieldValue.serverTimestamp()});
+    batch.set(_firestore.doc('users/$uid/blockedBy/$me'),
+        {'createdAt': FieldValue.serverTimestamp()});
+    await batch.commit();
   }
 
   @override
   Future<void> unblockUser(String uid) async {
-    await _blocked.doc(uid).delete();
+    final batch = _firestore.batch();
+    batch.delete(_blocked.doc(uid));
+    batch.delete(_firestore.doc('users/$uid/blockedBy/$_uid'));
+    await batch.commit();
   }
 
   @override
@@ -69,17 +80,36 @@ class FirestoreSafetyRepository implements SafetyRepository {
       yield const {};
       return;
     }
-    try {
-      await for (final snap in _firestore
+    yield* Stream<Set<String>>.multi((controller) {
+      Set<String>? outgoing;
+      Set<String>? incoming;
+      void emit() {
+        if (outgoing != null && incoming != null)
+          controller.add({...outgoing!, ...incoming!});
+      }
+
+      final a = _firestore
           .collection('users')
           .doc(uid)
           .collection('blocked')
-          .snapshots()) {
-        yield snap.docs.map((d) => d.id).toSet();
-      }
-    } catch (e, st) {
-      debugPrint('Blocked users stream failed: $e\n$st');
-      yield const {};
-    }
+          .snapshots()
+          .listen((snap) {
+        outgoing = snap.docs.map((d) => d.id).toSet();
+        emit();
+      }, onError: controller.addError);
+      final b = _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('blockedBy')
+          .snapshots()
+          .listen((snap) {
+        incoming = snap.docs.map((d) => d.id).toSet();
+        emit();
+      }, onError: controller.addError);
+      controller.onCancel = () async {
+        await a.cancel();
+        await b.cancel();
+      };
+    });
   }
 }

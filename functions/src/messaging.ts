@@ -1,3 +1,4 @@
+import { isBlocked } from "./safety";
 /**
  * Chat push delivery: notify the recipient of a new message via FCM.
  * Messages deliberately do NOT create notification-feed docs — they get
@@ -23,7 +24,7 @@ export const onChatMessagePush = onDocumentCreated(
       ? chat.participants
       : [];
     const recipient = participants.find((p) => p !== message.senderId);
-    if (!recipient) return;
+    if (!recipient || await isBlocked(recipient, message.senderId)) return;
 
     const info = chat.participantInfo ?? {};
     const senderName = info[message.senderId]?.name ?? "New message";

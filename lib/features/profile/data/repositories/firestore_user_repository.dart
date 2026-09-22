@@ -1,3 +1,4 @@
+import '../../../../core/services/content_visibility.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:image_picker/image_picker.dart';
@@ -39,13 +40,15 @@ class FirestoreUserRepository implements UserRepository {
 
   CollectionReference<Map<String, dynamic>> get _users =>
       _firestore.collection('users');
+  CollectionReference<Map<String, dynamic>> get _publicProfiles =>
+      _firestore.collection('publicProfiles');
 
   @override
   Future<UserProfile> getById(String uid) async {
     // Followers may exist only as `users/*/following/{uid}` (legacy dual-write
     // gaps). Prefer collection-group discovery over the reverse subcollection.
     final results = await Future.wait([
-      _users.doc(uid).get(),
+      (uid == _uid ? _users : _publicProfiles).doc(uid).get(),
       _users.doc(_uid).collection('following').doc(uid).get(),
       _countPosts(uid),
       _countFollowers(uid),
@@ -183,8 +186,10 @@ class FirestoreUserRepository implements UserRepository {
       ),
     ]);
 
+    final visibility = await ContentVisibility.load(_firestore);
     final posts = <Post>[];
     for (var i = 0; i < snap.docs.length; i++) {
+      if (!visibility.allows(snap.docs[i])) continue;
       posts.add(
         PostModel.fromDoc(
           snap.docs[i],
@@ -288,10 +293,12 @@ class FirestoreUserRepository implements UserRepository {
   }
 
   Future<List<AppUser>> _hydrateUsers(Iterable<String> uids) async {
+    final visibility = await ContentVisibility.load(_firestore);
     final users = await Future.wait(
       uids.map((id) async {
-        final snap = await _users.doc(id).get();
-        if (!snap.exists) return null;
+        final snap =
+            await (id == _uid ? _users : _publicProfiles).doc(id).get();
+        if (!visibility.allows(snap)) return null;
         return UserModel.fromDoc(snap);
       }),
     );
@@ -317,7 +324,14 @@ class FirestoreUserRepository implements UserRepository {
       updates['displayNameLower'] = displayName.trim().toLowerCase();
       await user.updateDisplayName(displayName.trim());
     }
-    if (bio != null) updates['bio'] = bio.trim();
+    if (bio != null) {
+      final clean = bio
+          .replaceAll(RegExp(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]'), '')
+          .trim();
+      if (clean.length > 160)
+        throw const AppException('Bio must be 160 characters or fewer.');
+      updates['bio'] = clean;
+    }
     if (phone != null) updates['phone'] = phone.trim();
     if (messagePrivacy != null) {
       updates['messagePrivacy'] = messagePrivacy.name;
@@ -327,7 +341,16 @@ class FirestoreUserRepository implements UserRepository {
           dietaryPreferences.map((preference) => preference.name).toList();
     }
 
-    await _users.doc(user.uid).update(updates);
+    final publicUpdates = UserModel.publicProfile(updates);
+    final batch = _firestore.batch()..update(_users.doc(user.uid), updates);
+    if (publicUpdates.isNotEmpty) {
+      batch.set(
+        _publicProfiles.doc(user.uid),
+        publicUpdates,
+        SetOptions(merge: true),
+      );
+    }
+    await batch.commit();
   }
 
   @override
@@ -339,13 +362,22 @@ class FirestoreUserRepository implements UserRepository {
     // Cache-bust: Storage keeps the same path, so append a version.
     final versioned =
         '$url${url.contains('?') ? '&' : '?'}v=${DateTime.now().millisecondsSinceEpoch}';
-    await Future.wait([
-      user.updatePhotoURL(versioned),
-      _users.doc(user.uid).update({
-        'photoUrl': versioned,
-        'updatedAt': FieldValue.serverTimestamp(),
-      }),
-    ]);
+    final updates = <String, dynamic>{
+      'photoUrl': versioned,
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+    await (_firestore.batch()
+          ..update(_users.doc(user.uid), updates)
+          ..set(
+            _publicProfiles.doc(user.uid),
+            updates,
+            SetOptions(merge: true),
+          ))
+        .commit();
+    // Firestore is the profile source of truth; Auth metadata is best effort.
+    try {
+      await user.updatePhotoURL(versioned);
+    } catch (_) {}
     return versioned;
   }
 }

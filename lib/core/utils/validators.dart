@@ -1,11 +1,31 @@
-/// Form field validators used across auth and profile flows.
+/// Form field validators shared by forms and the authentication repository.
 abstract final class Validators {
-  static final RegExp _email = RegExp(r'^[\w\.\-+]+@([\w-]+\.)+[\w-]{2,}$');
-
   static String? email(String? value) {
     final v = value?.trim() ?? '';
     if (v.isEmpty) return 'Email is required';
-    if (!_email.hasMatch(v)) return 'Enter a valid email address';
+    if (v.length > 254) return 'Enter a valid email address';
+    final parts = v.split('@');
+    if (parts.length != 2) return 'Enter a valid email address';
+    final local = parts[0];
+    final labels = parts[1].split('.');
+    final localPattern = RegExp(r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+$");
+    final labelPattern = RegExp(r'^[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?$');
+    if (local.isEmpty ||
+        local.length > 64 ||
+        !localPattern.hasMatch(local) ||
+        local.startsWith('.') ||
+        local.endsWith('.') ||
+        local.contains('..') ||
+        labels.length < 2 ||
+        labels.any(
+          (label) =>
+              label.isEmpty ||
+              label.length > 63 ||
+              !labelPattern.hasMatch(label),
+        ) ||
+        !RegExp(r'^[a-zA-Z]{2,}$').hasMatch(labels.last)) {
+      return 'Enter a valid email address';
+    }
     return null;
   }
 

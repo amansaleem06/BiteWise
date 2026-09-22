@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+import '../../../../core/utils/validators.dart';
+import '../../../../core/utils/switch_latest.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../../../core/errors/app_exception.dart';
@@ -29,30 +32,30 @@ class FirebaseAuthRepository implements AuthRepository {
 
   CollectionReference<Map<String, dynamic>> get _users =>
       _firestore.collection('users');
+  CollectionReference<Map<String, dynamic>> get _publicProfiles =>
+      _firestore.collection('publicProfiles');
 
   @override
   Stream<AppUser?> authStateChanges() {
-    // Emit immediately from Firebase Auth so sign-in/out redirects never wait
-    // on a Firestore round-trip (that delay looked like a freeze / required
-    // app restart). Then upgrade to the live profile document when available.
-    return _auth.authStateChanges().asyncExpand((fbUser) async* {
+    return switchLatest(_auth.userChanges(), (fb.User? fbUser) async* {
       if (fbUser == null) {
         yield null;
         return;
       }
-
       yield _userFromAuth(fbUser);
-
       yield* _users.doc(fbUser.uid).snapshots().map((doc) {
         if (!doc.exists) return _userFromAuth(fbUser);
         return UserModel.fromDoc(doc).copyWith(
-          emailVerified: fbUser.emailVerified ? true : null,
+          emailVerified: fbUser.emailVerified,
+          needsEmailVerification: _needsVerification(fbUser),
         );
-      }).handleError((Object e, StackTrace st) {
-        debugPrintStack(stackTrace: st, label: 'Profile stream error: $e');
       });
     });
   }
+
+  bool _needsVerification(fb.User user) =>
+      !user.emailVerified &&
+      user.providerData.any((p) => p.providerId == 'password');
 
   AppUser _userFromAuth(fb.User fbUser) => AppUser(
         uid: fbUser.uid,
@@ -61,6 +64,7 @@ class FirebaseAuthRepository implements AuthRepository {
         role: UserRole.user,
         photoUrl: fbUser.photoURL,
         emailVerified: fbUser.emailVerified,
+        needsEmailVerification: _needsVerification(fbUser),
       );
 
   @override
@@ -88,6 +92,11 @@ class FirebaseAuthRepository implements AuthRepository {
     String? businessName,
   }) async {
     try {
+      final emailError = Validators.email(email);
+      if (emailError != null)
+        throw AppException(emailError, code: 'invalid-email');
+      final nameError = Validators.displayName(displayName);
+      if (nameError != null) throw AppException(nameError);
       final cred = await _auth.createUserWithEmailAndPassword(
         email: email.trim(),
         password: password,
@@ -102,18 +111,28 @@ class FirebaseAuthRepository implements AuthRepository {
         // never invented here. Ratings already on that listing carry over.
       }
 
-      await _users.doc(user.uid).set(
-            UserModel.newUser(
-              email: email.trim(),
-              displayName: name,
-              role: role,
-              businessName: role == UserRole.restaurantOwner
-                  ? (businessName ?? name).trim()
-                  : null,
-              ownedRestaurantId: restaurantId,
-              emailVerified: true,
-            ),
-          );
+      final userData = UserModel.newUser(
+        email: email.trim(),
+        displayName: name,
+        role: role,
+        businessName: role == UserRole.restaurantOwner
+            ? (businessName ?? name).trim()
+            : null,
+        ownedRestaurantId: restaurantId,
+        emailVerified: user.emailVerified,
+      );
+      await (_firestore.batch()
+            ..set(_users.doc(user.uid), userData)
+            ..set(
+              _publicProfiles.doc(user.uid),
+              UserModel.publicProfile(userData),
+            ))
+          .commit();
+      // A delivery failure must not report account creation as failed. The
+      // verification screen offers retry without creating a second account.
+      try {
+        await user.sendEmailVerification();
+      } catch (_) {}
       return await _loadOrCreateProfile(user);
     } on fb.FirebaseAuthException catch (e) {
       throw _mapAuthError(e);
@@ -124,12 +143,20 @@ class FirebaseAuthRepository implements AuthRepository {
   Future<AppUser> signInWithGoogle() async {
     try {
       // Clear a stale Google session so the account picker can appear again.
-      await _googleSignIn.signOut().catchError((_) => null);
+      await _googleSignIn
+          .signOut()
+          .timeout(const Duration(seconds: 5))
+          .catchError((_) => null);
       final googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
         throw const AppException('Sign-in cancelled', code: 'cancelled');
       }
       final googleAuth = await googleUser.authentication;
+      if (googleAuth.idToken == null) {
+        throw const AppException(
+            'Google sign-in is unavailable. Please contact support.',
+            code: 'missing-google-token');
+      }
       final cred = await _auth.signInWithCredential(
         fb.GoogleAuthProvider.credential(
           accessToken: googleAuth.accessToken,
@@ -139,6 +166,16 @@ class FirebaseAuthRepository implements AuthRepository {
       return await _loadOrCreateProfile(cred.user!);
     } on fb.FirebaseAuthException catch (e) {
       throw _mapAuthError(e);
+    } on PlatformException catch (e) {
+      if (e.code == 'sign_in_canceled' || e.code == 'sign_in_cancelled') {
+        throw const AppException('Sign-in cancelled', code: 'cancelled');
+      }
+      throw AppException(
+        e.code == 'network_error'
+            ? 'Network error. Check your connection and try again.'
+            : 'Google sign-in could not complete. Please try again or contact support.',
+        code: e.code,
+      );
     }
   }
 
@@ -178,10 +215,19 @@ class FirebaseAuthRepository implements AuthRepository {
     await user.reload();
     final verified = _auth.currentUser?.emailVerified ?? false;
     if (verified) {
-      await _users.doc(user.uid).set(
-        {'emailVerified': true, 'updatedAt': FieldValue.serverTimestamp()},
-        SetOptions(merge: true),
-      );
+      final updatedAt = FieldValue.serverTimestamp();
+      await (_firestore.batch()
+            ..set(
+              _users.doc(user.uid),
+              {'emailVerified': true, 'updatedAt': updatedAt},
+              SetOptions(merge: true),
+            )
+            ..set(
+              _publicProfiles.doc(user.uid),
+              {'updatedAt': updatedAt},
+              SetOptions(merge: true),
+            ))
+          .commit();
     }
     return verified;
   }
@@ -278,20 +324,34 @@ class FirebaseAuthRepository implements AuthRepository {
 
   Future<AppUser> _loadOrCreateProfile(fb.User fbUser) async {
     final ref = _users.doc(fbUser.uid);
-    final doc = await ref.get();
-    if (!doc.exists) {
-      await ref.set(
-        UserModel.newUser(
+    // Read and create atomically: concurrent logins never overwrite a profile.
+    await _firestore.runTransaction((transaction) async {
+      final doc = await transaction.get(ref);
+      if (!doc.exists) {
+        final name = (fbUser.displayName ?? 'Food lover').trim();
+        final userData = UserModel.newUser(
           email: fbUser.email ?? '',
-          displayName: fbUser.displayName ?? 'Food lover',
+          displayName: name.length > 50 ? name.substring(0, 50) : name,
           photoUrl: fbUser.photoURL,
           emailVerified: fbUser.emailVerified,
-        ),
-      );
-      return UserModel.fromDoc(await ref.get())
-          .copyWith(emailVerified: fbUser.emailVerified);
-    }
-    return UserModel.fromDoc(doc).copyWith(emailVerified: fbUser.emailVerified);
+        );
+        transaction.set(ref, userData);
+        transaction.set(
+          _publicProfiles.doc(fbUser.uid),
+          UserModel.publicProfile(userData),
+        );
+      } else {
+        final publicRef = _publicProfiles.doc(fbUser.uid);
+        final publicDoc = await transaction.get(publicRef);
+        if (!publicDoc.exists) {
+          transaction.set(publicRef, UserModel.publicProfile(doc.data()!));
+        }
+      }
+    });
+    return UserModel.fromDoc(await ref.get()).copyWith(
+      emailVerified: fbUser.emailVerified,
+      needsEmailVerification: _needsVerification(fbUser),
+    );
   }
 
   AppException _mapAuthError(fb.FirebaseAuthException e) {
@@ -300,6 +360,8 @@ class FirebaseAuthRepository implements AuthRepository {
       'wrong-password' ||
       'user-not-found' =>
         'Incorrect email or password.',
+      'account-exists-with-different-credential' =>
+        'This email uses another sign-in method. Sign in with that method to keep your existing account.',
       'email-already-in-use' => 'An account already exists with this email.',
       'invalid-email' => 'That email address is invalid.',
       'weak-password' => 'Please choose a stronger password.',
@@ -307,7 +369,7 @@ class FirebaseAuthRepository implements AuthRepository {
       'network-request-failed' => 'Network error. Check your connection.',
       'user-disabled' => 'This account has been disabled.',
       'requires-recent-login' =>
-          'For security, sign in again before deleting your account.',
+        'For security, sign in again before deleting your account.',
       _ => 'Authentication failed (${e.code}). Please try again.',
     };
     return AppException(message, code: e.code);

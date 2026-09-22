@@ -1,3 +1,4 @@
+import '../widgets/terms_acceptance.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -94,6 +95,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
           ),
         ),
         const SizedBox(height: AppSpacing.md),
+        const TermsAcceptance(),
         AppButton(
           label: AppStrings.signIn,
           isLoading: authState.isLoading,

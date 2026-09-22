@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TasteWise Design System</title>
+  <meta name="description" content="TasteWise design system — foundations, 30+ components, tokens, patterns, and developer guide." />
+  <meta name="theme-color" content="#4A0E0E" />
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,800&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/tastewise.css" />
+</head>
+<body>
+  <a class="skip" href="#content">Skip to content</a>
+  <header class="tw-nav">
+    <div class="wrap" style="display:flex;align-items:center;width:100%;position:relative">
+      <a class="tw-brand" href="index.html">
+        <img src="assets/logo.svg" alt="" width="32" height="32" />
+        TasteWise
+      </a>
+      <ul id="site-nav" class="tw-nav__links">
+        <li><a href="index.html">Product</a></li>
+        <li><a href="design-system.html" aria-current="page">Design</a></li>
+        <li><a href="tokens.json">Tokens JSON</a></li>
+        <li><a href="DESIGN.md">Dev guide</a></li>
+        <li><a href="support.html">Support</a></li>
+      </ul>
+      <div class="tw-nav__actions">
+        <button class="tw-icon-btn" type="button" data-theme-toggle aria-label="Switch to dark mode">◐</button>
+        <button class="tw-icon-btn" type="button" data-nav-open aria-expanded="false" aria-controls="site-nav" aria-label="Open menu">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="wrap ds">
+    <nav class="ds-toc" aria-label="Design system">
+      <p class="t-overline" style="margin-bottom:12px">Contents</p>
+      <a href="#principles">Principles</a>
+      <a href="#color">Color</a>
+      <a href="#type">Typography</a>
+      <a href="#grid">Grid</a>
+      <a href="#space">Spacing</a>
+      <a href="#radius">Radius &amp; motion</a>
+      <a href="#components">Components</a>
+      <a href="#patterns">Patterns</a>
+      <a href="#a11y">Accessibility</a>
+      <a href="#tokens">Tokens</a>
+      <a href="#dos">Do’s &amp; don’ts</a>
+      <a href="#dev">Dev guide</a>
+    </nav>
+
+    <main id="content" class="ds-main stack-lg">
+      <header class="stack">
+        <p class="t-overline">TasteWise · 1.0</p>
+        <h1 class="t-display">Design system</h1>
+        <p class="t-lede" style="max-width:40rem">A dining room, not a food court. Maroon, cream, and champagne. Fraunces for the name of the dish; Source Sans 3 for everything you tap. This is the same theme as the Flutter app — published for web, legal, and marketing.</p>
+      </header>
+
+      <section id="principles" class="stack">
+        <h2 class="t-headline">Principles</h2>
+        <div class="grid">
+          <article class="tw-card span-4 stack">
+            <h3 class="t-title">Clarity</h3>
+            <p>One idea per surface. Type must read at arm’s length. Icons are tools, not decoration.</p>
+          </article>
+          <article class="tw-card span-4 stack">
+            <h3 class="t-title">Deference</h3>
+            <p>The plate is the hero. Chrome recedes — hairline borders, no drop shadows on feed cards, no orange “food app” clichés.</p>
+          </article>
+          <article class="tw-card span-4 stack">
+            <h3 class="t-title">Depth</h3>
+            <p>Motion is 150 / 250 / 400ms. Sheets rise; toasts float. Nothing bounces. Honor reduced motion.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="color" class="stack">
+        <h2 class="t-headline">Color</h2>
+        <p class="t-lede">Primary is maroon <code>#4A0E0E</code>. In dark mode, interactive color flips to champagne <code>#B8956A</code> — matching <code>AppTheme</code>.</p>
+        <h3 class="t-title">Brand</h3>
+        <div class="swatch-row">
+          <div class="swatch"><div class="swatch__chip" style="background:#4A0E0E"></div><div class="swatch__meta"><strong>Primary</strong><p class="t-caption">#4A0E0E · 15.4:1 on cream</p></div></div>
+          <div class="swatch"><div class="swatch__chip" style="background:#2F0808"></div><div class="swatch__meta"><strong>Primary dark</strong><p class="t-caption">#2F0808 · pressed</p></div></div>
+          <div class="swatch"><div class="swatch__chip" style="background:#F3E4D4"></div><div class="swatch__meta"><strong>Primary light</strong><p class="t-caption">#F3E4D4 · wash</p></div></div>
+          <div class="swatch"><div class="swatch__chip" style="background:#B8956A"></div><div class="swatch__meta"><strong>Accent</strong><p class="t-caption">#B8956A · not body text on cream</p></div></div>
+          <div class="swatch"><div class="swatch__chip" style="background:#FDF8F1"></div><div class="swatch__meta"><strong>Cream</strong><p class="t-caption">#FDF8F1 · canvas</p></div></div>
+          <div class="swatch"><div class="swatch__chip" style="background:#1A0C0C"></div><div class="swatch__meta"><strong>Charcoal</strong><p class="t-caption">#1A0C0C · ink</p></div></div>
+        </div>
+        <h3 class="t-title">Semantic</h3>
+        <div class="swatch-row">
+          <div class="swatch"><div class="swatch__chip" style="background:#DC2626"></div><div class="swatch__meta"><strong>Error</strong><p class="t-caption">#DC2626 · ~4.6:1</p></div></div>
+          <div class="swatch"><div class="swatch__chip" style="background:#15803D"></div><div class="swatch__meta"><strong>Success</strong><p class="t-caption">#15803D · ~4.8:1</p></div></div>
+          <div class="swatch"><div class="swatch__chip" style="background:#EAB308"></div><div class="swatch__meta"><strong>Rating</strong><p class="t-caption">#EAB308 · decorative</p></div></div>
+        </div>
+        <p class="t-caption">Usage: interactive maroon (light) / champagne (dark). Never introduce a foreign blue for links or focus. Champagne is stamps, stars, tab indicator, and focus ring — not paragraphs.</p>
+      </section>
+
+      <section id="type" class="stack">
+        <h2 class="t-headline">Typography — 9 levels</h2>
+        <p class="t-lede">Responsive with <code>clamp()</code>. Web body is 16px (AA). Flutter <code>bodyMedium</code> is 14 — acceptable in-app, not on marketing.</p>
+        <div class="type-row"><span class="t-overline">1 · Display</span><p class="t-display">TasteWise</p><p class="t-caption">Fraunces 800 · clamp 40–64 · tracking −0.04em · hero only</p></div>
+        <div class="type-row"><span class="t-overline">2 · Headline</span><p class="t-headline">A place you can return to</p><p class="t-caption">Fraunces 700 · clamp 32–44 · Flutter headlineLarge</p></div>
+        <div class="type-row"><span class="t-overline">3 · Title</span><p class="t-title">For You feed</p><p class="t-caption">Fraunces 700 · 22–28 · Flutter titleLarge</p></div>
+        <div class="type-row"><span class="t-overline">4 · Subtitle</span><p class="t-subtitle">Plates that fit how you eat</p><p class="t-caption">Source Sans 3 700 · 17–20</p></div>
+        <div class="type-row"><span class="t-overline">5 · Body large</span><p class="t-lede">See what people actually eat nearby.</p><p class="t-caption">Source Sans 3 400 · 17–18 · 1.55</p></div>
+        <div class="type-row"><span class="t-overline">6 · Body</span><p class="t-body">Share dishes with photos, captions, ratings, tags, and stories.</p><p class="t-caption">16 / 24 · Flutter bodyLarge</p></div>
+        <div class="type-row"><span class="t-overline">7 · Label</span><p class="t-label">Get TasteWise</p><p class="t-caption">15 · 700 · buttons</p></div>
+        <div class="type-row"><span class="t-overline">8 · Caption</span><p class="t-caption">Last updated August 10, 2026</p><p class="t-caption">13 · 600 · helper, meta</p></div>
+        <div class="type-row"><span class="t-overline">9 · Overline</span><p class="t-overline">Discover. Taste. Share.</p><p class="t-caption">12 · 700 · 0.08em · uppercase</p></div>
+      </section>
+
+      <section id="grid" class="stack">
+        <h2 class="t-headline">12-column grid</h2>
+        <p>Max 1120px. Gutter 24px. Margins 16 / 24 / 48. Columns collapse to 12-span on small screens; 4 / 6 / 8 from 768px.</p>
+        <div class="grid-demo" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <p class="t-caption">In-app lists cap at 720px (<code>AppBreakpoints.contentMax</code>). Marketing is wider; product UI is not.</p>
+      </section>
+
+      <section id="space" class="stack">
+        <h2 class="t-headline">8px spacing</h2>
+        <p>Base unit 8. Half-step 4 only for icon optical alignment. Prefer 8, 16, 24, 32, 48, 64, 80, 96, 128.</p>
+        <div>
+          <div class="space-bar"><i style="width:8px"></i><span class="t-caption">8 · space-1 · AppSpacing.xs</span></div>
+          <div class="space-bar"><i style="width:16px"></i><span class="t-caption">16 · space-2 · md</span></div>
+          <div class="space-bar"><i style="width:24px"></i><span class="t-caption">24 · space-3 · lg</span></div>
+          <div class="space-bar"><i style="width:32px"></i><span class="t-caption">32 · space-4 · xl</span></div>
+          <div class="space-bar"><i style="width:48px"></i><span class="t-caption">48 · space-6 · xxl</span></div>
+          <div class="space-bar"><i style="width:64px"></i><span class="t-caption">64 · space-8</span></div>
+        </div>
+      </section>
+
+      <section id="radius" class="stack">
+        <h2 class="t-headline">Radius, elevation, motion</h2>
+        <div class="cluster-md">
+          <div class="tw-card" style="border-radius:8px;width:88px;height:64px"></div>
+          <div class="tw-card" style="border-radius:16px;width:88px;height:64px"></div>
+          <div class="tw-card" style="width:88px;height:64px"></div>
+          <div class="tw-card" style="border-radius:999px;width:88px;height:64px"></div>
+        </div>
+        <p class="t-caption">Inputs 16 · cards 28 · buttons/chips pill. Elevation is hairline + rare soft shadow. Duration 150 / 250 / 400. Easing cubic-bezier(0.2, 0, 0, 1) for emphasized.</p>
+      </section>
+
+      <section id="components" class="stack-lg">
+        <h2 class="t-headline">Components</h2>
+        <p class="t-lede">Thirty-seven pieces. Each lists states, anatomy, usage, accessibility, and code. Flutter maps to <code>AppTheme</code> unless noted.</p>
+
+        <article id="c-button" class="stack">
+          <h3 class="t-title">1. Button</h3>
+          <div class="preview cluster-md">
+            <button class="tw-btn tw-btn--primary">Primary</button>
+            <button class="tw-btn tw-btn--secondary">Secondary</button>
+            <button class="tw-btn tw-btn--ghost">Ghost</button>
+            <button class="tw-btn tw-btn--destructive">Delete</button>
+            <button class="tw-btn tw-btn--primary" disabled>Disabled</button>
+          </div>
+          <p><strong>States:</strong> default, hover, pressed (scale 0.98), disabled (40% opacity), focus-visible. <strong>Anatomy:</strong> 54px height, pill, 24px inset, label 15/700. <strong>Usage:</strong> one primary per view. <strong>A11y:</strong> min 44px; disabled is <code>disabled</code> not click-swallow. <strong>Code:</strong> <code>.tw-btn.tw-btn--primary</code> · Flutter <code>FilledButton</code> / <code>OutlinedButton</code> / <code>TextButton</code>.</p>
+        </article>
+
+        <article class="stack">
+          <h3 class="t-title">2. Icon button</h3>
+          <div class="preview cluster"><button class="tw-icon-btn" aria-label="Theme">◐</button><button class="tw-icon-btn" aria-label="Menu">☰</button></div>
+          <p>44×44 hit target, circular hover wash. Always an accessible name. Flutter <code>IconButton</code>.</p>
+        </article>
+
+        <article class="stack">
+          <h3 class="t-title">3. Text link</h3>
+          <div class="preview"><a class="tw-link" href="#c-button">Privacy Policy</a></div>
+          <p>Underline on hover, offset 0.18em. Never orange. Contrast is interactive token.</p>
+        </article>
+
+        <article class="stack">
+          <h3 class="t-title">4–7. Text field, textarea, search, select</h3>
+          <div class="preview grid">
+            <div class="tw-field span-6"><label for="f1">Email</label><input class="tw-input" id="f1" placeholder="you@table.com" /></div>
+            <div class="tw-field span-6"><label for="f2">Password</label><input class="tw-input" id="f2" type="password" aria-invalid="true" /><span class="tw-error">Incorrect password</span></div>
+            <div class="tw-search span-6"><span aria-hidden="true">⌕</span><input class="tw-input" type="search" placeholder="Restaurants, dishes" aria-label="Search" /></div>
+            <div class="tw-field span-6"><label for="f3">Cuisine</label><select class="tw-select" id="f3"><option>Italian</option><option>Japanese</option></select></div>
+            <div class="tw-field span-12"><label for="f4">Caption</label><textarea class="tw-textarea" id="f4" placeholder="What did you taste?"></textarea><span class="tw-help">Optional. Keep it about the plate.</span></div>
+          </div>
+          <p><strong>Anatomy:</strong> fill 92% white / dark surface, 16 radius, 16+16 padding, 1.6px focus ring in interactive. Error border <code>#DC2626</code>. Labels are visible, never placeholder-only. Flutter <code>InputDecorationTheme</code>.</p>
+        </article>
+
+        <article class="stack">
+          <h3 class="t-title">8–10. Checkbox, radio, switch</h3>
+          <div class="preview cluster-md">
+            <label class="tw-check"><input type="checkbox" checked /> Nuts</label>
+            <label class="tw-radio"><input type="radio" name="feed" checked /> For You</label>
+            <label class="tw-radio"><input type="radio" name="feed" /> Following</label>
+            <button class="tw-switch" type="button" role="switch" aria-checked="true" aria-label="Dark mode" onclick="this.setAttribute('aria-checked', this.getAttribute('aria-checked')==='true'?'false':'true')"></button>
+          </div>
+          <p>20px controls, 8px gap. Switch is 48×28. Accent color = interactive. Keyboard operable. Flutter <code>Checkbox</code> / <code>Radio</code> / <code>Switch</code>.</p>
+        </article>
+
+        <article class="stack">
+          <h3 class="t-title">11–13. Chip, filter chip, tag</h3>
+          <div class="preview cluster">
+            <button class="tw-chip">Italian</button>
+            <button class="tw-chip is-selected" aria-pressed="true">Japanese</button>
+            <span class="tw-tag">Gluten-free</span>
+          </div>
+          <p>Stadium. Selected = champagne fill + on-accent text. <code>aria-pressed</code> for filters. Flutter <code>ChipTheme</code>.</p>
+        </article>
+
+        <article class="stack">
+          <h3 class="t-title">14. Badge</h3>
+          <div class="preview cluster"><span class="tw-badge">Pending</span><span class="tw-badge tw-badge--accent">Claimed</span><span class="tw-badge tw-badge--success">Booked</span></div>
+          <p>11px, 800, uppercase. Status only — not a button.</p>
+        </article>
+
+        <article class="stack">
+          <h3 class="t-title">15. Avatar</h3>
+          <div class="preview cluster-md">
+            <div class="tw-avatar tw-avatar--sm">A</div>
+            <div class="tw-avatar">TW</div>
+            <div class="tw-avatar tw-avatar--lg">M</div>
+          </div>
+          <p>32 / 48 / 72. Initials in Fraunces on maroon. Alt text if image.</p>
+        </article>
+
+        <article class="stack">
+          <h3 class="t-title">16. Card</h3>
+          <div class="preview"><div class="tw-card" style="max-width:320px"><h3 class="t-title">Empty table</h3><p class="t-caption">Hairline 0.5px, radius 28, no elevation.</p></div></div>
+          <p>Flutter <code>CardTheme</code> — elevation 0, outline 0.55 alpha.</p>
+        </article>
+
+        <article class="stack">
+          <h3 class="t-title">17. Plate card</h3>
+          <div class="preview" style="max-width:280px">
+            <article class="tw-card tw-plate">
+              <div class="tw-plate__media" role="img" aria-label="Editorial plate"></div>
+              <div class="tw-plate__body">
+                <p class="t-overline">Italian</p>
+                <h3 class="t-title">Agnolotti</h3>
+                <p class="t-caption">Osteria · ★ 4.8</p>
+              </div>
+            </article>
+          </div>
+          <p>Media 4:5. Cuisine overline, Fraunces title, meta caption. The photograph is the content; type is quiet.</p>
+        </article>
+
+        <article class="stack">
+          <h3 class="t-title">18. List item</h3>
+          <div class="preview" style="max-width:400px">
+            <div class="tw-list-item"><div class="tw-avatar tw-avatar--sm">R</div><div><p class="t-label">Reservations</p><p class="t-caption">2 upcoming</p></div></div>
+            <div class="tw-list-item"><div class="tw-avatar tw-avatar--sm">S</div><div><p class="t-label">Saved plates</p><p class="t-caption">12</p></div></div>
+          </div>
+          <p>Flutter <code>ListTileTheme</code>. Icon muted, title on-surface, subtitle bodySmall.</p>
+        </article>
+
+        <article class="stack">
+          <h3 class="t-title">19. Navigation bar</h3>
+          <p>Sticky, 72px, blur, hairline. Brand left, links, theme, CTA. Mobile: hamburger + overlay. Landmark <code>banner</code>.</p>
+        </article>
+
+        <article class="stack">
+          <h3 class="t-title">20. Tabs</h3>
+          <div class="preview">
+            <div class="tw-tabs" role="tablist">
+              <button type="button" role="tab" aria-selected="true">For You</button>
+              <button type="button" role="tab" aria-selected="false">Following</button>
+              <button type="button" role="tab" aria-selected="false">Palette</button>
+            </div>
+          </div>
+          <p>Selected label = interactive; indicator = accent. Flutter <code>TabBarTheme</code>.</p>
+        </article>
+
+        <article class="stack">
+          <h3 class="t-title">21. Segmented control</h3>
+          <div class="preview">
+            <div class="tw-segment" role="tablist">
+              <button type="button" aria-selected="true">Light</button>
+              <button type="button" aria-selected="false">Dark</button>
+            </div>
+          </div>
+          <p>Feed mode picker pattern. Selected maroon fill.</p>
+        </article>
+
+        <article class="stack">
+          <h3 class="t-title">22. Dialog</h3>
+          <div class="preview">
+            <div class="tw-dialog" role="dialog" aria-labelledby="d1">
+              <h3 class="t-title" id="d1">Delete your account?</h3>
+              <p class="t-caption">This cannot be undone. Posts are anonymized.</p>
+              <div class="cluster-md" style="margin-top:16px">
+                <button class="tw-btn tw-btn--destructive tw-btn--sm">Delete my account</button>
+                <button class="tw-btn tw-btn--ghost">Cancel</button>
+              </div>
+            </div>
+          </div>
+          <p>Focus trap in product. Title Fraunces. Destructive never primary maroon. Flutter <code>AppConfirmDialog</code>.</p>
+        </article>
+
+        <article class="stack">
+          <h3 class="t-title">23. Bottom sheet</h3>
+          <div class="preview">
+            <div class="tw-sheet" style="max-width:360px">
+              <div class="tw-sheet__handle"></div>
+              <h3 class="t-title">Feed</h3>
+              <p class="t-caption">Discover plates for your tastes</p>
+            </div>
+          </div>
+          <p>Handle 40×4. Drag-to-dismiss in app. <code>showDragHandle: true</code>.</p>
+        </article>
+
+        <article class="stack">
+          <h3 class="t-title">24. Toast / snackbar</h3>
+          <div class="preview"><div class="tw-toast" role="status">Reset link sent. Check your inbox.</div></div>
+          <p>Inverse surface, radius 12, floating. Flutter <code>SnackBarTheme</code> + <code>AppSnackbar</code>.</p>
+        </article>
+
+        <article class="stack">
+          <h3 class="t-title">25. Empty state</h3>
+          <div class="preview"><div class="tw-empty stack"><h3 class="t-title">Palette is waiting</h3><p class="t-caption">Build Your Palette and we’ll serve plates that match it here.</p><button class="tw-btn tw-btn--primary tw-btn--sm">Open Your Palette</button></div></div>
+          <p>Title, subtitle, one action. Flutter <code>AppEmptyState</code>.</p>
+        </article>
+
+        <article class="stack">
+          <h3 class="t-title">26. Skeleton</h3>
+          <div class="preview stack"><span class="tw-skeleton" style="width:70%"></span><span class="tw-skeleton" style="width:50%"></span><span class="tw-skeleton" style="height:120px"></span></div>
+          <p>Shimmer on primary-light. Pause if <code>prefers-reduced-motion</code>. Flutter <code>ListShimmer</code>.</p>
+        </article>
+
+        <article class="stack">
+          <h3 class="t-title">27. Divider</h3>
+          <div class="preview"><hr class="tw-divider" /></div>
+          <p>0.5px outline. Flutter <code>DividerTheme</code>.</p>
+        </article>
+
+        <article class="stack">
+          <h3 class="t-title">28. Rating</h3>
+          <div class="preview"><span class="tw-rating" aria-label="4.8 of 5">★★★★★</span> <span class="t-caption">4.8</span></div>
+          <p>Star color <code>#EAB308</code>. Numeric text in charcoal for contrast. Always include the number in accessible name.</p>
+        </article>
+
+        <article class="stack">
+          <h3 class="t-title">29. Taste stamp</h3>
+          <div class="preview cluster-md">
+            <div class="tw-stamp" aria-label="Locked Italian stamp">IT</div>
+            <div class="tw-stamp is-earned" aria-label="Earned Japanese stamp">JP</div>
+          </div>
+          <p>72px seal, champagne ring. Earned = filled accent. Passport, not gamification chrome.</p>
+        </article>
+
+        <article class="stack">
+          <h3 class="t-title">30. Tooltip</h3>
+          <div class="preview" style="padding-top:40px"><button class="tw-btn tw-btn--ghost tw-tooltip" data-tip="Taste Passport" type="button">Passport</button></div>
+          <p>Appear on hover and focus. Do not use as the only label.</p>
+        </article>
+
+        <article class="stack">
+          <h3 class="t-title">31. Accordion</h3>
+          <div class="preview tw-accordion" style="max-width:480px">
+            <details open><summary>Account</summary><p class="t-caption">Sign-in, password reset, delete account.</p></details>
+            <details><summary>Reservations</summary><p class="t-caption">Outcomes depend on restaurant partners.</p></details>
+          </div>
+          <p>Native <code>details</code>. Summary is the hit target.</p>
+        </article>
+
+        <article class="stack">
+          <h3 class="t-title">32. Pagination dots</h3>
+          <div class="preview"><div class="tw-dots" aria-label="Story progress"><span class="is-on"></span><span></span><span></span></div></div>
+          <p>Stories tray. Active pill 24×8.</p>
+        </article>
+
+        <article class="stack">
+          <h3 class="t-title">33. Alert / banner</h3>
+          <div class="preview stack">
+            <div class="tw-alert" role="status">You’re offline. TasteWise will sync when you’re back.</div>
+            <div class="tw-alert tw-alert--error" role="alert">Couldn’t request the reservation.</div>
+          </div>
+          <p>Connectivity uses <code>ConnectivityBanner</code> in-app. Errors are polite and retryable.</p>
+        </article>
+
+        <article class="stack">
+          <h3 class="t-title">34. Menu seal</h3>
+          <div class="preview"><button class="tw-seal" aria-label="Open courses">+</button></div>
+          <p>App shell FAB. Brand gradient only here and the download band. 56px.</p>
+        </article>
+
+        <article class="stack">
+          <h3 class="t-title">35. Footer</h3>
+          <p>Quiet links, no orange. Legal + design + contact. See marketing footer.</p>
+        </article>
+
+        <article class="stack">
+          <h3 class="t-title">36. Store CTA</h3>
+          <div class="preview cluster-md">
+            <a class="tw-btn tw-btn--primary" href="mailto:tastewise2026@gmail.com">App Store</a>
+            <a class="tw-btn tw-btn--secondary" href="mailto:tastewise2026@gmail.com">Google Play</a>
+          </div>
+          <p>TasteWise pills — do not counterfeit Apple/Google badge artwork.</p>
+        </article>
+
+        <article class="stack">
+          <h3 class="t-title">37. Form field group</h3>
+          <p>Label + control + helper/error. Error replaces helper, never both. Required indicated in label text, not color alone.</p>
+        </article>
+      </section>
+
+      <section id="patterns" class="stack">
+        <h2 class="t-headline">Patterns</h2>
+        <div class="grid">
+          <article class="tw-card span-6 stack">
+            <h3 class="t-title">Marketing hero</h3>
+            <p>Overline + Display + lede + primary/secondary. Device mock on the right from 768px. Stage gradient, not photography stock.</p>
+          </article>
+          <article class="tw-card span-6 stack">
+            <h3 class="t-title">Feed</h3>
+            <p>Stories tray, cuisine chips, plate cards. Chrome hides on reverse scroll. Modes: For You, Following, Palette.</p>
+          </article>
+          <article class="tw-card span-6 stack">
+            <h3 class="t-title">Auth</h3>
+            <p>Welcome line from <code>AppStrings.welcomeTitle</code>. Google / Apple / email. Cream stage gradient.</p>
+          </article>
+          <article class="tw-card span-6 stack">
+            <h3 class="t-title">Legal document</h3>
+            <p>720 max, Fraunces headings, Source Sans body, shared nav. Same tokens as marketing.</p>
+          </article>
+          <article class="tw-card span-6 stack">
+            <h3 class="t-title">Loading / empty / error</h3>
+            <p>Skeleton → empty with one CTA → error with retry. Never a blank white screen.</p>
+          </article>
+          <article class="tw-card span-6 stack">
+            <h3 class="t-title">Restaurant claim</h3>
+            <p>Badge (pending) + page identity + chips. Copy is calm; approval is a human, not a spinner.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="a11y" class="stack">
+        <h2 class="t-headline">Accessibility</h2>
+        <table class="table">
+          <thead><tr><th>Rule</th><th>Bar</th></tr></thead>
+          <tbody>
+            <tr><td>Text contrast</td><td>AA 4.5:1 body, AAA preferred for charcoal/cream</td></tr>
+            <tr><td>Accent on cream</td><td>Forbidden for small text</td></tr>
+            <tr><td>Focus</td><td>2px cream + 2px champagne ring</td></tr>
+            <tr><td>Hit targets</td><td>44px min; buttons 54px</td></tr>
+            <tr><td>Motion</td><td>Honor <code>prefers-reduced-motion</code></td></tr>
+            <tr><td>Theme</td><td>Light, dark, system. Interactive remaps in dark.</td></tr>
+            <tr><td>Names</td><td>Icon buttons labelled; ratings include the number</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="tokens" class="stack">
+        <h2 class="t-headline">Tokens</h2>
+        <p>Machine-readable source: <a href="tokens.json">tokens.json</a> (DTCG). CSS custom properties in <code>assets/tastewise.css</code>. Flutter in <code>lib/app/theme/</code>.</p>
+        <pre class="spec">{
+  "color.brand.primary": "#4A0E0E",
+  "color.brand.accent": "#B8956A",
+  "font.display": "Fraunces",
+  "spacing.1": "8px",
+  "grid.columns": 12,
+  "size.buttonHeight": "54px"
+}</pre>
+        <button class="tw-btn tw-btn--secondary tw-btn--sm" type="button" data-copy="#4A0E0E">Copy primary</button>
+      </section>
+
+      <section id="dos" class="stack">
+        <h2 class="t-headline">Do’s and don’ts</h2>
+        <div class="do-grid">
+          <div class="do"><strong>Do</strong> set dishes in Fraunces and UI in Source Sans 3.</div>
+          <div class="dont"><strong>Don’t</strong> use Segoe, Inter, or orange links on this brand.</div>
+          <div class="do"><strong>Do</strong> let photographs (or plate media) carry emotion.</div>
+          <div class="dont"><strong>Don’t</strong> drop heavy shadows on feed cards.</div>
+          <div class="do"><strong>Do</strong> use champagne for stamps, stars, and focus.</div>
+          <div class="dont"><strong>Don’t</strong> set body copy in champagne on cream.</div>
+          <div class="do"><strong>Do</strong> keep one primary button per screen.</div>
+          <div class="dont"><strong>Don’t</strong> use the brand gradient on every CTA — only the seal and the closing band.</div>
+        </div>
+      </section>
+
+      <section id="dev" class="stack">
+        <h2 class="t-headline">Developer guide</h2>
+        <ol>
+          <li>Read <a href="DESIGN.md">DESIGN.md</a> before adding a color or type size.</li>
+          <li>Web: use CSS variables, never hex in components.</li>
+          <li>Flutter: <code>AppColors</code>, <code>AppSpacing</code>, <code>AppTypography</code>, <code>AppRadius</code>. No new palette without a token.</li>
+          <li>If you add a token, update <code>tokens.json</code>, CSS, and Dart in the same change.</li>
+          <li>Legal and marketing share this CSS so App Store URLs stay on-brand.</li>
+        </ol>
+        <p class="t-caption">Publish path: GitHub Pages from <code>docs/</code> → <a href="https://amansaleem06.github.io/BiteWise/">amansaleem06.github.io/BiteWise</a></p>
+      </section>
+    </main>
+  </div>
+  <script src="assets/site.js"></script>
+</body>
+</html>

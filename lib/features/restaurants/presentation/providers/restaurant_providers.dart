@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../safety/presentation/providers/safety_providers.dart';
 
 import '../../../feed/presentation/providers/feed_providers.dart';
 import '../../data/repositories/firestore_restaurant_repository.dart';
@@ -77,6 +78,7 @@ class RestaurantPostsController
 
   @override
   Future<FeedState> build(String restaurantId) async {
+    await ref.watch(blockedUserIdsProvider.future);
     final page = await _repo.fetchPosts(restaurantId);
     return FeedState(
       posts: page.posts,

@@ -1,3 +1,4 @@
+import { isBlocked } from "./safety";
 /**
  * Notification fan-out + push delivery.
  *
@@ -25,7 +26,7 @@ async function createNotification(
   recipientUid: string,
   payload: NotificationPayload,
 ): Promise<void> {
-  if (recipientUid === payload.actorId) return; // never notify yourself
+  if (recipientUid === payload.actorId || await isBlocked(recipientUid, payload.actorId)) return; // never notify yourself
 
   const actorSnap = await db().doc(`users/${payload.actorId}`).get();
   const actor = actorSnap.data() ?? {};
@@ -101,7 +102,7 @@ export const onNotificationPush = onDocumentCreated(
   "users/{uid}/notifications/{notificationId}",
   async (event) => {
     const n = event.data?.data();
-    if (!n) return;
+    if (!n || await isBlocked(event.params.uid, String(n.actorId ?? ""))) return;
 
     const tokensSnap = await db()
       .collection(`users/${event.params.uid}/tokens`)

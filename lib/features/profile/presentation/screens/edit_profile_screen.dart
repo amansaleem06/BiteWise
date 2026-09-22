@@ -1,3 +1,7 @@
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import '../../../../core/errors/error_text.dart';
+import 'avatar_crop_screen.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,7 +28,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _name;
   late final TextEditingController _bio;
-  late final TextEditingController _phone;
   final _dietary = <DietaryPreference>{};
 
   @override
@@ -33,7 +36,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final user = ref.read(currentUserProvider);
     _name = TextEditingController(text: user?.displayName ?? '');
     _bio = TextEditingController(text: user?.bio ?? '');
-    _phone = TextEditingController(text: user?.phone ?? '');
     _dietary.addAll(user?.dietaryPreferences ?? const []);
   }
 
@@ -41,7 +43,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   void dispose() {
     _name.dispose();
     _bio.dispose();
-    _phone.dispose();
     super.dispose();
   }
 
@@ -50,7 +51,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final ok = await ref.read(editProfileControllerProvider.notifier).save(
           displayName: _name.text,
           bio: _bio.text,
-          phone: _phone.text,
           dietaryPreferences: _dietary.toList(),
         );
     if (!mounted) return;
@@ -63,10 +63,45 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }
 
   Future<void> _changeAvatar() async {
-    final ok = await ref
-        .read(editProfileControllerProvider.notifier)
-        .pickAndUploadAvatar();
-    if (ok && mounted) AppSnackbar.success(context, 'Photo updated');
+    XFile? cropped;
+    try {
+      final image = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 2048,
+        maxHeight: 2048,
+        imageQuality: 90,
+      );
+      if (image == null || !mounted) return;
+      if (await image.length() > 20 * 1024 * 1024) {
+        throw const FormatException(
+            'Please choose a photo smaller than 20 MB.');
+      }
+      if (!mounted) return;
+      cropped = await Navigator.of(context).push<XFile>(
+        MaterialPageRoute(
+          builder: (_) => AvatarCropScreen(image: image),
+        ),
+      );
+      if (cropped == null || !mounted) return;
+      final ok = await ref
+          .read(editProfileControllerProvider.notifier)
+          .uploadAvatar(cropped);
+      if (!mounted) return;
+      if (ok) {
+        AppSnackbar.success(context, 'Photo updated');
+      } else {
+        AppSnackbar.error(context,
+            'Photo upload failed. Your previous photo is unchanged. Please retry.');
+      }
+    } catch (e) {
+      if (mounted) AppSnackbar.error(context, userMessageFrom(e));
+    } finally {
+      if (cropped != null) {
+        try {
+          await File(cropped.path).delete();
+        } catch (_) {}
+      }
+    }
   }
 
   @override
@@ -113,8 +148,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                               color: AppColors.primary,
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color:
-                                    Theme.of(context).colorScheme.surface,
+                                color: Theme.of(context).colorScheme.surface,
                                 width: 2,
                               ),
                             ),
@@ -145,17 +179,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         controller: _bio,
                         maxLines: 3,
                         maxLength: 160,
+                        validator: (value) => (value?.trim().length ?? 0) > 160
+                            ? 'Bio must be 160 characters or fewer'
+                            : null,
                         decoration: const InputDecoration(labelText: 'Bio'),
                         textCapitalization: TextCapitalization.sentences,
                       ),
                       const SizedBox(height: AppSpacing.md),
-                      AppTextField(
-                        label: 'Phone (for calls)',
-                        controller: _phone,
-                        keyboardType: TextInputType.phone,
-                        validator: Validators.optionalPhone,
-                        textInputAction: TextInputAction.done,
-                      ),
                     ],
                   ),
                 ),
@@ -173,8 +203,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   child: Text(
                     'TasteWise boosts matching plates and restaurants in your feed.',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color:
-                              Theme.of(context).colorScheme.onSurfaceVariant,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                   ),
                 ),
