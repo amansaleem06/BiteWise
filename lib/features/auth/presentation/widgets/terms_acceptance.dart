@@ -17,16 +17,19 @@ class TermsAcceptance extends ConsumerWidget {
             contentPadding: EdgeInsets.zero,
             title: const Text('I agree to the Terms of Use / EULA'),
             subtitle: const Text(
-                'Zero tolerance for objectionable content and abusive behavior. I have read the Privacy Policy.'),
+              'Zero tolerance for objectionable content and abusive behavior. I have read the Privacy Policy.',
+            ),
           ),
           Wrap(
             children: [
               TextButton(
-                  onPressed: () => context.push(Routes.termsOfService),
-                  child: const Text('Terms of Use / EULA')),
+                onPressed: () => context.push(Routes.termsOfService),
+                child: const Text('Terms of Use / EULA'),
+              ),
               TextButton(
-                  onPressed: () => context.push(Routes.privacyPolicy),
-                  child: const Text('Privacy Policy')),
+                onPressed: () => context.push(Routes.privacyPolicy),
+                child: const Text('Privacy Policy'),
+              ),
             ],
           ),
         ],

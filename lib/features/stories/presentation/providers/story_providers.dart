@@ -14,7 +14,8 @@ final storyRingsProvider = StreamProvider.autoDispose<List<StoryRing>>(
   (ref) async* {
     final blocked = await ref.watch(blockedUserIdsProvider.future);
     yield* ref.watch(storyRepositoryProvider).watchRings().map(
-        (rings) => rings.where((r) => !blocked.contains(r.authorId)).toList());
+          (rings) => rings.where((r) => !blocked.contains(r.authorId)).toList(),
+        );
   },
 );
 
@@ -23,7 +24,8 @@ final storyCommentsProvider =
   (ref, storyId) async* {
     final blocked = await ref.watch(blockedUserIdsProvider.future);
     yield* ref.watch(storyRepositoryProvider).watchComments(storyId).map(
-        (items) => items.where((c) => !blocked.contains(c.authorId)).toList());
+          (items) => items.where((c) => !blocked.contains(c.authorId)).toList(),
+        );
   },
 );
 

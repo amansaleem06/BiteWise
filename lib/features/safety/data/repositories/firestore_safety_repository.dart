@@ -60,8 +60,10 @@ class FirestoreSafetyRepository implements SafetyRepository {
     }
     final batch = _firestore.batch();
     batch.set(_blocked.doc(uid), {'createdAt': FieldValue.serverTimestamp()});
-    batch.set(_firestore.doc('users/$uid/blockedBy/$me'),
-        {'createdAt': FieldValue.serverTimestamp()});
+    batch.set(
+      _firestore.doc('users/$uid/blockedBy/$me'),
+      {'createdAt': FieldValue.serverTimestamp()},
+    );
     await batch.commit();
   }
 
@@ -84,8 +86,9 @@ class FirestoreSafetyRepository implements SafetyRepository {
       Set<String>? outgoing;
       Set<String>? incoming;
       void emit() {
-        if (outgoing != null && incoming != null)
+        if (outgoing != null && incoming != null) {
           controller.add({...outgoing!, ...incoming!});
+        }
       }
 
       final a = _firestore
@@ -93,19 +96,25 @@ class FirestoreSafetyRepository implements SafetyRepository {
           .doc(uid)
           .collection('blocked')
           .snapshots()
-          .listen((snap) {
-        outgoing = snap.docs.map((d) => d.id).toSet();
-        emit();
-      }, onError: controller.addError);
+          .listen(
+        (snap) {
+          outgoing = snap.docs.map((d) => d.id).toSet();
+          emit();
+        },
+        onError: controller.addError,
+      );
       final b = _firestore
           .collection('users')
           .doc(uid)
           .collection('blockedBy')
           .snapshots()
-          .listen((snap) {
-        incoming = snap.docs.map((d) => d.id).toSet();
-        emit();
-      }, onError: controller.addError);
+          .listen(
+        (snap) {
+          incoming = snap.docs.map((d) => d.id).toSet();
+          emit();
+        },
+        onError: controller.addError,
+      );
       controller.onCancel = () async {
         await a.cancel();
         await b.cancel();

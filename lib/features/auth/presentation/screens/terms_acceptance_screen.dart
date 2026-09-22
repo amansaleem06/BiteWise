@@ -15,19 +15,24 @@ class TermsAcceptanceScreen extends ConsumerWidget {
     return AuthScaffold(
       showBack: false,
       children: [
-        Text('Before you continue',
-            style: Theme.of(context).textTheme.headlineMedium),
+        Text(
+          'Before you continue',
+          style: Theme.of(context).textTheme.headlineMedium,
+        ),
         const Text(
-            'Please review and accept our community terms to use TasteWise.'),
+          'Please review and accept our community terms to use TasteWise.',
+        ),
         const TermsAcceptance(),
         if (consent.isLoading || action.isLoading)
           const Center(child: CircularProgressIndicator()),
         if (consent.hasError) ...[
           const Text(
-              'We could not check your agreement. Check your connection and retry.'),
+            'We could not check your agreement. Check your connection and retry.',
+          ),
           TextButton(
-              onPressed: () => ref.invalidate(termsAcceptedProvider),
-              child: const Text('Retry')),
+            onPressed: () => ref.invalidate(termsAcceptedProvider),
+            child: const Text('Retry'),
+          ),
         ],
         if (action.hasError) Text(userMessageFrom(action.error)),
         FilledButton(
@@ -37,10 +42,11 @@ class TermsAcceptanceScreen extends ConsumerWidget {
           child: const Text('Agree and continue'),
         ),
         TextButton(
-            onPressed: action.isLoading
-                ? null
-                : () => ref.read(authControllerProvider.notifier).signOut(),
-            child: const Text('Sign out')),
+          onPressed: action.isLoading
+              ? null
+              : () => ref.read(authControllerProvider.notifier).signOut(),
+          child: const Text('Sign out'),
+        ),
       ],
     );
   }

@@ -22,9 +22,13 @@ final trendingPostsProvider = StreamProvider.autoDispose<List<Post>>(
     final blockedState = ref.watch(blockedUserIdsProvider);
     final blocked = blockedState.valueOrNull ??
         await ref.watch(blockedUserIdsProvider.future);
+    if (blocked == null) {
+      throw StateError('Could not load blocked users.');
+    }
     yield* ref.read(exploreRepositoryProvider).watchTrendingPosts().map(
-        (posts) =>
-            posts.where((post) => !blocked.contains(post.authorId)).toList());
+          (posts) =>
+              posts.where((post) => !blocked.contains(post.authorId)).toList(),
+        );
   },
 );
 

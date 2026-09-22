@@ -36,35 +36,41 @@ class _ModerationScreenState extends ConsumerState<ModerationScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               SelectableText(
-                  'Target: ${doc.data()['targetType']} / ${doc.data()['targetId']}\n'
-                  'Account: ${doc.data()['targetUserId']}\nReason: ${doc.data()['reason']}'),
+                'Target: ${doc.data()['targetType']} / ${doc.data()['targetId']}\n'
+                'Account: ${doc.data()['targetUserId']}\nReason: ${doc.data()['reason']}',
+              ),
               const Text(
-                  'Inspect the reported content in Firestore before acting. Hiding preserves it for review; suspension prevents participation.'),
+                'Inspect the reported content in Firestore before acting. Hiding preserves it for review; suspension prevents participation.',
+              ),
               TextField(
                 controller: note,
                 maxLength: 2000,
                 maxLines: 3,
-                decoration:
-                    const InputDecoration(labelText: 'Review note (required)'),
+                decoration: const InputDecoration(
+                  labelText: 'Review note (required)',
+                ),
               ),
             ],
           ),
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
           for (final entry in {
             'dismiss': 'Dismiss',
             'hide': 'Hide content',
-            'suspend': 'Suspend account'
+            'suspend': 'Suspend account',
           }.entries)
             TextButton(
-                onPressed: () {
-                  if (note.text.trim().isNotEmpty)
-                    Navigator.pop(context, entry.key);
-                },
-                child: Text(entry.value)),
+              onPressed: () {
+                if (note.text.trim().isNotEmpty) {
+                  Navigator.pop(context, entry.key);
+                }
+              },
+              child: Text(entry.value),
+            ),
         ],
       ),
     );
@@ -72,7 +78,9 @@ class _ModerationScreenState extends ConsumerState<ModerationScreen> {
     // The dialog's text field may still be animating out.
     await Future<void>.delayed(const Duration(milliseconds: 250));
     note.dispose();
-    if (action == null || !mounted) return;
+    if (action == null || !mounted) {
+      return;
+    }
     setState(() => _busy = true);
     try {
       final token = await FirebaseAuth.instance.currentUser!.getIdToken();
@@ -80,30 +88,46 @@ class _ModerationScreenState extends ConsumerState<ModerationScreen> {
       final response = await http
           .post(
             Uri.https(
-                'us-central1-$project.cloudfunctions.net', '/resolveReport'),
+              'us-central1-$project.cloudfunctions.net',
+              '/resolveReport',
+            ),
             headers: {
               'Authorization': 'Bearer $token',
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
             },
             body: jsonEncode({
-              'data': {'reportId': doc.id, 'action': action, 'note': reviewNote}
+              'data': {
+                'reportId': doc.id,
+                'action': action,
+                'note': reviewNote,
+              },
             }),
           )
           .timeout(const Duration(seconds: 30));
       if (response.statusCode != 200) {
         throw StateError(
-            'Review failed. Check your access and function deployment; retry to confirm the result.');
+          'Review failed. Check your access and function deployment; retry to confirm the result.',
+        );
       }
-      if (mounted)
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Report resolved')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Report resolved')),
+        );
+      }
     } catch (_) {
-      if (mounted)
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
             content: Text(
-                'Could not confirm resolution. Check the report and retry.')));
+              'Could not confirm resolution. Check the report and retry.',
+            ),
+          ),
+        );
+      }
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() => _busy = false);
+      }
     }
   }
 
@@ -115,21 +139,27 @@ class _ModerationScreenState extends ConsumerState<ModerationScreen> {
             : StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                 stream: _reports,
                 builder: (context, snapshot) {
-                  if (snapshot.hasError)
+                  if (snapshot.hasError) {
                     return const Center(
-                        child: Text(
-                            'Could not load reports. Check access and retry.'));
-                  if (!snapshot.hasData)
+                      child: Text(
+                        'Could not load reports. Check access and retry.',
+                      ),
+                    );
+                  }
+                  if (!snapshot.hasData) {
                     return const Center(child: CircularProgressIndicator());
+                  }
                   final docs = snapshot.data!.docs;
-                  if (docs.isEmpty)
+                  if (docs.isEmpty) {
                     return const Center(child: Text('No open reports'));
+                  }
                   return ListView(
                     children: [
                       for (final doc in docs)
                         ListTile(
                           title: Text(
-                              '${doc.data()['reason']} · ${doc.data()['targetType']}'),
+                            '${doc.data()['reason']} · ${doc.data()['targetType']}',
+                          ),
                           subtitle: Text('${doc.data()['targetId']}'),
                           trailing: const Icon(Icons.chevron_right),
                           enabled: !_busy,

@@ -91,7 +91,8 @@ class MediaUploadService {
 
     if (compressed.length >= 2 * 1024 * 1024) {
       throw const AppException(
-          'Photo is too large. Please choose another image.');
+        'Photo is too large. Please choose another image.',
+      );
     }
     final ref = _storage.ref('avatars/$uid/${_uuid.v4()}.jpg');
     try {

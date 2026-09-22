@@ -18,24 +18,31 @@ class BlockedUsersScreen extends ConsumerWidget {
         body: ref.watch(myBlockedUserIdsProvider).when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (_, __) => Center(
-                  child: TextButton(
-                      onPressed: () => ref.invalidate(myBlockedUserIdsProvider),
-                      child: const Text('Could not load. Retry'))),
+                child: TextButton(
+                  onPressed: () => ref.invalidate(myBlockedUserIdsProvider),
+                  child: const Text('Could not load. Retry'),
+                ),
+              ),
               data: (ids) => ids.isEmpty
                   ? const Center(child: Text('No blocked accounts'))
                   : ListView(
                       children: [
                         for (final uid in ids)
                           ListTile(
-                            title: Text(ref
-                                    .watch(_blockedNameProvider(uid))
-                                    .valueOrNull ??
-                                'Blocked account'),
+                            title: Text(
+                              ref
+                                      .watch(_blockedNameProvider(uid))
+                                      .valueOrNull ??
+                                  'Blocked account',
+                            ),
                             trailing: TextButton(
-                                onPressed: () => SafetyActions.unblockUser(
-                                    context, ref,
-                                    uid: uid),
-                                child: const Text('Unblock')),
+                              onPressed: () => SafetyActions.unblockUser(
+                                context,
+                                ref,
+                                uid: uid,
+                              ),
+                              child: const Text('Unblock'),
+                            ),
                           ),
                       ],
                     ),

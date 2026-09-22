@@ -217,7 +217,7 @@ class _PlateRouletteSheetState extends ConsumerState<PlateRouletteSheet>
             ),
           ] else
             Padding(
-              padding: EdgeInsets.all(AppSpacing.xl),
+              padding: const EdgeInsets.all(AppSpacing.xl),
               child: Icon(
                 Icons.casino_outlined,
                 size: 56,

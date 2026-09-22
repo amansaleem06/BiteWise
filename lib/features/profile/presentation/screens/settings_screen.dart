@@ -98,8 +98,10 @@ class SettingsScreen extends ConsumerWidget {
             },
           ),
           ListTile(
-            leading: Icon(Icons.delete_forever_outlined,
-                color: theme.colorScheme.error),
+            leading: Icon(
+              Icons.delete_forever_outlined,
+              color: theme.colorScheme.error,
+            ),
             title: Text(
               AppStrings.deleteAccount,
               style: theme.textTheme.titleMedium

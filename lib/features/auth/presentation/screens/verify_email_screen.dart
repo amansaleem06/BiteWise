@@ -48,9 +48,12 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
         AppSnackbar.show(context, 'Not verified yet — check your inbox.');
       }
     } catch (_) {
-      if (manual && mounted)
+      if (manual && mounted) {
         AppSnackbar.error(
-            context, 'Could not check verification. Please retry.');
+          context,
+          'Could not check verification. Please retry.',
+        );
+      }
     } finally {
       _checking = false;
     }

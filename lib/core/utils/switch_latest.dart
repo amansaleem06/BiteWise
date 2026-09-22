@@ -19,27 +19,38 @@ Stream<R> switchLatest<T, R>(Stream<T> source, Stream<R> Function(T) project) {
           final previous = inner;
           inner = null;
           await previous?.cancel();
-          if (cancelled || current != generation) return;
+          if (cancelled || current != generation) {
+            return;
+          }
           switching = false;
           try {
             inner = project(value).listen(
               (event) {
-                if (!cancelled && current == generation) controller.add(event);
+                if (!cancelled && current == generation) {
+                  controller.add(event);
+                }
               },
               onError: (Object e, StackTrace st) {
-                if (!cancelled && current == generation)
+                if (!cancelled && current == generation) {
                   controller.addError(e, st);
+                }
               },
               onDone: () {
                 if (current == generation) {
                   inner = null;
-                  if (outerDone && !cancelled) controller.close();
+                  if (outerDone && !cancelled) {
+                    controller.close();
+                  }
                 }
               },
             );
           } catch (e, st) {
-            if (!cancelled && current == generation) controller.addError(e, st);
-            if (outerDone && !cancelled) controller.close();
+            if (!cancelled && current == generation) {
+              controller.addError(e, st);
+            }
+            if (outerDone && !cancelled) {
+              controller.close();
+            }
           }
         },
         onError: controller.addError,

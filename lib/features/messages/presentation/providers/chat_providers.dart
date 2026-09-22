@@ -15,15 +15,18 @@ final chatsProvider = StreamProvider.autoDispose<List<Chat>>(
   (ref) async* {
     final blocked = await ref.watch(blockedUserIdsProvider.future);
     yield* ref.read(chatRepositoryProvider).watchChats().map(
-        (chats) => chats.where((c) => !blocked.contains(c.peer.uid)).toList());
+          (chats) => chats.where((c) => !blocked.contains(c.peer.uid)).toList(),
+        );
   },
 );
 
 final chatProvider = StreamProvider.autoDispose.family<Chat?, String>(
   (ref, chatId) async* {
     final blocked = await ref.watch(blockedUserIdsProvider.future);
-    yield* ref.read(chatRepositoryProvider).watchChat(chatId).map((chat) =>
-        chat != null && blocked.contains(chat.peer.uid) ? null : chat);
+    yield* ref.read(chatRepositoryProvider).watchChat(chatId).map(
+          (chat) =>
+              chat != null && blocked.contains(chat.peer.uid) ? null : chat,
+        );
   },
 );
 

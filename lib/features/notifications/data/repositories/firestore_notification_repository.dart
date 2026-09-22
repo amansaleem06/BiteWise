@@ -39,8 +39,10 @@ class FirestoreNotificationRepository {
   CollectionReference<Map<String, dynamic>> get _notifications =>
       _firestore.collection('users').doc(_uid).collection('notifications');
 
-  Future<NotificationPage> fetch(
-      {Object? cursor, int limit = _pageSize}) async {
+  Future<NotificationPage> fetch({
+    Object? cursor,
+    int limit = _pageSize,
+  }) async {
     Query<Map<String, dynamic>> query =
         _notifications.orderBy('createdAt', descending: true).limit(limit);
     if (cursor is DocumentSnapshot) query = query.startAfterDocument(cursor);
@@ -55,7 +57,9 @@ class FirestoreNotificationRepository {
   /// Whether any unread notifications exist (drives the bell badge).
   Stream<bool> hasUnread({Set<String> blocked = const {}}) =>
       _notifications.where('read', isEqualTo: false).limit(100).snapshots().map(
-          (s) => s.docs.any((doc) => !blocked.contains(doc.data()['actorId'])));
+            (s) =>
+                s.docs.any((doc) => !blocked.contains(doc.data()['actorId'])),
+          );
 
   Future<void> markAllRead() async {
     final unread =

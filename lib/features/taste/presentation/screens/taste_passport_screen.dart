@@ -40,7 +40,9 @@ class TastePassportScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final uid = ref.watch(currentUserProvider)?.uid;
-    if (uid == null) return const Scaffold(body: SizedBox.shrink());
+    if (uid == null) {
+      return const Scaffold(body: SizedBox.shrink());
+    }
     final statsAsync = ref.watch(tasteStatsProvider(uid));
 
     return Scaffold(
@@ -80,9 +82,9 @@ class _PassportSkeleton extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       children: [
         AppContent(
-            child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
               Container(
                 height: 144,
                 decoration: BoxDecoration(
@@ -91,37 +93,45 @@ class _PassportSkeleton extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
-              Row(children: [
-                for (var i = 0; i < 3; i++) ...[
-                  Expanded(
-                      child: Container(
-                    height: 72,
-                    decoration: BoxDecoration(
-                      color: fill,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                    ),
-                  )),
-                  if (i < 2) const SizedBox(width: AppSpacing.xs),
-                ],
-              ]),
-              const SizedBox(height: AppSpacing.lg),
-              for (var row = 0; row < 2; row++) ...[
-                Row(children: [
+              Row(
+                children: [
                   for (var i = 0; i < 3; i++) ...[
                     Expanded(
-                        child: Container(
-                      height: 90,
-                      decoration: BoxDecoration(
-                        color: fill,
-                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      child: Container(
+                        height: 72,
+                        decoration: BoxDecoration(
+                          color: fill,
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
                       ),
-                    )),
+                    ),
                     if (i < 2) const SizedBox(width: AppSpacing.xs),
                   ],
-                ]),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              for (var row = 0; row < 2; row++) ...[
+                Row(
+                  children: [
+                    for (var i = 0; i < 3; i++) ...[
+                      Expanded(
+                        child: Container(
+                          height: 90,
+                          decoration: BoxDecoration(
+                            color: fill,
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                          ),
+                        ),
+                      ),
+                      if (i < 2) const SizedBox(width: AppSpacing.xs),
+                    ],
+                  ],
+                ),
                 const SizedBox(height: AppSpacing.xs),
               ],
-            ])),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -230,7 +240,9 @@ class _PassportBody extends StatelessWidget {
               Row(
                 children: [
                   _StatTile(
-                      value: '${stats.postCount}', label: 'Plates shared'),
+                    value: '${stats.postCount}',
+                    label: 'Plates shared',
+                  ),
                   const SizedBox(width: AppSpacing.xs),
                   _StatTile(
                     value: '${stats.restaurantIds.length}',
@@ -269,11 +281,18 @@ class _PassportBody extends StatelessWidget {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: MediaQuery.textScalerOf(context).scale(1) >
-                          1.3
-                      ? AppBreakpoints.gridColumns(context, phone: 2, tablet: 4)
-                      : AppBreakpoints.gridColumns(context,
-                          phone: 3, tablet: 5),
+                  crossAxisCount:
+                      MediaQuery.textScalerOf(context).scale(1) > 1.3
+                          ? AppBreakpoints.gridColumns(
+                              context,
+                              phone: 2,
+                              tablet: 4,
+                            )
+                          : AppBreakpoints.gridColumns(
+                              context,
+                              phone: 3,
+                              tablet: 5,
+                            ),
                   mainAxisSpacing: 10,
                   crossAxisSpacing: 10,
                   childAspectRatio: 0.92,
@@ -429,8 +448,10 @@ class _Stamp extends StatelessWidget {
                       : theme.colorScheme.outline,
                 ),
               ),
-              child: Text(_cuisineGlyphs[stamp.cuisine] ?? '🍽️',
-                  style: const TextStyle(fontSize: 22)),
+              child: Text(
+                _cuisineGlyphs[stamp.cuisine] ?? '🍽️',
+                style: const TextStyle(fontSize: 22),
+              ),
             ),
             const SizedBox(height: 4),
             Text(

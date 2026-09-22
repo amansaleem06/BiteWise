@@ -34,7 +34,9 @@ void main() {
     '${'a' * 65}@example.com',
     'a@${'b' * 64}.com',
   ]) {
-    test('rejects malformed email ${email.replaceAll('\n', r'\n')}',
-        () => expect(Validators.email(email), isNotNull));
+    test(
+      'rejects malformed email ${email.replaceAll('\n', r'\n')}',
+      () => expect(Validators.email(email), isNotNull),
+    );
   }
 }

@@ -172,10 +172,12 @@ class FirestoreStoryRepository implements StoryRepository {
         .orderBy('createdAt', descending: false)
         .limit(80)
         .snapshots()
-        .map((snap) => snap.docs
-            .where((doc) => doc.data()['moderationHidden'] != true)
-            .map(_commentFromDoc)
-            .toList());
+        .map(
+          (snap) => snap.docs
+              .where((doc) => doc.data()['moderationHidden'] != true)
+              .map(_commentFromDoc)
+              .toList(),
+        );
   }
 
   @override

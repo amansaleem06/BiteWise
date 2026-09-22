@@ -330,8 +330,9 @@ class FirestoreUserRepository implements UserRepository {
       final clean = bio
           .replaceAll(RegExp(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]'), '')
           .trim();
-      if (clean.length > 160)
+      if (clean.length > 160) {
         throw const AppException('Bio must be 160 characters or fewer.');
+      }
       updates['bio'] = clean;
     }
     if (phone != null) updates['phone'] = phone.trim();

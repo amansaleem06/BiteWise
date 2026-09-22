@@ -181,7 +181,8 @@ class FirestoreRestaurantRepository implements RestaurantRepository {
     final user = userSnap.data() ?? {};
     if ((user['role'] as String?) != UserRole.restaurantOwner.name) {
       throw const AppException(
-          'Only business accounts can claim a restaurant.');
+        'Only business accounts can claim a restaurant.',
+      );
     }
 
     final owned = user['ownedRestaurantId'] as String?;

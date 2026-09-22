@@ -65,8 +65,9 @@ class UserPostsController
   @override
   Future<FeedState> build(String uid) async {
     final blocked = await ref.watch(blockedUserIdsProvider.future);
-    if (blocked.contains(uid))
+    if (blocked.contains(uid)) {
       return const FeedState(posts: [], hasMore: false);
+    }
     final page = await _repo.fetchUserPosts(uid);
     return FeedState(
       posts: page.posts,

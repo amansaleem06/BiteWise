@@ -117,10 +117,13 @@ class UserProfileScreen extends ConsumerWidget {
       body: isBlocked
           ? const Center(
               child: Text(
-                  'This account is blocked. Posts and interactions are unavailable.'))
+                'This account is blocked. Posts and interactions are unavailable.',
+              ),
+            )
           : profileAsync.when(
               loading: () => const Center(
-                  child: CircularProgressIndicator(strokeWidth: 2.5)),
+                child: CircularProgressIndicator(strokeWidth: 2.5),
+              ),
               error: (error, stack) => AsyncErrorView(
                 error: error,
                 stackTrace: stack,

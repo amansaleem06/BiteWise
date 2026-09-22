@@ -11,7 +11,8 @@ String userMessageFrom(Object? error) {
 
   if (error is FirebaseException) {
     debugPrint(
-        'FirebaseException(${error.plugin}/${error.code}): ${error.message}');
+      'FirebaseException(${error.plugin}/${error.code}): ${error.message}',
+    );
     return switch (error.code) {
       'permission-denied' =>
         'We couldn\'t access this right now. Please try again or sign in again.',

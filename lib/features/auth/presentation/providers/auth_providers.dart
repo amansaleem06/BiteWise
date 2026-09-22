@@ -32,7 +32,8 @@ class AuthController extends AsyncNotifier<void> {
   AuthRepository get _repo => ref.read(authRepositoryProvider);
 
   Future<bool> signIn(String email, String password) => _authenticate(
-      () => _repo.signInWithEmail(email: email, password: password));
+        () => _repo.signInWithEmail(email: email, password: password),
+      );
 
   Future<bool> signUp(
     String name,
@@ -78,8 +79,9 @@ class AuthController extends AsyncNotifier<void> {
   }
 
   Future<bool> acceptTerms() => _run(() async {
-        if (!ref.read(termsCheckedProvider))
+        if (!ref.read(termsCheckedProvider)) {
           throw const AppException('Please agree to the terms first.');
+        }
         final user = ref.read(currentUserProvider);
         if (user == null) throw const AppException('Please sign in again.');
         await recordTermsAcceptance(ref, user.uid);

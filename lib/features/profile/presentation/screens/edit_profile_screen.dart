@@ -74,7 +74,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       if (image == null || !mounted) return;
       if (await image.length() > 20 * 1024 * 1024) {
         throw const FormatException(
-            'Please choose a photo smaller than 20 MB.');
+          'Please choose a photo smaller than 20 MB.',
+        );
       }
       if (!mounted) return;
       cropped = await Navigator.of(context).push<XFile>(
@@ -93,7 +94,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         final error = ref.read(editProfileControllerProvider).error;
         AppSnackbar.error(
           context,
-          error == null ? 'Photo upload failed. Please retry.' : userMessageFrom(error),
+          error == null
+              ? 'Photo upload failed. Please retry.'
+              : userMessageFrom(error),
         );
       }
     } catch (e) {
@@ -129,9 +132,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     );
     if (confirmed != true || !mounted) return;
 
-    final ok = await ref
-        .read(editProfileControllerProvider.notifier)
-        .removeAvatar();
+    final ok =
+        await ref.read(editProfileControllerProvider.notifier).removeAvatar();
     if (!mounted) return;
     if (ok) {
       AppSnackbar.success(context, 'Profile photo removed');
@@ -139,7 +141,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       final error = ref.read(editProfileControllerProvider).error;
       AppSnackbar.error(
         context,
-        error == null ? 'Could not remove photo. Please retry.' : userMessageFrom(error),
+        error == null
+            ? 'Could not remove photo. Please retry.'
+            : userMessageFrom(error),
       );
     }
   }

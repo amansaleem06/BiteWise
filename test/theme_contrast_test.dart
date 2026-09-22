@@ -10,35 +10,34 @@ double _contrast(Color a, Color b) {
       (first > second ? second + 0.05 : first + 0.05);
 }
 
+void _expectContrast(Color foreground, Color background) {
+  expect(
+    _contrast(foreground, background),
+    greaterThanOrEqualTo(4.5),
+  );
+}
+
 void main() {
   test('primary and secondary copy remains readable in both themes', () {
     for (final theme in [AppTheme.light, AppTheme.dark]) {
       final scheme = theme.colorScheme;
-      expect(_contrast(scheme.onSurface, scheme.surface),
-          greaterThanOrEqualTo(4.5));
-      expect(_contrast(scheme.onSurfaceVariant, scheme.surface),
-          greaterThanOrEqualTo(4.5));
-      expect(_contrast(scheme.onSurfaceVariant, scheme.surfaceContainerHighest),
-          greaterThanOrEqualTo(4.5));
-      expect(_contrast(scheme.onPrimary, scheme.primary),
-          greaterThanOrEqualTo(4.5));
-      expect(
-          _contrast(scheme.error, scheme.surface), greaterThanOrEqualTo(4.5));
+      _expectContrast(scheme.onSurface, scheme.surface);
+      _expectContrast(scheme.onSurfaceVariant, scheme.surface);
+      _expectContrast(
+        scheme.onSurfaceVariant,
+        scheme.surfaceContainerHighest,
+      );
+      _expectContrast(scheme.onPrimary, scheme.primary);
+      _expectContrast(scheme.error, scheme.surface);
     }
   });
 
   test('passport and reservation labels retain normal-text contrast', () {
-    expect(_contrast(AppColors.accent, AppColors.surfaceDark),
-        greaterThanOrEqualTo(4.5));
-    expect(_contrast(AppColors.accentDark, AppColors.accentLight),
-        greaterThanOrEqualTo(4.5));
-    expect(_contrast(AppColors.warningTextDark, AppColors.warningSurfaceDark),
-        greaterThanOrEqualTo(4.5));
-    expect(_contrast(AppColors.warningTextLight, AppColors.warningSurfaceLight),
-        greaterThanOrEqualTo(4.5));
-    expect(_contrast(AppColors.successTextDark, AppColors.successSurfaceDark),
-        greaterThanOrEqualTo(4.5));
-    expect(_contrast(AppColors.successTextLight, AppColors.successSurfaceLight),
-        greaterThanOrEqualTo(4.5));
+    _expectContrast(AppColors.accent, AppColors.surfaceDark);
+    _expectContrast(AppColors.accentDark, AppColors.accentLight);
+    _expectContrast(AppColors.warningTextDark, AppColors.warningSurfaceDark);
+    _expectContrast(AppColors.warningTextLight, AppColors.warningSurfaceLight);
+    _expectContrast(AppColors.successTextDark, AppColors.successSurfaceDark);
+    _expectContrast(AppColors.successTextLight, AppColors.successSurfaceLight);
   });
 }

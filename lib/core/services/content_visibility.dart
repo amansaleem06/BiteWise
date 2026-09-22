@@ -15,7 +15,7 @@ class ContentVisibility {
     ]);
     return ContentVisibility({
       for (final snap in snapshots)
-        for (final doc in snap.docs) doc.id
+        for (final doc in snap.docs) doc.id,
     });
   }
 

@@ -47,9 +47,10 @@ class MediaPickerGrid extends StatelessWidget {
           ),
           child: child,
         ),
-        onReorder: (oldIndex, newIndex) {
+        onReorderItem: (oldIndex, newIndex) {
           if (oldIndex >= images.length) return;
-          var dest = newIndex;
+          // The controller still expects the old, unadjusted destination.
+          var dest = newIndex > oldIndex ? newIndex + 1 : newIndex;
           if (dest > images.length) dest = images.length;
           onReorder?.call(oldIndex, dest);
         },

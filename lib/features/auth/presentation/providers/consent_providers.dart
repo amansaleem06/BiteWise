@@ -11,11 +11,7 @@ final consentStoreProvider = Provider<FirebaseFirestore>(
 final termsAcceptedProvider = StreamProvider<bool>((ref) {
   final uid = ref.watch(currentUserProvider.select((user) => user?.uid));
   if (uid == null) return Stream.value(false);
-  return ref
-      .watch(consentStoreProvider)
-      .doc('users/$uid')
-      .snapshots()
-      .map(
+  return ref.watch(consentStoreProvider).doc('users/$uid').snapshots().map(
         (doc) => doc.data()?['termsAcceptedVersion'] == AppLegal.termsVersion,
       );
 });
@@ -26,9 +22,12 @@ Future<bool> recordTermsAcceptance(Ref ref, String uid) async {
   if (existing.data()?['termsAcceptedVersion'] == AppLegal.termsVersion) {
     return false;
   }
-  await userRef.set({
-    'termsAcceptedVersion': AppLegal.termsVersion,
-    'termsAcceptedAt': FieldValue.serverTimestamp(),
-  }, SetOptions(merge: true));
+  await userRef.set(
+    {
+      'termsAcceptedVersion': AppLegal.termsVersion,
+      'termsAcceptedAt': FieldValue.serverTimestamp(),
+    },
+    SetOptions(merge: true),
+  );
   return true;
 }

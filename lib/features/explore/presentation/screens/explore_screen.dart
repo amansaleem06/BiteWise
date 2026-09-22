@@ -292,8 +292,10 @@ class _TrendingTile extends StatelessWidget {
                 ),
                 errorWidget: (_, __, ___) => ColoredBox(
                   color: scheme.surfaceContainerHighest,
-                  child: Icon(Icons.broken_image_outlined,
-                      color: scheme.onSurfaceVariant),
+                  child: Icon(
+                    Icons.broken_image_outlined,
+                    color: scheme.onSurfaceVariant,
+                  ),
                 ),
               )
             else

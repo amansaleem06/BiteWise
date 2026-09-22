@@ -79,15 +79,14 @@ class GeminiService {
         final busy = e.code == 'RESOURCE_EXHAUSTED' || e.code == 'HTTP_429';
         if (busy) {
           // Same project quota — other models will fail the same way.
-          throw e;
+          rethrow;
         }
-        if (!missing || i == candidates.length - 1) throw e;
+        if (!missing || i == candidates.length - 1) rethrow;
         debugPrint('Gemini $current failed (${e.code}); trying next model.');
       }
     }
 
-    throw last ??
-        const AppException('AI request failed. Please try again.');
+    throw last ?? const AppException('AI request failed. Please try again.');
   }
 
   Future<List<String>> _candidates(
@@ -264,8 +263,7 @@ class GeminiService {
         '(attempt $attempt): $apiStatus $apiMessage',
       );
 
-      final busy =
-          res.statusCode == 429 || apiStatus == 'RESOURCE_EXHAUSTED';
+      final busy = res.statusCode == 429 || apiStatus == 'RESOURCE_EXHAUSTED';
       if (busy && attempt < maxAttempts) {
         final wait = _retryAfter(res, attempt);
         debugPrint('Gemini busy; waiting ${wait.inSeconds}s.');
@@ -299,16 +297,14 @@ class GeminiService {
     final found = <String>[];
     for (final version in const ['v1beta', 'v1']) {
       try {
-        final res = await _client
-            .get(
-              Uri.https(
-                'generativelanguage.googleapis.com',
-                '/$version/models',
-                {'key': key},
-              ),
-              headers: {'x-goog-api-key': key},
-            )
-            .timeout(const Duration(seconds: 15));
+        final res = await _client.get(
+          Uri.https(
+            'generativelanguage.googleapis.com',
+            '/$version/models',
+            {'key': key},
+          ),
+          headers: {'x-goog-api-key': key},
+        ).timeout(const Duration(seconds: 15));
         final decoded = _tryDecode(res.body);
         if (res.statusCode != 200 || decoded is! Map<String, dynamic>) {
           debugPrint('Gemini list models $version: ${res.statusCode}');
@@ -317,8 +313,8 @@ class GeminiService {
         final models = decoded['models'] as List<dynamic>? ?? const [];
         for (final raw in models) {
           if (raw is! Map) continue;
-          final methods = raw['supportedGenerationMethods'] as List<dynamic>? ??
-              const [];
+          final methods =
+              raw['supportedGenerationMethods'] as List<dynamic>? ?? const [];
           if (!methods.contains('generateContent')) continue;
           var name = raw['name'] as String? ?? '';
           if (name.startsWith('models/')) name = name.substring(7);

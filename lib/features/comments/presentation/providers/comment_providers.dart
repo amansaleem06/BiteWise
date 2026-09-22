@@ -20,8 +20,9 @@ class PostDetailController
   Future<Post> build(String postId) async {
     final blocked = await ref.watch(blockedUserIdsProvider.future);
     final post = await ref.read(feedRepositoryProvider).getPostById(postId);
-    if (blocked.contains(post.authorId))
+    if (blocked.contains(post.authorId)) {
       throw const AppException('This content is unavailable.');
+    }
     return post;
   }
 

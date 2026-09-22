@@ -74,29 +74,40 @@ class _RestaurantSkeleton extends StatelessWidget {
     return SafeArea(
       child: ListView(
         children: [
-          SizedBox(
+          const SizedBox(
             height: 120,
-            child: Stack(children: [
-              const Positioned.fill(
-                child: DecoratedBox(
+            child: Stack(
+              children: [
+                const Positioned.fill(
+                  child: DecoratedBox(
                     decoration:
-                        BoxDecoration(gradient: AppColors.brandGradient)),
-              ),
-              const Positioned(
-                  top: 8, left: 8, child: BackButton(color: AppColors.cream)),
-            ]),
+                        BoxDecoration(gradient: AppColors.brandGradient),
+                  ),
+                ),
+                const Positioned(
+                  top: 8,
+                  left: 8,
+                  child: BackButton(color: AppColors.cream),
+                ),
+              ],
+            ),
           ),
           Padding(
             padding: const EdgeInsets.all(AppSpacing.md),
-            child: Row(children: [
-              CircleAvatar(radius: 32, backgroundColor: fill),
-              const SizedBox(width: AppSpacing.md),
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                bar(160, 20),
-                const SizedBox(height: AppSpacing.xs),
-                bar(110, 13),
-              ]),
-            ]),
+            child: Row(
+              children: [
+                CircleAvatar(radius: 32, backgroundColor: fill),
+                const SizedBox(width: AppSpacing.md),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    bar(160, 20),
+                    const SizedBox(height: AppSpacing.xs),
+                    bar(110, 13),
+                  ],
+                ),
+              ],
+            ),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
@@ -109,13 +120,16 @@ class _RestaurantSkeleton extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.sm),
           AspectRatio(
-              aspectRatio: 3,
-              child: Row(children: [
+            aspectRatio: 3,
+            child: Row(
+              children: [
                 for (var i = 0; i < 3; i++) ...[
                   Expanded(child: ColoredBox(color: fill)),
                   if (i < 2) const SizedBox(width: 2),
                 ],
-              ])),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -207,8 +221,12 @@ class _CoverAppBar extends StatelessWidget {
                       decoration:
                           BoxDecoration(gradient: AppColors.brandGradient),
                       child: Center(
-                          child: Icon(Icons.restaurant_rounded,
-                              size: 40, color: AppColors.accentLight)),
+                        child: Icon(
+                          Icons.restaurant_rounded,
+                          size: 40,
+                          color: AppColors.accentLight,
+                        ),
+                      ),
                     ),
                   ),
                   const DecoratedBox(
@@ -266,7 +284,11 @@ class _IdentitySection extends ConsumerWidget {
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-          AppSpacing.md, AppSpacing.lg, AppSpacing.md, AppSpacing.md),
+        AppSpacing.md,
+        AppSpacing.lg,
+        AppSpacing.md,
+        AppSpacing.md,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -300,10 +322,12 @@ class _IdentitySection extends ConsumerWidget {
                     ClaimStatusBadge(restaurant: restaurant),
                     if (restaurant.city != null) ...[
                       const SizedBox(height: AppSpacing.xxs),
-                      Text(restaurant.city!,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          )),
+                      Text(
+                        restaurant.city!,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
                     ],
                     const SizedBox(height: AppSpacing.xxs),
                     Wrap(
@@ -421,16 +445,20 @@ class _IdentitySection extends ConsumerWidget {
                       extra: StoryEditArgs(image),
                     );
                   },
-                  child: const Icon(Icons.auto_awesome_outlined,
-                      semanticLabel: 'Add story'),
+                  child: const Icon(
+                    Icons.auto_awesome_outlined,
+                    semanticLabel: 'Add story',
+                  ),
                 ),
                 const SizedBox(width: AppSpacing.xs),
                 OutlinedButton(
                   onPressed: () => context.push(
                     Routes.restaurantEditPath(restaurant.id),
                   ),
-                  child: const Icon(Icons.edit_outlined,
-                      semanticLabel: 'Edit restaurant'),
+                  child: const Icon(
+                    Icons.edit_outlined,
+                    semanticLabel: 'Edit restaurant',
+                  ),
                 ),
               ],
             ),

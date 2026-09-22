@@ -29,7 +29,7 @@ void main() {
     final auth = StreamController<String>();
     final events = <String>[];
     final subscription =
-        switchLatest(auth.stream, (String uid) => Stream.value(uid))
+        switchLatest<String, String>(auth.stream, Stream<String>.value)
             .listen(events.add);
     auth.add('one');
     auth.add('two');

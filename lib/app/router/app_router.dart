@@ -103,13 +103,17 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       GoRoute(
-          path: '/moderation', builder: (_, __) => const ModerationScreen()),
+        path: '/moderation',
+        builder: (_, __) => const ModerationScreen(),
+      ),
       GoRoute(
-          path: '/blocked-accounts',
-          builder: (_, __) => const BlockedUsersScreen()),
+        path: '/blocked-accounts',
+        builder: (_, __) => const BlockedUsersScreen(),
+      ),
       GoRoute(
-          path: '/accept-terms',
-          builder: (_, __) => const TermsAcceptanceScreen()),
+        path: '/accept-terms',
+        builder: (_, __) => const TermsAcceptanceScreen(),
+      ),
       GoRoute(
         path: Routes.welcome,
         builder: (_, __) => const WelcomeScreen(),

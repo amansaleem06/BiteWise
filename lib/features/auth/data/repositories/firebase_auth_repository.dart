@@ -93,8 +93,9 @@ class FirebaseAuthRepository implements AuthRepository {
   }) async {
     try {
       final emailError = Validators.email(email);
-      if (emailError != null)
+      if (emailError != null) {
         throw AppException(emailError, code: 'invalid-email');
+      }
       final nameError = Validators.displayName(displayName);
       if (nameError != null) throw AppException(nameError);
       final cred = await _auth.createUserWithEmailAndPassword(
@@ -154,8 +155,9 @@ class FirebaseAuthRepository implements AuthRepository {
       final googleAuth = await googleUser.authentication;
       if (googleAuth.idToken == null) {
         throw const AppException(
-            'Google sign-in is unavailable. Please contact support.',
-            code: 'missing-google-token');
+          'Google sign-in is unavailable. Please contact support.',
+          code: 'missing-google-token',
+        );
       }
       final cred = await _auth.signInWithCredential(
         fb.GoogleAuthProvider.credential(

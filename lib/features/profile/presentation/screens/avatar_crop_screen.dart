@@ -38,9 +38,13 @@ class _AvatarCropScreenState extends State<AvatarCropScreen> {
         await file.delete();
       }
     } catch (_) {
-      if (mounted)
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Could not process this photo. Try another image.')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not process this photo. Try another image.'),
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -54,7 +58,8 @@ class _AvatarCropScreenState extends State<AvatarCropScreen> {
             padding: const EdgeInsets.all(24),
             children: [
               const Text(
-                  'Pinch to zoom and drag to reposition. Your avatar will appear in a circle.'),
+                'Pinch to zoom and drag to reposition. Your avatar will appear in a circle.',
+              ),
               const SizedBox(height: 24),
               AspectRatio(
                 aspectRatio: 1,
@@ -82,8 +87,10 @@ class _AvatarCropScreenState extends State<AvatarCropScreen> {
                               errorBuilder: (context, error, stack) {
                                 _failed = true;
                                 return const Center(
-                                    child: Text(
-                                        'Unsupported image. Choose a different photo.'));
+                                  child: Text(
+                                    'Unsupported image. Choose a different photo.',
+                                  ),
+                                );
                               },
                             ),
                           ),
@@ -96,7 +103,8 @@ class _AvatarCropScreenState extends State<AvatarCropScreen> {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.fromBorderSide(
-                                BorderSide(color: Colors.white, width: 3)),
+                              BorderSide(color: Colors.white, width: 3),
+                            ),
                           ),
                         ),
                       ),
@@ -106,11 +114,13 @@ class _AvatarCropScreenState extends State<AvatarCropScreen> {
               ),
               const SizedBox(height: 24),
               FilledButton(
-                  onPressed: _saving || _failed || !_ready ? null : _usePhoto,
-                  child: Text(_saving ? 'Processing…' : 'Use photo')),
+                onPressed: _saving || _failed || !_ready ? null : _usePhoto,
+                child: Text(_saving ? 'Processing…' : 'Use photo'),
+              ),
               TextButton(
-                  onPressed: _saving ? null : () => Navigator.pop(context),
-                  child: const Text('Cancel')),
+                onPressed: _saving ? null : () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
             ],
           ),
         ),
