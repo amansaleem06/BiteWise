@@ -61,8 +61,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Future<void> _sendText() async {
     final text = _input.text;
     if (text.trim().isEmpty) return;
-    _input.clear();
-    await ref.read(chatActionsProvider).sendText(widget.chatId, text);
+    try {
+      await ref.read(chatActionsProvider).sendText(widget.chatId, text);
+      if (mounted && _input.text == text) _input.clear();
+    } catch (e) {
+      if (mounted) AppSnackbar.error(context, userMessageFrom(e));
+    }
   }
 
   Future<void> _pickAndSendImage() async {
@@ -122,8 +126,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       return;
     }
     final dir = await getTemporaryDirectory();
-    final path =
-        '${dir.path}/vn_${DateTime.now().millisecondsSinceEpoch}.m4a';
+    final path = '${dir.path}/vn_${DateTime.now().millisecondsSinceEpoch}.m4a';
     await _recorder.start(
       const RecordConfig(encoder: AudioEncoder.aacLc),
       path: path,
@@ -309,8 +312,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     messages.indexWhere((m) => m.senderId == me);
                 return ListView.builder(
                   reverse: true,
-                  padding:
-                      const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                   itemCount: messages.length,
                   itemBuilder: (context, i) {
                     final message = messages[i];

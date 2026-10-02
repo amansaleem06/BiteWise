@@ -121,6 +121,12 @@ class FirestoreChatRepository implements ChatRepository {
   Future<void> _assertCanMessage(String peerUid) async {
     final peerDoc =
         await _firestore.collection('publicProfiles').doc(peerUid).get();
+    if (!peerDoc.exists) {
+      throw const AppException(
+        'This account is temporarily unavailable for messaging. Please try again later.',
+        code: 'missing-public-profile',
+      );
+    }
     final privacy = MessagePrivacy.fromKey(
       peerDoc.data()?['messagePrivacy'] as String?,
     );

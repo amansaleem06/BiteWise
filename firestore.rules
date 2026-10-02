@@ -102,7 +102,7 @@ service cloud.firestore {
         && data.displayName.size() >= 1 && data.displayName.size() <= 50
         && data.displayNameLower is string && data.displayNameLower.size() <= 50
         && data.role in ['user', 'restaurantOwner', 'admin']
-        && data.messagePrivacy in ['everyone', 'followers', 'nobody']
+        && data.messagePrivacy in ['everyone', 'followers', 'none', 'nobody']
         && data.emailVerified is bool
         && data.followerCount is int && data.followerCount >= 0
         && data.followingCount is int && data.followingCount >= 0
@@ -148,7 +148,7 @@ service cloud.firestore {
         && data.displayName.size() >= 1 && data.displayName.size() <= 50
         && data.displayNameLower is string && data.displayNameLower.size() <= 50
         && data.role in ['user', 'restaurantOwner', 'admin']
-        && data.messagePrivacy in ['everyone', 'followers', 'nobody']
+        && data.messagePrivacy in ['everyone', 'followers', 'none', 'nobody']
         && data.followerCount is int && data.followerCount >= 0
         && data.followingCount is int && data.followingCount >= 0
         && data.postCount is int && data.postCount >= 0
@@ -229,9 +229,12 @@ service cloud.firestore {
 
       // A user may update their own profile but never role or counters.
       // Business owners may attach verification details and a claimed restaurant.
-      allow update: if isValidPrivateUser(request.resource.data)
+      // Let legacy accounts accept the current terms even if their older
+      // profile is missing fields required for ordinary profile edits.
+      allow update: if (isSelf(uid) && isTermsAcceptanceOnly())
+        || (isValidPrivateUser(request.resource.data)
         && (isAdmin()
-        || (isSelf(uid) && (isTermsAcceptanceOnly() || (
+        || (isSelf(uid) && (
           request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             'displayName', 'displayNameLower', 'username', 'usernameLower',
             'photoUrl', 'bio', 'phone', 'businessName', 'businessAddress',

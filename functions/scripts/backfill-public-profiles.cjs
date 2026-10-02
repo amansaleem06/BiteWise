@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 /*
- * Backfill users/{uid} -> publicProfiles/{uid}. Dry-run is the default.
+ * Fill missing legacy user fields and create missing publicProfiles/{uid}.
+ * Dry-run is the default. The script only adds missing private fields and
+ * creates missing public profiles. The existing profile Cloud Function may
+ * subsequently refresh a public projection from its private source.
  *
  * node scripts/backfill-public-profiles.cjs --project bitewise-1d266
  * node scripts/backfill-public-profiles.cjs --project bitewise-1d266 --apply
@@ -28,6 +31,14 @@ const publicFields = [
   'ownedRestaurantId', 'messagePrivacy', 'followerCount', 'followingCount',
   'postCount', 'suspended', 'createdAt', 'updatedAt',
 ];
+const requiredDefaults = {
+  messagePrivacy: 'everyone',
+  followerCount: 0,
+  followingCount: 0,
+  postCount: 0,
+  emailVerified: false,
+};
+const requiredSourceFields = ['email', 'displayName', 'role', 'createdAt', 'updatedAt'];
 
 function publicProfile(data) {
   return Object.fromEntries(
@@ -40,6 +51,8 @@ function publicProfile(data) {
 async function main() {
   let cursor;
   let scanned = 0;
+  let missing = 0;
+  let legacy = 0;
   let written = 0;
   do {
     let query = db.collection('users').orderBy(FieldPath.documentId()).limit(400);
@@ -47,18 +60,57 @@ async function main() {
     const page = await query.get();
     if (page.empty) break;
     scanned += page.size;
-    if (apply) {
-      const batch = db.batch();
-      for (const doc of page.docs) {
-        batch.set(db.doc(`publicProfiles/${doc.id}`), publicProfile(doc.data()));
+    const publicRefs = page.docs.map(doc => db.doc(`publicProfiles/${doc.id}`));
+    const existing = await db.getAll(...publicRefs);
+    for (let i = 0; i < page.docs.length; i++) {
+      const source = page.docs[i].data();
+      const absentSourceFields = requiredSourceFields.filter(key => source[key] === undefined);
+      if (absentSourceFields.length) {
+        throw new Error(`${page.docs[i].id} is missing ${absentSourceFields.join(',')}; inspect manually before applying`);
       }
-      await batch.commit();
-      written += page.size;
+      const additions = Object.fromEntries(
+        Object.entries(requiredDefaults).filter(([key]) => source[key] === undefined),
+      );
+      if (source.messagePrivacy === undefined && existing[i].exists) {
+        additions.messagePrivacy = existing[i].data().messagePrivacy || 'everyone';
+      }
+      if (source.displayNameLower === undefined) {
+        additions.displayNameLower = source.displayName.toLowerCase();
+      }
+      if (Object.keys(additions).length) legacy++;
+      if (!existing[i].exists) missing++;
+      if (Object.keys(additions).length || !existing[i].exists) {
+        console.log(`${page.docs[i].id}: ${Object.keys(additions).length ? `add ${Object.keys(additions).join(',')}` : 'no private changes'}; ${existing[i].exists ? 'public exists' : 'create public'}`);
+      }
+      if (apply) {
+        let created = false;
+        await db.runTransaction(async transaction => {
+          created = false;
+          const privateDoc = await transaction.get(page.docs[i].ref);
+          const publicDoc = await transaction.get(publicRefs[i]);
+          if (!privateDoc.exists) return;
+          const current = privateDoc.data();
+          const currentAdditions = Object.fromEntries(
+            Object.entries(requiredDefaults).filter(([key]) => current[key] === undefined),
+          );
+          if (current.messagePrivacy === undefined && publicDoc.exists) {
+            currentAdditions.messagePrivacy = publicDoc.data().messagePrivacy || 'everyone';
+          }
+          if (current.displayNameLower === undefined) {
+            currentAdditions.displayNameLower = current.displayName.toLowerCase();
+          }
+          if (Object.keys(currentAdditions).length) transaction.update(privateDoc.ref, currentAdditions);
+          if (!publicDoc.exists) {
+            transaction.create(publicRefs[i], publicProfile({ ...current, ...currentAdditions }));
+            created = true;
+          }
+        });
+        if (created) written++;
+      }
     }
     cursor = page.docs.at(-1);
-    console.log(`${apply ? 'Applied' : 'Would write'} ${scanned} public profiles so far.`);
   } while (cursor);
-  console.log(`${apply ? `Wrote ${written}` : `Dry run: would write ${scanned}`} public profiles in ${projectId}.`);
+  console.log(`Scanned ${scanned} users; ${legacy} legacy private records; ${missing} missing public profiles; ${apply ? `created ${written}` : 'dry run only'} in ${projectId}.`);
 }
 
 main().catch(error => {

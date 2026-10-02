@@ -42,9 +42,16 @@ class FirebaseAuthRepository implements AuthRepository {
         yield null;
         return;
       }
-      yield _userFromAuth(fbUser);
+      // A Firebase Auth session is not a usable app session until its profile
+      // exists under the same UID. This also repairs an interrupted signup.
+      yield await _loadOrCreateProfile(fbUser);
       yield* _users.doc(fbUser.uid).snapshots().map((doc) {
-        if (!doc.exists) return _userFromAuth(fbUser);
+        if (!doc.exists) {
+          throw const AppException(
+            'Your account profile could not be found. Please contact support.',
+            code: 'missing-user-profile',
+          );
+        }
         return UserModel.fromDoc(doc).copyWith(
           emailVerified: fbUser.emailVerified,
           needsEmailVerification: _needsVerification(fbUser),
@@ -56,16 +63,6 @@ class FirebaseAuthRepository implements AuthRepository {
   bool _needsVerification(fb.User user) =>
       !user.emailVerified &&
       user.providerData.any((p) => p.providerId == 'password');
-
-  AppUser _userFromAuth(fb.User fbUser) => AppUser(
-        uid: fbUser.uid,
-        email: fbUser.email ?? '',
-        displayName: fbUser.displayName ?? '',
-        role: UserRole.user,
-        photoUrl: fbUser.photoURL,
-        emailVerified: fbUser.emailVerified,
-        needsEmailVerification: _needsVerification(fbUser),
-      );
 
   @override
   Future<AppUser> signInWithEmail({
@@ -330,9 +327,25 @@ class FirebaseAuthRepository implements AuthRepository {
     await _firestore.runTransaction((transaction) async {
       final doc = await transaction.get(ref);
       if (!doc.exists) {
-        final name = (fbUser.displayName ?? 'Food lover').trim();
+        final createdAt = fbUser.metadata.creationTime;
+        if (createdAt == null ||
+            DateTime.now().difference(createdAt) > const Duration(minutes: 5)) {
+          throw const AppException(
+            'This sign-in is missing its original profile. Please contact support to reconnect your account.',
+            code: 'orphaned-auth-account',
+          );
+        }
+        final providedName = fbUser.displayName?.trim() ?? '';
+        final name = providedName.isEmpty ? 'Food lover' : providedName;
+        final email = fbUser.email?.trim() ?? '';
+        if (email.isEmpty) {
+          throw const AppException(
+            'This sign-in did not provide an email address. Please check your account settings and try again.',
+            code: 'missing-provider-email',
+          );
+        }
         final userData = UserModel.newUser(
-          email: fbUser.email ?? '',
+          email: email,
           displayName: name.length > 50 ? name.substring(0, 50) : name,
           photoUrl: fbUser.photoURL,
           emailVerified: fbUser.emailVerified,
@@ -342,12 +355,6 @@ class FirebaseAuthRepository implements AuthRepository {
           _publicProfiles.doc(fbUser.uid),
           UserModel.publicProfile(userData),
         );
-      } else {
-        final publicRef = _publicProfiles.doc(fbUser.uid);
-        final publicDoc = await transaction.get(publicRef);
-        if (!publicDoc.exists) {
-          transaction.set(publicRef, UserModel.publicProfile(doc.data()!));
-        }
       }
     });
     return UserModel.fromDoc(await ref.get()).copyWith(

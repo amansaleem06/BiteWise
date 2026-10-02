@@ -8,9 +8,10 @@ enum MessagePrivacy {
   followers,
   none;
 
-  static MessagePrivacy fromKey(String? key) =>
-      MessagePrivacy.values.where((s) => s.name == key).firstOrNull ??
-      MessagePrivacy.everyone;
+  static MessagePrivacy fromKey(String? key) => key == 'nobody'
+      ? MessagePrivacy.none
+      : MessagePrivacy.values.where((s) => s.name == key).firstOrNull ??
+          MessagePrivacy.everyone;
 
   String get label => switch (this) {
         MessagePrivacy.everyone => 'Anyone',
