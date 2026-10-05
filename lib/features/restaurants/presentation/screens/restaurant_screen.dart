@@ -78,13 +78,13 @@ class _RestaurantSkeleton extends StatelessWidget {
             height: 120,
             child: Stack(
               children: [
-                const Positioned.fill(
+                Positioned.fill(
                   child: DecoratedBox(
                     decoration:
                         BoxDecoration(gradient: AppColors.brandGradient),
                   ),
                 ),
-                const Positioned(
+                Positioned(
                   top: 8,
                   left: 8,
                   child: BackButton(color: AppColors.cream),
