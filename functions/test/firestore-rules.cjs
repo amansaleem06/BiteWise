@@ -1,7 +1,8 @@
 // Local emulator only. No credentials, dependencies, or production writes.
 // Start Firestore on 127.0.0.1:8189 with project demo-tastewise-tests and this repo's rules.
 const assert = require('node:assert/strict');
-const base = 'http://127.0.0.1:8189/v1/projects/demo-tastewise-tests/databases/(default)/documents';
+const emulator = process.env.FIRESTORE_EMULATOR_HOST || '127.0.0.1:8189';
+const base = 'http://' + emulator + '/v1/projects/demo-tastewise-tests/databases/(default)/documents';
 const name = p => 'projects/demo-tastewise-tests/databases/(default)/documents/' + p;
 const token = uid => [Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url'),
   Buffer.from(JSON.stringify({ sub: uid, user_id: uid, email: uid+'@example.com', email_verified: true,
@@ -46,7 +47,7 @@ const profileWrites = uid => {
 };
 const post = uid => ({authorId:uid,restaurantId:'place',restaurantName:'Cafe',caption:'Lunch',media:[{url:'https://example.com/photo.jpg'}],likeCount:0,commentCount:0,shareCount:0,trendingScore:0});
 async function main(){
-  const reset=await fetch('http://127.0.0.1:8189/emulator/v1/projects/demo-tastewise-tests/databases/(default)/documents',{method:'DELETE'});
+  const reset=await fetch('http://' + emulator + '/emulator/v1/projects/demo-tastewise-tests/databases/(default)/documents',{method:'DELETE'});
   assert(reset.ok);
   await commit('alice',profileWrites('alice'),true,'new private and public profile can be created atomically');
   await commit('bob',profileWrites('bob'),true,'second private and public profile can be created atomically');
@@ -59,6 +60,14 @@ async function main(){
   await commit('alice',[write('posts/pre-consent',post('alice'))],false,'publishing requires terms');
   await commit('alice',[patch('users/alice',{termsAcceptedVersion:'wrong'},['termsAcceptedAt'])],false,'wrong terms version rejected');
   for(const uid of ['alice','bob'])await commit(uid,[patch('users/'+uid,{termsAcceptedVersion:'2026-09-21'},['termsAcceptedAt'])],true,uid+' accepts terms');
+  await commit('owner',[write('users/legacy',{email:'legacy@example.com',displayName:'Legacy',displayNameLower:'legacy',role:'user',emailVerified:true},['createdAt','updatedAt'])],true,'admin seeds incomplete legacy user');
+  await commit('legacy',[patch('users/legacy',{termsAcceptedVersion:'2026-09-21'},['termsAcceptedAt'])],true,'legacy user accepts terms despite missing modern profile fields');
+  await commit('owner',[write('chats/bob_legacy',{participants:['bob','legacy'],participantInfo:{bob:{name:'Bob'},legacy:{name:'Legacy'}}},['updatedAt'])],true,'admin seeds legacy conversation');
+  await commit('legacy',[
+    write('chats/bob_legacy/messages/first',{senderId:'legacy',type:'text',text:'Hello'}),
+    patch('chats/bob_legacy',{lastMessage:{text:'Hello',senderId:'legacy'}},['updatedAt'])
+  ],true,'legacy user sends and updates existing conversation');
+  await readDoc('bob','chats/bob_legacy/messages/first',true,'recipient can read persisted message');
   await commit('alice',[
     patch('users/alice',{bio:'Food lover\nCoffee enthusiast'},['updatedAt']),
     patch('publicProfiles/alice',{bio:'Food lover\nCoffee enthusiast'},['updatedAt'])
