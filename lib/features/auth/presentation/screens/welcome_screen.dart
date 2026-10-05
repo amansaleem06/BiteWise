@@ -21,6 +21,7 @@ class WelcomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final session = ref.watch(authStateProvider);
     final authState = ref.watch(authControllerProvider);
 
     ref.listen(authControllerProvider, (_, next) {
@@ -28,6 +29,21 @@ class WelcomeScreen extends ConsumerWidget {
         AppSnackbar.error(context, userMessageFrom(next.error));
       }
     });
+
+    // Firebase restores a persisted session asynchronously. Keep the welcome
+    // actions hidden until that first auth/profile load resolves, so startup
+    // never presents a signed-out screen while the session is still unknown.
+    if (session.isLoading) {
+      return const AuthScaffold(
+        showBack: false,
+        children: [
+          SizedBox(
+            height: 220,
+            child: Center(child: CircularProgressIndicator()),
+          ),
+        ],
+      );
+    }
 
     return AuthScaffold(
       showBack: false,
