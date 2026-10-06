@@ -13,31 +13,33 @@ final chatRepositoryProvider = Provider<ChatRepository>(
 
 final chatsProvider = StreamProvider.autoDispose<List<Chat>>(
   (ref) async* {
-    final blocked = await ref.watch(blockedUserIdsProvider.future);
-    yield* ref.read(chatRepositoryProvider).watchChats().map(
-          (chats) => chats.where((c) => !blocked.contains(c.peer.uid)).toList(),
-        );
+    // Start the chat listener immediately. Waiting for both block-list
+    // snapshots here delayed the entire Messages screen on a cold open.
+    final chats = ref.read(chatRepositoryProvider).watchChats();
+    await for (final items in chats) {
+      final blocked = ref.read(blockedUserIdsProvider).valueOrNull ?? const {};
+      yield items.where((chat) => !blocked.contains(chat.peer.uid)).toList();
+    }
   },
 );
 
 final chatProvider = StreamProvider.autoDispose.family<Chat?, String>(
   (ref, chatId) async* {
-    final blocked = await ref.watch(blockedUserIdsProvider.future);
-    yield* ref.read(chatRepositoryProvider).watchChat(chatId).map(
-          (chat) =>
-              chat != null && blocked.contains(chat.peer.uid) ? null : chat,
-        );
+    // Do not make opening a conversation wait for the block-list snapshots.
+    final chats = ref.read(chatRepositoryProvider).watchChat(chatId);
+    await for (final chat in chats) {
+      final blocked = ref.read(blockedUserIdsProvider).valueOrNull ?? const {};
+      yield chat != null && blocked.contains(chat.peer.uid) ? null : chat;
+    }
   },
 );
 
 final chatMessagesProvider =
     StreamProvider.autoDispose.family<List<Message>, String>(
   (ref, chatId) async* {
-    final chat = await ref.watch(chatProvider(chatId).future);
-    if (chat == null) {
-      yield [];
-      return;
-    }
+    // Messages are authorized by chat membership in Firestore. Subscribe
+    // directly so a slow/missing profile or block-list snapshot cannot leave
+    // an existing conversation stuck on a spinner.
     yield* ref.read(chatRepositoryProvider).watchMessages(chatId);
   },
 );
