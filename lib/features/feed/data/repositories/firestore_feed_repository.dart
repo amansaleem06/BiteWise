@@ -12,6 +12,11 @@ import '../../domain/entities/discovery_location.dart';
 import '../../domain/repositories/feed_repository.dart';
 import '../models/post_model.dart';
 
+typedef _ScopedPostDocs = ({
+  List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+  bool hasMore,
+});
+
 class FirestoreFeedRepository implements FeedRepository {
   FirestoreFeedRepository({
     FirebaseFirestore? firestore,
@@ -83,7 +88,8 @@ class FirestoreFeedRepository implements FeedRepository {
     }
 
     var restaurantIds = await _restaurantIdsFor(location);
-    var local = await _fetchScopedDocs(restaurantIds, cursor, limit);
+    _ScopedPostDocs local =
+        await _fetchScopedDocs(restaurantIds, cursor, limit);
 
     if (location.scope == DiscoveryScope.nearby &&
         local.docs.length < limit &&
@@ -109,7 +115,10 @@ class FirestoreFeedRepository implements FeedRepository {
     final localDocs = local.docs.take(limit).toList();
     final remaining = limit - localDocs.length;
     final globalDocs = remaining == 0
-        ? const <QueryDocumentSnapshot<Map<String, dynamic>>>[]
+        ? (
+            docs: <QueryDocumentSnapshot<Map<String, dynamic>>>[],
+            hasMore: false,
+          )
         : await _fetchGlobalDocs(cursor, remaining);
     final localIds = localDocs.map((doc) => doc.id).toSet();
     final fallbackDocs =
@@ -117,7 +126,7 @@ class FirestoreFeedRepository implements FeedRepository {
     final combined = [...localDocs, ...fallbackDocs].take(limit).toList();
     if (combined.isEmpty) return const FeedPage(posts: [], hasMore: false);
 
-    final page = await _pageFromDocs(combined);
+    final page = await _pageFromDocs(combined, limit);
     return FeedPage(
       posts: page.posts,
       cursor: combined.last,
@@ -161,13 +170,18 @@ class FirestoreFeedRepository implements FeedRepository {
           }
         }
         if (country != null && country.isNotEmpty) {
-          final cityDocs = [...results[0].docs, ...results[1].docs];
+          final cityDocs = [
+            ...results[0].docs,
+            ...results[1].docs,
+          ];
           final cityDataById = {
             for (final doc in cityDocs) doc.id: doc.data(),
           };
-          ids.removeWhere((id) =>
-              cityDataById.containsKey(id) &&
-              !_matchesCountry(cityDataById[id]!, country));
+          ids.removeWhere(
+            (id) =>
+                cityDataById.containsKey(id) &&
+                !_matchesCountry(cityDataById[id]!, country),
+          );
         }
         return ids.take(120).toList();
       case DiscoveryScope.country:
@@ -261,13 +275,11 @@ class FirestoreFeedRepository implements FeedRepository {
     return earthRadiusKm * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
   }
 
-  Future<
-          ({
-            List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
-            bool hasMore
-          })>
-      _fetchScopedDocs(
-          List<String> restaurantIds, Object? cursor, int limit) async {
+  Future<_ScopedPostDocs> _fetchScopedDocs(
+    List<String> restaurantIds,
+    Object? cursor,
+    int limit,
+  ) async {
     if (restaurantIds.isEmpty) {
       return (
         docs: <QueryDocumentSnapshot<Map<String, dynamic>>>[],
@@ -308,11 +320,7 @@ class FirestoreFeedRepository implements FeedRepository {
     );
   }
 
-  Future<
-      ({
-        List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
-        bool hasMore
-      })> _fetchGlobalDocs(Object? cursor, int limit) async {
+  Future<_ScopedPostDocs> _fetchGlobalDocs(Object? cursor, int limit) async {
     Query<Map<String, dynamic>> query =
         _posts.orderBy('createdAt', descending: true).limit(limit);
     if (cursor is DocumentSnapshot<Map<String, dynamic>>) {
@@ -324,39 +332,56 @@ class FirestoreFeedRepository implements FeedRepository {
 
   Future<FeedPage> _pageFromDocs(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+    int limit,
   ) async {
     if (docs.isEmpty) return const FeedPage(posts: [], hasMore: false);
     final uid = _uid;
     final postIds = docs.map((doc) => doc.id).toList();
     final results = await Future.wait([
-      Future.wait(postIds
-          .map((id) => _posts.doc(id).collection('likes').doc(uid).get())),
-      Future.wait(postIds.map((id) => _firestore
-          .collection('users')
-          .doc(uid)
-          .collection('bookmarks')
-          .doc(id)
-          .get())),
-      Future.wait(postIds.map((id) => _firestore
-          .collection('users')
-          .doc(uid)
-          .collection('reposts')
-          .doc(id)
-          .get())),
+      Future.wait(
+        postIds.map(
+          (id) => _posts.doc(id).collection('likes').doc(uid).get(),
+        ),
+      ),
+      Future.wait(
+        postIds.map(
+          (id) => _firestore
+              .collection('users')
+              .doc(uid)
+              .collection('bookmarks')
+              .doc(id)
+              .get(),
+        ),
+      ),
+      Future.wait(
+        postIds.map(
+          (id) => _firestore
+              .collection('users')
+              .doc(uid)
+              .collection('reposts')
+              .doc(id)
+              .get(),
+        ),
+      ),
     ]);
     final visibility = await ContentVisibility.load(_firestore);
     final posts = <Post>[];
     for (var i = 0; i < docs.length; i++) {
       if (!visibility.allows(docs[i])) continue;
-      posts.add(PostModel.fromDoc(
-        docs[i],
-        isLikedByMe: results[0][i].exists,
-        isBookmarkedByMe: results[1][i].exists,
-        isRepostedByMe: results[2][i].exists,
-      ));
+      posts.add(
+        PostModel.fromDoc(
+          docs[i],
+          isLikedByMe: results[0][i].exists,
+          isBookmarkedByMe: results[1][i].exists,
+          isRepostedByMe: results[2][i].exists,
+        ),
+      );
     }
     return FeedPage(
-        posts: posts, cursor: docs.last, hasMore: docs.length == limit);
+      posts: posts,
+      cursor: docs.last,
+      hasMore: docs.length == limit,
+    );
   }
 
   @override

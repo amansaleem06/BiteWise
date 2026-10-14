@@ -124,7 +124,9 @@ class PlacesSearchService {
     final decoded = jsonDecode(res.body);
     if (decoded is! Map<String, dynamic>) {
       throw PlacesApiException(
-          'INVALID_RESPONSE', 'Unexpected Places response');
+        'INVALID_RESPONSE',
+        'Unexpected Places response',
+      );
     }
 
     if (res.statusCode != 200) {
@@ -200,7 +202,9 @@ class PlacesSearchService {
   }
 
   Future<PlaceSuggestion> _getPlaceDetails(
-      String placeId, String apiKey) async {
+    String placeId,
+    String apiKey,
+  ) async {
     final res = await http.get(
       Uri.https('places.googleapis.com', '/v1/places/$placeId'),
       headers: {
@@ -214,7 +218,9 @@ class PlacesSearchService {
     final decoded = jsonDecode(res.body);
     if (decoded is! Map<String, dynamic>) {
       throw PlacesApiException(
-          'INVALID_RESPONSE', 'Unexpected Places response');
+        'INVALID_RESPONSE',
+        'Unexpected Places response',
+      );
     }
     if (res.statusCode != 200) {
       final err = decoded['error'] as Map<String, dynamic>?;

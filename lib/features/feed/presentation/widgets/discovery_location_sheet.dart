@@ -97,14 +97,17 @@ class _DiscoveryLocationSheetState
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Discover food in',
-                  style: Theme.of(context).textTheme.titleLarge),
+              Text(
+                'Discover food in',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
               const SizedBox(height: AppSpacing.sm),
               ListTile(
                 leading: const Icon(Icons.near_me_outlined),
                 title: const Text('Nearby'),
                 subtitle: const Text(
-                    'Use your current area when location is allowed'),
+                  'Use your current area when location is allowed',
+                ),
                 selected: current?.scope == DiscoveryScope.nearby,
                 onTap: _busy ? null : _nearby,
               ),
