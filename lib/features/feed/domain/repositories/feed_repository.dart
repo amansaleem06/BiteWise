@@ -1,17 +1,30 @@
 import '../entities/post.dart';
+import '../entities/discovery_location.dart';
 
 class FeedPage {
-  const FeedPage({required this.posts, this.cursor, required this.hasMore});
+  const FeedPage({
+    required this.posts,
+    this.cursor,
+    required this.hasMore,
+    this.primaryCount,
+  });
 
   final List<Post> posts;
   final Object? cursor;
   final bool hasMore;
+
+  /// Number of posts in the requested location before any global fallback.
+  final int? primaryCount;
 }
 
 abstract interface class FeedRepository {
   Future<Post> getPostById(String postId);
 
-  Future<FeedPage> fetchForYou({Object? cursor, int limit});
+  Future<FeedPage> fetchForYou({
+    Object? cursor,
+    int limit,
+    DiscoveryLocation? location,
+  });
 
   Future<FeedPage> fetchFollowing({Object? cursor, int limit});
 

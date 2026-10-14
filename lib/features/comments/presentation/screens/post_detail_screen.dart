@@ -32,6 +32,7 @@ class PostDetailScreen extends ConsumerStatefulWidget {
 class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   final _input = TextEditingController();
   final _inputFocus = FocusNode();
+  final _commentsKey = GlobalKey();
 
   @override
   void dispose() {
@@ -50,6 +51,17 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     } else if (mounted && _input.text.trim().isNotEmpty) {
       AppSnackbar.error(context, AppStrings.genericError);
     }
+  }
+
+  void _scrollToComments() {
+    final target = _commentsKey.currentContext;
+    if (target == null) return;
+    Scrollable.ensureVisible(
+      target,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOutCubic,
+      alignment: 0.05,
+    );
   }
 
   @override
@@ -92,6 +104,8 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                   return false;
                 },
                 child: ListView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
                   children: [
                     PostCard(
                       post: post,
@@ -114,7 +128,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                         restaurantName: post.restaurantName,
                         caption: post.caption,
                       ),
-                      onComment: _inputFocus.requestFocus,
+                      onComment: _scrollToComments,
                       onAuthorTap: () => openPostAuthor(context, post),
                       onRestaurantTap: () => context.push(
                         Routes.restaurantPath(post.restaurantId),
@@ -128,77 +142,79 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                       ),
                     ),
                     const Divider(),
-                    commentsAsync.when(
-                      loading: () => const Padding(
-                        padding: EdgeInsets.all(AppSpacing.lg),
-                        child: Center(
-                          child: CircularProgressIndicator(strokeWidth: 2.5),
-                        ),
-                      ),
-                      error: (_, __) => Padding(
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        child: Center(
-                          child: TextButton(
-                            onPressed: () => ref.invalidate(
-                              commentsControllerProvider(widget.postId),
-                            ),
-                            child:
-                                const Text('Couldn\'t load comments — retry'),
+                    KeyedSubtree(
+                      key: _commentsKey,
+                      child: commentsAsync.when(
+                        loading: () => const Padding(
+                          padding: EdgeInsets.all(AppSpacing.lg),
+                          child: Center(
+                            child: CircularProgressIndicator(strokeWidth: 2.5),
                           ),
                         ),
-                      ),
-                      data: (comments) => Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (comments.comments.isEmpty)
-                            Padding(
-                              padding: const EdgeInsets.all(AppSpacing.lg),
-                              child: Center(
-                                child: Text(
-                                  'No comments yet. Start the conversation.',
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant,
+                        error: (_, __) => Padding(
+                          padding: const EdgeInsets.all(AppSpacing.lg),
+                          child: Center(
+                            child: TextButton(
+                              onPressed: () => ref.invalidate(
+                                commentsControllerProvider(widget.postId),
+                              ),
+                              child:
+                                  const Text('Couldn\'t load comments — retry'),
+                            ),
+                          ),
+                        ),
+                        data: (comments) => Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (comments.comments.isEmpty)
+                              Padding(
+                                padding: const EdgeInsets.all(AppSpacing.lg),
+                                child: Center(
+                                  child: Text(
+                                    'No comments yet. Start the conversation.',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          for (final comment in comments.comments)
-                            CommentTile(
-                              comment: comment,
-                              isMine: comment.authorId == me?.uid,
-                              onReply: () {
-                                commentsController
-                                    .startReply(comment.authorName);
-                                _inputFocus.requestFocus();
-                              },
-                              onDelete: () =>
-                                  commentsController.delete(comment.id),
-                              onReport: comment.authorId == me?.uid
-                                  ? null
-                                  : () => SafetyActions.report(
-                                        context,
-                                        ref,
-                                        type: ReportTargetType.comment,
-                                        targetId:
-                                            'posts/${widget.postId}/comments/${comment.id}',
-                                        targetUserId: comment.authorId,
-                                      ),
-                            ),
-                          if (comments.isLoadingMore)
-                            const Padding(
-                              padding: EdgeInsets.all(AppSpacing.md),
-                              child: Center(
-                                child: SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
+                            for (final comment in comments.comments)
+                              CommentTile(
+                                comment: comment,
+                                isMine: comment.authorId == me?.uid,
+                                onReply: () {
+                                  commentsController
+                                      .startReply(comment.authorName);
+                                },
+                                onDelete: () =>
+                                    commentsController.delete(comment.id),
+                                onReport: comment.authorId == me?.uid
+                                    ? null
+                                    : () => SafetyActions.report(
+                                          context,
+                                          ref,
+                                          type: ReportTargetType.comment,
+                                          targetId:
+                                              'posts/${widget.postId}/comments/${comment.id}',
+                                          targetUserId: comment.authorId,
+                                        ),
+                              ),
+                            if (comments.isLoadingMore)
+                              const Padding(
+                                padding: EdgeInsets.all(AppSpacing.md),
+                                child: Center(
+                                  child: SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          const SizedBox(height: AppSpacing.lg),
-                        ],
+                            const SizedBox(height: AppSpacing.lg),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -245,6 +261,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                         child: TextField(
                           controller: _input,
                           focusNode: _inputFocus,
+                          onTapOutside: (_) => _inputFocus.unfocus(),
                           minLines: 1,
                           maxLines: 4,
                           maxLength: 500,

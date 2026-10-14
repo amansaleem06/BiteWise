@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import '../../../../core/services/content_visibility.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
@@ -6,6 +8,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import '../../../../core/errors/app_exception.dart';
 import '../../../../core/services/social_notification_writer.dart';
 import '../../domain/entities/post.dart';
+import '../../domain/entities/discovery_location.dart';
 import '../../domain/repositories/feed_repository.dart';
 import '../models/post_model.dart';
 
@@ -65,11 +68,295 @@ class FirestoreFeedRepository implements FeedRepository {
   }
 
   @override
-  Future<FeedPage> fetchForYou({Object? cursor, int limit = _pageSize}) {
+  Future<FeedPage> fetchForYou({
+    Object? cursor,
+    int limit = _pageSize,
+    DiscoveryLocation? location,
+  }) async {
+    if (location == null || location.scope == DiscoveryScope.global) {
+      Query<Map<String, dynamic>> query =
+          _posts.orderBy('createdAt', descending: true).limit(limit);
+      if (cursor is DocumentSnapshot<Map<String, dynamic>>) {
+        query = query.startAfterDocument(cursor);
+      }
+      return _runPageQuery(query, limit);
+    }
+
+    var restaurantIds = await _restaurantIdsFor(location);
+    var local = await _fetchScopedDocs(restaurantIds, cursor, limit);
+
+    if (location.scope == DiscoveryScope.nearby &&
+        local.docs.length < limit &&
+        location.latitude != null &&
+        location.longitude != null) {
+      for (final radiusKm in [75.0, 200.0]) {
+        restaurantIds = await _restaurantIdsForNearby(
+          location.latitude!,
+          location.longitude!,
+          radiusKm,
+        );
+        local = await _fetchScopedDocs(restaurantIds, cursor, limit);
+        if (local.docs.length >= limit) break;
+      }
+    } else if (location.scope == DiscoveryScope.city &&
+        local.docs.length < limit &&
+        location.country?.isNotEmpty == true) {
+      final countryIds = await _restaurantIdsForCountry(location.country!);
+      restaurantIds = {...restaurantIds, ...countryIds}.toList();
+      local = await _fetchScopedDocs(restaurantIds, cursor, limit);
+    }
+
+    final localDocs = local.docs.take(limit).toList();
+    final remaining = limit - localDocs.length;
+    final globalDocs = remaining == 0
+        ? const <QueryDocumentSnapshot<Map<String, dynamic>>>[]
+        : await _fetchGlobalDocs(cursor, remaining);
+    final localIds = localDocs.map((doc) => doc.id).toSet();
+    final fallbackDocs =
+        globalDocs.docs.where((doc) => !localIds.contains(doc.id)).toList();
+    final combined = [...localDocs, ...fallbackDocs].take(limit).toList();
+    if (combined.isEmpty) return const FeedPage(posts: [], hasMore: false);
+
+    final page = await _pageFromDocs(combined);
+    return FeedPage(
+      posts: page.posts,
+      cursor: combined.last,
+      hasMore: local.hasMore || globalDocs.hasMore,
+      primaryCount: localDocs.length,
+    );
+  }
+
+  Future<List<String>> _restaurantIdsFor(DiscoveryLocation location) async {
+    switch (location.scope) {
+      case DiscoveryScope.city:
+        final city = location.city?.trim() ?? '';
+        if (city.isEmpty) return const [];
+        final results = await Future.wait([
+          _firestore
+              .collection('restaurants')
+              .where('city', isEqualTo: city)
+              .limit(250)
+              .get(),
+          _firestore
+              .collection('restaurants')
+              .where('cityLower', isEqualTo: city.toLowerCase())
+              .limit(250)
+              .get(),
+          _firestore.collection('restaurants').limit(500).get(),
+        ]);
+        final ids = <String>{
+          ...results[0].docs.map((doc) => doc.id),
+          ...results[1].docs.map((doc) => doc.id),
+        };
+        final normalizedCity = city.toLowerCase();
+        final country = location.country?.trim().toLowerCase();
+        for (final doc in results[2].docs) {
+          final data = doc.data();
+          final stored = (data['city'] as String?)?.trim().toLowerCase() ?? '';
+          if (stored == normalizedCity &&
+              (country == null ||
+                  country.isEmpty ||
+                  _matchesCountry(data, country))) {
+            ids.add(doc.id);
+          }
+        }
+        if (country != null && country.isNotEmpty) {
+          final cityDocs = [...results[0].docs, ...results[1].docs];
+          final cityDataById = {
+            for (final doc in cityDocs) doc.id: doc.data(),
+          };
+          ids.removeWhere((id) =>
+              cityDataById.containsKey(id) &&
+              !_matchesCountry(cityDataById[id]!, country));
+        }
+        return ids.take(120).toList();
+      case DiscoveryScope.country:
+        return _restaurantIdsForCountry(location.country ?? '');
+      case DiscoveryScope.nearby:
+        if (location.latitude == null || location.longitude == null) {
+          return const [];
+        }
+        return _restaurantIdsForNearby(
+          location.latitude!,
+          location.longitude!,
+          25,
+        );
+      case DiscoveryScope.global:
+        return const [];
+    }
+  }
+
+  Future<List<String>> _restaurantIdsForCountry(String country) async {
+    final normalized = country.trim().toLowerCase();
+    if (normalized.isEmpty) return const [];
+    final results = await Future.wait([
+      _firestore
+          .collection('restaurants')
+          .where('countryLower', isEqualTo: normalized)
+          .limit(250)
+          .get(),
+      _firestore
+          .collection('restaurants')
+          .where('country', isEqualTo: country.trim())
+          .limit(250)
+          .get(),
+      _firestore.collection('restaurants').limit(500).get(),
+    ]);
+    final ids = <String>{};
+    for (final doc in results[0].docs) {
+      ids.add(doc.id);
+    }
+    for (final doc in results[1].docs) {
+      ids.add(doc.id);
+    }
+    // Older restaurant records have no country field; their formatted address
+    // still lets us match the country without changing existing data.
+    for (final doc in results[2].docs) {
+      if (_matchesCountry(doc.data(), normalized)) ids.add(doc.id);
+    }
+    return ids.take(120).toList();
+  }
+
+  bool _matchesCountry(Map<String, dynamic> data, String normalizedCountry) {
+    final stored = (data['country'] as String?) ??
+        (data['address'] as String?)?.split(',').last.trim();
+    return stored?.trim().toLowerCase() == normalizedCountry;
+  }
+
+  Future<List<String>> _restaurantIdsForNearby(
+    double latitude,
+    double longitude,
+    double radiusKm,
+  ) async {
+    final snap = await _firestore
+        .collection('restaurants')
+        .where('hasLocation', isEqualTo: true)
+        .limit(500)
+        .get();
+    final matches = <({String id, double distance})>[];
+    for (final doc in snap.docs) {
+      final point = doc.data()['location'];
+      if (point is! GeoPoint) continue;
+      final distance = _distanceKm(
+        latitude,
+        longitude,
+        point.latitude,
+        point.longitude,
+      );
+      if (distance <= radiusKm) matches.add((id: doc.id, distance: distance));
+    }
+    matches.sort((a, b) => a.distance.compareTo(b.distance));
+    return matches.take(120).map((item) => item.id).toList();
+  }
+
+  double _distanceKm(double lat1, double lon1, double lat2, double lon2) {
+    const earthRadiusKm = 6371.0;
+    final dLat = (lat2 - lat1) * 0.017453292519943295;
+    final dLon = (lon2 - lon1) * 0.017453292519943295;
+    final a = (math.sin(dLat / 2) * math.sin(dLat / 2)) +
+        math.cos(lat1 * 0.017453292519943295) *
+            math.cos(lat2 * 0.017453292519943295) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
+    return earthRadiusKm * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+  }
+
+  Future<
+          ({
+            List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+            bool hasMore
+          })>
+      _fetchScopedDocs(
+          List<String> restaurantIds, Object? cursor, int limit) async {
+    if (restaurantIds.isEmpty) {
+      return (
+        docs: <QueryDocumentSnapshot<Map<String, dynamic>>>[],
+        hasMore: false,
+      );
+    }
+    final queries = <Future<QuerySnapshot<Map<String, dynamic>>>>[];
+    for (var offset = 0; offset < restaurantIds.length; offset += 30) {
+      final ids = restaurantIds.skip(offset).take(30).toList();
+      Query<Map<String, dynamic>> query = _posts
+          .where('restaurantId', whereIn: ids)
+          .orderBy('createdAt', descending: true)
+          .limit(limit);
+      if (cursor is DocumentSnapshot<Map<String, dynamic>>) {
+        query = query.startAfterDocument(cursor);
+      }
+      queries.add(query.get());
+    }
+    final snapshots = await Future.wait(queries);
+    final docs = <QueryDocumentSnapshot<Map<String, dynamic>>>[
+      for (final snap in snapshots) ...snap.docs,
+    ]..sort((a, b) {
+        final aTime =
+            (a.data()['createdAt'] as Timestamp?)?.microsecondsSinceEpoch ?? 0;
+        final bTime =
+            (b.data()['createdAt'] as Timestamp?)?.microsecondsSinceEpoch ?? 0;
+        return bTime.compareTo(aTime);
+      });
+    final unique = <String, QueryDocumentSnapshot<Map<String, dynamic>>>{};
+    for (final doc in docs) {
+      unique.putIfAbsent(doc.id, () => doc);
+    }
+    final uniqueDocs = unique.values.toList();
+    return (
+      docs: uniqueDocs,
+      hasMore: uniqueDocs.length > limit ||
+          snapshots.any((snap) => snap.docs.length == limit),
+    );
+  }
+
+  Future<
+      ({
+        List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+        bool hasMore
+      })> _fetchGlobalDocs(Object? cursor, int limit) async {
     Query<Map<String, dynamic>> query =
         _posts.orderBy('createdAt', descending: true).limit(limit);
-    if (cursor is DocumentSnapshot) query = query.startAfterDocument(cursor);
-    return _runPageQuery(query, limit);
+    if (cursor is DocumentSnapshot<Map<String, dynamic>>) {
+      query = query.startAfterDocument(cursor);
+    }
+    final snap = await query.get();
+    return (docs: snap.docs, hasMore: snap.docs.length == limit);
+  }
+
+  Future<FeedPage> _pageFromDocs(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+  ) async {
+    if (docs.isEmpty) return const FeedPage(posts: [], hasMore: false);
+    final uid = _uid;
+    final postIds = docs.map((doc) => doc.id).toList();
+    final results = await Future.wait([
+      Future.wait(postIds
+          .map((id) => _posts.doc(id).collection('likes').doc(uid).get())),
+      Future.wait(postIds.map((id) => _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('bookmarks')
+          .doc(id)
+          .get())),
+      Future.wait(postIds.map((id) => _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('reposts')
+          .doc(id)
+          .get())),
+    ]);
+    final visibility = await ContentVisibility.load(_firestore);
+    final posts = <Post>[];
+    for (var i = 0; i < docs.length; i++) {
+      if (!visibility.allows(docs[i])) continue;
+      posts.add(PostModel.fromDoc(
+        docs[i],
+        isLikedByMe: results[0][i].exists,
+        isBookmarkedByMe: results[1][i].exists,
+        isRepostedByMe: results[2][i].exists,
+      ));
+    }
+    return FeedPage(
+        posts: posts, cursor: docs.last, hasMore: docs.length == limit);
   }
 
   @override

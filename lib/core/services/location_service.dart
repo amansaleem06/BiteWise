@@ -4,12 +4,13 @@ import 'package:geolocator/geolocator.dart';
 class LocationService {
   /// Current position, or null if permission is denied or services are off.
   /// Never throws — callers treat "no location" as a normal state.
-  Future<Position?> currentPosition() async {
+  Future<Position?> currentPosition({bool requestPermission = true}) async {
     try {
       if (!await Geolocator.isLocationServiceEnabled()) return null;
 
       var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
+        if (!requestPermission) return null;
         permission = await Geolocator.requestPermission();
       }
       if (permission == LocationPermission.denied ||

@@ -18,6 +18,8 @@ class PlaceSuggestion {
     this.longitude,
     this.phone,
     this.website,
+    this.city,
+    this.country,
   });
 
   final String placeId;
@@ -27,12 +29,8 @@ class PlaceSuggestion {
   final double? longitude;
   final String? phone;
   final String? website;
-
-  String? get city {
-    final parts = address?.split(',') ?? const [];
-    if (parts.length < 2) return null;
-    return parts[parts.length - 2].trim();
-  }
+  final String? city;
+  final String? country;
 }
 
 /// Keyword → nearby restaurant recommendations via Places API (New).
@@ -116,8 +114,8 @@ class PlacesSearchService {
             'X-Goog-Api-Key': apiKey,
             'X-Goog-FieldMask':
                 'places.id,places.displayName,places.formattedAddress,'
-                'places.location,places.nationalPhoneNumber,'
-                'places.internationalPhoneNumber,places.websiteUri',
+                    'places.addressComponents,places.location,places.nationalPhoneNumber,'
+                    'places.internationalPhoneNumber,places.websiteUri',
           },
           body: jsonEncode(body),
         )
@@ -125,7 +123,8 @@ class PlacesSearchService {
 
     final decoded = jsonDecode(res.body);
     if (decoded is! Map<String, dynamic>) {
-      throw PlacesApiException('INVALID_RESPONSE', 'Unexpected Places response');
+      throw PlacesApiException(
+          'INVALID_RESPONSE', 'Unexpected Places response');
     }
 
     if (res.statusCode != 200) {
@@ -136,23 +135,30 @@ class PlacesSearchService {
     }
 
     final places = decoded['places'] as List<dynamic>? ?? const [];
-    return places.map((raw) {
-      final m = raw as Map<String, dynamic>;
-      final display = m['displayName'] as Map<String, dynamic>?;
-      final loc = m['location'] as Map<String, dynamic>?;
-      var id = m['id'] as String? ?? '';
-      if (id.startsWith('places/')) id = id.substring('places/'.length);
-      return PlaceSuggestion(
-        placeId: id,
-        name: (display?['text'] as String?) ?? '',
-        address: m['formattedAddress'] as String?,
-        latitude: (loc?['latitude'] as num?)?.toDouble(),
-        longitude: (loc?['longitude'] as num?)?.toDouble(),
-        phone: (m['nationalPhoneNumber'] as String?) ??
-            (m['internationalPhoneNumber'] as String?),
-        website: m['websiteUri'] as String?,
-      );
-    }).where((p) => p.placeId.isNotEmpty && p.name.isNotEmpty).toList();
+    return places
+        .map((raw) {
+          final m = raw as Map<String, dynamic>;
+          final display = m['displayName'] as Map<String, dynamic>?;
+          final loc = m['location'] as Map<String, dynamic>?;
+          var id = m['id'] as String? ?? '';
+          if (id.startsWith('places/')) id = id.substring('places/'.length);
+          return PlaceSuggestion(
+            placeId: id,
+            name: (display?['text'] as String?) ?? '',
+            address: m['formattedAddress'] as String?,
+            city: _placeCity(m['addressComponents']) ??
+                _cityFromAddress(m['formattedAddress'] as String?),
+            country: _placeCountry(m['addressComponents']) ??
+                _countryFromAddress(m['formattedAddress'] as String?),
+            latitude: (loc?['latitude'] as num?)?.toDouble(),
+            longitude: (loc?['longitude'] as num?)?.toDouble(),
+            phone: (m['nationalPhoneNumber'] as String?) ??
+                (m['internationalPhoneNumber'] as String?),
+            website: m['websiteUri'] as String?,
+          );
+        })
+        .where((p) => p.placeId.isNotEmpty && p.name.isNotEmpty)
+        .toList();
   }
 
   /// Phone and website for a listing — used to raise the claim bar.
@@ -193,22 +199,22 @@ class PlacesSearchService {
     );
   }
 
-  Future<PlaceSuggestion> _getPlaceDetails(String placeId, String apiKey) async {
-    final res = await http
-        .get(
-          Uri.https('places.googleapis.com', '/v1/places/$placeId'),
-          headers: {
-            'X-Goog-Api-Key': apiKey,
-            'X-Goog-FieldMask':
-                'id,displayName,formattedAddress,location,'
+  Future<PlaceSuggestion> _getPlaceDetails(
+      String placeId, String apiKey) async {
+    final res = await http.get(
+      Uri.https('places.googleapis.com', '/v1/places/$placeId'),
+      headers: {
+        'X-Goog-Api-Key': apiKey,
+        'X-Goog-FieldMask':
+            'id,displayName,formattedAddress,addressComponents,location,'
                 'nationalPhoneNumber,internationalPhoneNumber,websiteUri',
-          },
-        )
-        .timeout(const Duration(seconds: 12));
+      },
+    ).timeout(const Duration(seconds: 12));
 
     final decoded = jsonDecode(res.body);
     if (decoded is! Map<String, dynamic>) {
-      throw PlacesApiException('INVALID_RESPONSE', 'Unexpected Places response');
+      throw PlacesApiException(
+          'INVALID_RESPONSE', 'Unexpected Places response');
     }
     if (res.statusCode != 200) {
       final err = decoded['error'] as Map<String, dynamic>?;
@@ -226,6 +232,10 @@ class PlacesSearchService {
       placeId: id,
       name: (display?['text'] as String?) ?? '',
       address: decoded['formattedAddress'] as String?,
+      city: _placeCity(decoded['addressComponents']) ??
+          _cityFromAddress(decoded['formattedAddress'] as String?),
+      country: _placeCountry(decoded['addressComponents']) ??
+          _countryFromAddress(decoded['formattedAddress'] as String?),
       latitude: (loc?['latitude'] as num?)?.toDouble(),
       longitude: (loc?['longitude'] as num?)?.toDouble(),
       phone: (decoded['nationalPhoneNumber'] as String?) ??
@@ -233,6 +243,53 @@ class PlacesSearchService {
       website: decoded['websiteUri'] as String?,
     );
   }
+}
+
+String? _placeCity(dynamic components) {
+  if (components is! List) return null;
+  const preferred = [
+    'locality',
+    'postal_town',
+    'sublocality_level_1',
+    'administrative_area_level_3',
+  ];
+  for (final type in preferred) {
+    for (final item in components) {
+      if (item is! Map) continue;
+      final types = item['types'];
+      if (types is List && types.contains(type)) {
+        final value = item['longText'] as String?;
+        if (value?.trim().isNotEmpty == true) return value!.trim();
+      }
+    }
+  }
+  return null;
+}
+
+String? _placeCountry(dynamic components) {
+  if (components is! List) return null;
+  for (final item in components) {
+    if (item is! Map) continue;
+    final types = item['types'];
+    if (types is List && types.contains('country')) {
+      final value = item['longText'] as String?;
+      if (value?.trim().isNotEmpty == true) return value!.trim();
+    }
+  }
+  return null;
+}
+
+String? _cityFromAddress(String? address) {
+  final parts = address?.split(',') ?? const [];
+  if (parts.length < 2) return null;
+  return parts[parts.length - 2].trim();
+}
+
+String? _countryFromAddress(String? address) {
+  final parts = address?.split(',') ?? const [];
+  if (parts.isEmpty) return null;
+  final value = parts.last.trim();
+  return value.isEmpty ? null : value;
 }
 
 class PlacesApiException implements Exception {

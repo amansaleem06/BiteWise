@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/errors/app_exception.dart';
-import '../../../../core/services/location_service.dart';
 import '../../../../core/services/media_upload_service.dart';
 import '../../../../core/services/places_search_service.dart';
 import '../../../../core/services/restaurant_page_voice.dart';
@@ -55,7 +54,6 @@ class FirebaseCreatePostRepository implements CreatePostRepository {
   @override
   Future<RestaurantRef> createRestaurantStub(String name) async {
     final trimmed = name.trim();
-    final position = await LocationService().currentPosition();
 
     final doc = await _firestore.collection('restaurants').add({
       'name': trimmed,
@@ -68,10 +66,6 @@ class FirebaseCreatePostRepository implements CreatePostRepository {
       'postCount': 0,
       'ratingSum': 0,
       'ratingCount': 0,
-      if (position != null) ...{
-        'location': GeoPoint(position.latitude, position.longitude),
-        'hasLocation': true,
-      },
       'createdAt': FieldValue.serverTimestamp(),
     });
     return RestaurantRef(id: doc.id, name: trimmed);
@@ -110,7 +104,14 @@ class FirebaseCreatePostRepository implements CreatePostRepository {
       if (place.address != null) 'address': place.address,
       if (place.phone != null) 'phone': place.phone,
       if (place.website != null) 'website': place.website,
-      if (place.city != null) 'city': place.city,
+      if (place.city != null) ...{
+        'city': place.city,
+        'cityLower': place.city!.toLowerCase(),
+      },
+      if (place.country != null) ...{
+        'country': place.country,
+        'countryLower': place.country!.toLowerCase(),
+      },
       'claimed': false,
       'claimStatus': 'unclaimed',
       'ownerId': null,
@@ -174,8 +175,8 @@ class FirebaseCreatePostRepository implements CreatePostRepository {
         final ownerId = data?['ownerId'] as String?;
         final claimed = (data?['claimed'] as bool?) ?? false;
         final claimStatus = data?['claimStatus'] as String?;
-        postingAsPage = ownerId == user.uid &&
-            (claimed || claimStatus == 'claimed');
+        postingAsPage =
+            ownerId == user.uid && (claimed || claimStatus == 'claimed');
         if (postingAsPage) {
           page = RestaurantPageVoice(
             id: restaurantId,
@@ -231,8 +232,7 @@ class FirebaseCreatePostRepository implements CreatePostRepository {
 
     if (taggedId.isEmpty) return;
 
-    final restaurantRef =
-        _firestore.collection('restaurants').doc(taggedId);
+    final restaurantRef = _firestore.collection('restaurants').doc(taggedId);
     await _firestore.runTransaction((tx) async {
       final snap = await tx.get(restaurantRef);
       if (!snap.exists) return;

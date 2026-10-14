@@ -7,7 +7,9 @@ import '../../../safety/presentation/providers/safety_providers.dart';
 import '../../../taste/presentation/providers/diet_plan_providers.dart';
 import '../../data/repositories/firestore_feed_repository.dart';
 import '../../domain/entities/post.dart';
+import '../../domain/entities/discovery_location.dart';
 import '../../domain/repositories/feed_repository.dart';
+import 'discovery_location_provider.dart';
 
 final feedRepositoryProvider = Provider<FeedRepository>(
   (ref) => FirestoreFeedRepository(),
@@ -49,9 +51,15 @@ class FeedState {
 /// runs; on failure the change is rolled back.
 class FeedController extends FamilyAsyncNotifier<FeedState, FeedTab> {
   FeedRepository get _repo => ref.read(feedRepositoryProvider);
+  DiscoveryLocation? _discoveryLocation;
 
   @override
   Future<FeedState> build(FeedTab tab) async {
+    if (tab == FeedTab.forYou) {
+      final location = ref.watch(discoveryLocationProvider);
+      _discoveryLocation = location.valueOrNull ??
+          await ref.watch(discoveryLocationProvider.future);
+    }
     if (tab == FeedTab.palette) {
       ref.watch(nutritionProfileProvider);
       ref.watch(currentDietPlanProvider);
@@ -59,7 +67,11 @@ class FeedController extends FamilyAsyncNotifier<FeedState, FeedTab> {
     final blocked = await ref.watch(blockedUserIdsProvider.future);
     final page = await _fetch(null);
     return FeedState(
-      posts: _prepare(page.posts, blocked),
+      posts: _prepare(
+        page.posts,
+        blocked: blocked,
+        primaryCount: page.primaryCount,
+      ),
       cursor: page.cursor,
       hasMore: page.hasMore,
     );
@@ -76,7 +88,11 @@ class FeedController extends FamilyAsyncNotifier<FeedState, FeedTab> {
   /// Only For You is re-ranked; Following stays strictly chronological.
   /// Ranking runs per fetched page, so pagination never reshuffles posts
   /// the diner has already scrolled past.
-  List<Post> _prepare(List<Post> posts, [Set<String>? blocked]) {
+  List<Post> _prepare(
+    List<Post> posts, {
+    Set<String>? blocked,
+    int? primaryCount,
+  }) {
     final visible = _withoutBlocked(posts, blocked);
     if (arg == FeedTab.following) return visible;
     final preferences =
@@ -99,11 +115,25 @@ class FeedController extends FamilyAsyncNotifier<FeedState, FeedTab> {
         preferences: preferences,
       );
     }
+    if (arg == FeedTab.forYou && primaryCount != null) {
+      final primary =
+          _withoutBlocked(posts.take(primaryCount).toList(), blocked);
+      final fallback =
+          _withoutBlocked(posts.skip(primaryCount).toList(), blocked);
+      return [
+        ...DietaryRanking.rankPosts(primary, preferences),
+        ...DietaryRanking.rankPosts(fallback, preferences),
+      ];
+    }
     return DietaryRanking.rankPosts(visible, preferences);
   }
 
   Future<FeedPage> _fetch(Object? cursor) => switch (arg) {
-        FeedTab.forYou || FeedTab.palette => _repo.fetchForYou(cursor: cursor),
+        FeedTab.forYou => _repo.fetchForYou(
+            cursor: cursor,
+            location: _discoveryLocation,
+          ),
+        FeedTab.palette => _repo.fetchForYou(cursor: cursor),
         FeedTab.following => _repo.fetchFollowing(cursor: cursor),
       };
 
@@ -111,7 +141,7 @@ class FeedController extends FamilyAsyncNotifier<FeedState, FeedTab> {
     state = await AsyncValue.guard(() async {
       final page = await _fetch(null);
       return FeedState(
-        posts: _prepare(page.posts),
+        posts: _prepare(page.posts, primaryCount: page.primaryCount),
         cursor: page.cursor,
         hasMore: page.hasMore,
       );
@@ -127,7 +157,10 @@ class FeedController extends FamilyAsyncNotifier<FeedState, FeedTab> {
       final page = await _fetch(current.cursor);
       state = AsyncData(
         current.copyWith(
-          posts: [...current.posts, ..._prepare(page.posts)],
+          posts: [
+            ...current.posts,
+            ..._prepare(page.posts, primaryCount: page.primaryCount),
+          ],
           cursor: page.cursor,
           hasMore: page.hasMore,
           isLoadingMore: false,
@@ -158,8 +191,7 @@ class FeedController extends FamilyAsyncNotifier<FeedState, FeedTab> {
   Future<void> toggleRepost(String postId) => _toggle(
         postId,
         apply: (p) => p.copyWith(isRepostedByMe: !p.isRepostedByMe),
-        write: (p) =>
-            _repo.setReposted(postId, reposted: !p.isRepostedByMe),
+        write: (p) => _repo.setReposted(postId, reposted: !p.isRepostedByMe),
       );
 
   Future<void> sharePost(String postId) async {
@@ -168,8 +200,8 @@ class FeedController extends FamilyAsyncNotifier<FeedState, FeedTab> {
     final index = current.posts.indexWhere((p) => p.id == postId);
     if (index == -1) return;
     final original = current.posts[index];
-    final updated = [...current.posts]
-      ..[index] = original.copyWith(shareCount: original.shareCount + 1);
+    final updated = [...current.posts]..[index] =
+        original.copyWith(shareCount: original.shareCount + 1);
     state = AsyncData(current.copyWith(posts: updated));
     try {
       await _repo.recordShare(postId);

@@ -9,7 +9,9 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/constants/cuisines.dart';
 import '../../../feed/presentation/providers/feed_providers.dart';
+import '../../../feed/presentation/providers/discovery_location_provider.dart';
 import '../../../feed/presentation/widgets/feed_list.dart';
+import '../../../feed/presentation/widgets/discovery_location_sheet.dart';
 import '../../../notifications/presentation/providers/notification_providers.dart';
 import '../../../stories/presentation/widgets/stories_tray.dart';
 import '../../../taste/domain/palette_copy.dart';
@@ -144,6 +146,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final theme = Theme.of(context);
     final hasUnread =
         ref.watch(hasUnreadNotificationsProvider).valueOrNull ?? false;
+    final discoveryLocation = ref.watch(discoveryLocationProvider).valueOrNull;
     final preview = Cuisines.all.take(3).toList();
     final modeLabel = switch (_tab) {
       FeedTab.forYou => 'For You',
@@ -254,6 +257,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             scrollDirection: Axis.horizontal,
                             child: Row(
                               children: [
+                                if (_tab == FeedTab.forYou) ...[
+                                  _Chip(
+                                    label:
+                                        'Location · ${discoveryLocation?.label ?? 'Global'}',
+                                    selected: false,
+                                    emphasized: true,
+                                    onTap: () =>
+                                        DiscoveryLocationSheet.show(context),
+                                  ),
+                                  const SizedBox(width: 8),
+                                ],
                                 _Chip(
                                   label: 'All',
                                   selected: _cuisineFilter == null,
