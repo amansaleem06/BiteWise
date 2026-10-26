@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/constants/app_legal.dart';
+import '../../../../core/constants/app_strings.dart';
 import '../../../../core/constants/contact_support.dart';
 import '../../../../core/errors/error_text.dart';
 import '../../../../core/widgets/app_snackbar.dart';
@@ -119,7 +121,7 @@ abstract final class SafetyActions {
     } catch (e, stackTrace) {
       _logSafetyFailure('report', e, stackTrace);
       if (context.mounted) {
-        AppSnackbar.error(context, userMessageFrom(e));
+        AppSnackbar.error(context, _safetyErrorMessage(e));
       }
     }
   }
@@ -164,7 +166,7 @@ abstract final class SafetyActions {
     } catch (e, stackTrace) {
       _logSafetyFailure('block user', e, stackTrace);
       if (context.mounted) {
-        AppSnackbar.error(context, userMessageFrom(e));
+        AppSnackbar.error(context, _safetyErrorMessage(e));
       }
     }
   }
@@ -186,7 +188,7 @@ abstract final class SafetyActions {
     } catch (e, stackTrace) {
       _logSafetyFailure('unblock user', e, stackTrace);
       if (context.mounted) {
-        AppSnackbar.error(context, userMessageFrom(e));
+        AppSnackbar.error(context, _safetyErrorMessage(e));
       }
     }
   }
@@ -198,5 +200,17 @@ abstract final class SafetyActions {
   ) {
     debugPrint('Safety action failed ($action): $error');
     debugPrintStack(stackTrace: stackTrace);
+  }
+
+  static String _safetyErrorMessage(Object error) {
+    final message = userMessageFrom(error);
+    if (error is FirebaseException) {
+      return '$message (${error.code})';
+    }
+    if (message == AppStrings.genericError) {
+      return 'Could not complete this safety action '
+          '(${error.runtimeType}). Please try again.';
+    }
+    return message;
   }
 }
