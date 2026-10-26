@@ -35,11 +35,16 @@ class LegalDocumentScreen extends StatelessWidget {
         itemBuilder: (context, index) {
           final line = lines[index];
           if (line.startsWith('# ')) {
+            // The app bar already names the document; don't repeat it in the
+            // document body.
+            if (line.substring(2).trim() == title) {
+              return const SizedBox.shrink();
+            }
             return Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.md),
-              child: Text(
+              child: _formattedText(
                 line.substring(2),
-                style: theme.textTheme.headlineSmall,
+                theme.textTheme.headlineSmall,
               ),
             );
           }
@@ -49,19 +54,61 @@ class LegalDocumentScreen extends StatelessWidget {
                 top: AppSpacing.lg,
                 bottom: AppSpacing.sm,
               ),
-              child: Text(
+              child: _formattedText(
                 line.substring(3),
-                style: theme.textTheme.titleMedium,
+                theme.textTheme.titleMedium,
               ),
             );
           }
           if (line.isEmpty) return const SizedBox(height: AppSpacing.sm);
+          if (line.startsWith('- ')) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('-', style: theme.textTheme.bodyMedium),
+                  const SizedBox(width: AppSpacing.xs),
+                  Expanded(
+                    child: _formattedText(
+                      line.substring(2),
+                      theme.textTheme.bodyMedium,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
           return Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-            child: Text(line, style: theme.textTheme.bodyMedium),
+            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: _formattedText(line, theme.textTheme.bodyMedium),
           );
         },
       ),
+    );
+  }
+
+  Widget _formattedText(String text, TextStyle? style) {
+    final spans = <InlineSpan>[];
+    final bold = RegExp(r'\*\*(.+?)\*\*');
+    var offset = 0;
+    for (final match in bold.allMatches(text)) {
+      if (match.start > offset) {
+        spans.add(TextSpan(text: text.substring(offset, match.start)));
+      }
+      spans.add(
+        TextSpan(
+          text: match.group(1),
+          style: style?.copyWith(fontWeight: FontWeight.w700),
+        ),
+      );
+      offset = match.end;
+    }
+    if (offset < text.length) {
+      spans.add(TextSpan(text: text.substring(offset)));
+    }
+    return SelectableText.rich(
+      TextSpan(style: style, children: spans),
     );
   }
 }
