@@ -38,7 +38,7 @@ abstract final class AppColors {
   static const Color textPrimaryLight = Color(0xFF1A0C0C);
   static const Color textSecondaryLight = Color(0xFF6B5752);
   static const Color textPrimaryDark = Color(0xFFFDF8F1);
-  static const Color textSecondaryDark = Color(0xFFC9B8B0);
+  static const Color textSecondaryDark = Color(0xFFE1D4CD);
   static const Color textTertiaryDark = Color(0xFFB6A39A);
   static const Color textTertiaryLight = Color(0xFF715E58);
 

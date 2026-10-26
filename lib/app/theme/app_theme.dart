@@ -21,8 +21,8 @@ abstract final class AppTheme {
       onPrimary: onInteractiveColor,
       primaryContainer: isDark ? AppColors.primaryDark : AppColors.primaryLight,
       onPrimaryContainer: isDark ? Colors.white : AppColors.secondary,
-      secondary: AppColors.secondary,
-      onSecondary: Colors.white,
+      secondary: isDark ? AppColors.textSecondaryDark : AppColors.secondary,
+      onSecondary: isDark ? AppColors.charcoal : Colors.white,
       secondaryContainer:
           isDark ? AppColors.charcoalLight : AppColors.secondaryLight,
       onSecondaryContainer:

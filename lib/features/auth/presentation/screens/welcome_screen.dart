@@ -1,20 +1,21 @@
-import '../widgets/terms_acceptance.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/routes.dart';
+import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../app/theme/app_theme.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/errors/error_text.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../providers/auth_providers.dart';
-import '../widgets/auth_scaffold.dart';
 import '../widgets/brand_mark.dart';
+import '../widgets/terms_acceptance.dart';
 
-/// Entry screen: brand moment + primary auth choices.
+/// Entry screen with a simple provider-first sign-in choice.
 class WelcomeScreen extends ConsumerWidget {
   const WelcomeScreen({super.key});
 
@@ -30,87 +31,96 @@ class WelcomeScreen extends ConsumerWidget {
       }
     });
 
-    // Firebase restores a persisted session asynchronously. Keep the welcome
-    // actions hidden until that first auth/profile load resolves, so startup
-    // never presents a signed-out screen while the session is still unknown.
+    // Wait for Firebase's persisted session/profile lookup before presenting
+    // sign-in actions, so startup cannot flash a false signed-out state.
     if (session.isLoading) {
-      return const AuthScaffold(
-        showBack: false,
-        children: [
-          SizedBox(
-            height: 220,
+      return Theme(
+        data: AppTheme.light,
+        child: const Scaffold(
+          body: DecoratedBox(
+            decoration: BoxDecoration(gradient: AppColors.authBackground),
             child: Center(child: CircularProgressIndicator()),
           ),
-        ],
+        ),
       );
     }
 
-    return AuthScaffold(
-      showBack: false,
-      children: [
-        const SizedBox(height: AppSpacing.xl),
-        const BrandMark(size: 88),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          AppStrings.tagline,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.labelMedium,
-        ),
-        const SizedBox(height: AppSpacing.xxl),
-        Text(
-          AppStrings.welcomeTitle,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.headlineLarge,
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        Text(
-          AppStrings.welcomeSubtitle,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodyMedium
-              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-        ),
-        const SizedBox(height: AppSpacing.xl),
-        const LegalConsentNotice(),
-        const SizedBox(height: AppSpacing.md),
-        AppButton(
-          label: AppStrings.signUp,
-          onPressed: () => context.push(Routes.signUp),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        AppOutlinedButton(
-          label: AppStrings.continueWithGoogle,
-          icon: const Icon(Icons.g_mobiledata_rounded, size: 28),
-          isLoading: authState.isLoading,
-          onPressed: () =>
-              ref.read(authControllerProvider.notifier).signInWithGoogle(),
-        ),
-        // Sign in with Apple: iOS only (App Review requirement when other
-        // third-party sign-ins are offered).
-        if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) ...[
-          const SizedBox(height: AppSpacing.sm),
-          AppOutlinedButton(
-            label: AppStrings.continueWithApple,
-            icon: const Icon(Icons.apple_rounded, size: 24),
-            isLoading: authState.isLoading,
-            onPressed: () =>
-                ref.read(authControllerProvider.notifier).signInWithApple(),
+    return Theme(
+      data: AppTheme.light,
+      child: Scaffold(
+        body: DecoratedBox(
+          decoration: const BoxDecoration(gradient: AppColors.authBackground),
+          child: SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) => SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.md,
+                ),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight - AppSpacing.md * 2,
+                  ),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 440),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const SizedBox(height: AppSpacing.xl),
+                          const BrandMark(size: 82),
+                          const SizedBox(height: AppSpacing.xxl),
+                          Text(
+                            'Sign up or log in to TasteWise',
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.headlineLarge?.copyWith(
+                              height: 1.12,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.xl),
+                          if (!kIsWeb &&
+                              defaultTargetPlatform == TargetPlatform.iOS) ...[
+                            AppOutlinedButton(
+                              label: AppStrings.continueWithApple,
+                              icon: const Icon(Icons.apple_rounded, size: 24),
+                              isLoading: authState.isLoading,
+                              onPressed: () => ref
+                                  .read(authControllerProvider.notifier)
+                                  .signInWithApple(),
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                          ],
+                          AppOutlinedButton(
+                            label: AppStrings.continueWithGoogle,
+                            icon: const Icon(
+                              Icons.g_mobiledata_rounded,
+                              size: 28,
+                            ),
+                            isLoading: authState.isLoading,
+                            onPressed: () => ref
+                                .read(authControllerProvider.notifier)
+                                .signInWithGoogle(),
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          AppButton(
+                            label: 'Continue with email',
+                            icon: const Icon(Icons.email_outlined, size: 20),
+                            onPressed: () => context.push(Routes.signIn),
+                          ),
+                          const SizedBox(height: AppSpacing.xl),
+                          const LegalConsentNotice(),
+                          const SizedBox(height: AppSpacing.md),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
-        ],
-        const SizedBox(height: AppSpacing.lg),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              AppStrings.hasAccountPrompt,
-              style: theme.textTheme.bodyMedium,
-            ),
-            TextButton(
-              onPressed: () => context.push(Routes.signIn),
-              child: const Text(AppStrings.signIn),
-            ),
-          ],
         ),
-      ],
+      ),
     );
   }
 }
