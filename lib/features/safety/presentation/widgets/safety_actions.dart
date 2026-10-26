@@ -207,6 +207,15 @@ abstract final class SafetyActions {
     if (error is FirebaseException) {
       return '$message (${error.code})';
     }
+    if (error is StateError) {
+      final detail =
+          error.message.toString().replaceAll(RegExp(r'[\r\n]+'), ' ').trim();
+      if (detail.isNotEmpty) {
+        final shortened =
+            detail.length > 140 ? '${detail.substring(0, 137)}…' : detail;
+        return 'Safety action failed: $shortened';
+      }
+    }
     if (message == AppStrings.genericError) {
       return 'Could not complete this safety action '
           '(${error.runtimeType}). Please try again.';
