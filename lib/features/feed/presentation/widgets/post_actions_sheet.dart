@@ -143,10 +143,14 @@ class PostActionsSheet extends ConsumerWidget {
               leading: const Icon(Icons.flag_outlined),
               title: const Text('Report post'),
               onTap: () {
+                final container = ProviderScope.containerOf(
+                  context,
+                  listen: false,
+                );
                 Navigator.pop(context);
                 SafetyActions.report(
                   pageContext,
-                  ref,
+                  container,
                   type: ReportTargetType.post,
                   targetId: post.id,
                   targetUserId: post.authorId,
@@ -157,10 +161,14 @@ class PostActionsSheet extends ConsumerWidget {
               leading: const Icon(Icons.block_rounded),
               title: const Text('Block user'),
               onTap: () {
+                final container = ProviderScope.containerOf(
+                  context,
+                  listen: false,
+                );
                 Navigator.pop(context);
                 SafetyActions.blockUser(
                   pageContext,
-                  ref,
+                  container,
                   uid: post.authorId,
                   name: post.publicAuthorName,
                 );

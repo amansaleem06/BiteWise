@@ -325,7 +325,10 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
                                 if (value == 'report') {
                                   await SafetyActions.report(
                                     context,
-                                    ref,
+                                    ProviderScope.containerOf(
+                                      context,
+                                      listen: false,
+                                    ),
                                     type: ReportTargetType.story,
                                     targetId: story.id,
                                     targetUserId: story.authorId,
@@ -333,7 +336,10 @@ class _StoryViewerScreenState extends ConsumerState<StoryViewerScreen>
                                 } else if (value == 'block') {
                                   await SafetyActions.blockUser(
                                     context,
-                                    ref,
+                                    ProviderScope.containerOf(
+                                      context,
+                                      listen: false,
+                                    ),
                                     uid: story.authorId,
                                     name: ring.authorName,
                                   );
@@ -564,7 +570,10 @@ class _StoryCommentsSheetState extends ConsumerState<_StoryCommentsSheet> {
                                 ? null
                                 : () => SafetyActions.report(
                                       context,
-                                      ref,
+                                      ProviderScope.containerOf(
+                                        context,
+                                        listen: false,
+                                      ),
                                       type: ReportTargetType.comment,
                                       targetId:
                                           'stories/${widget.storyId}/comments/${c.id}',

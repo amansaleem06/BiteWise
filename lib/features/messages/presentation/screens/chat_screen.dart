@@ -259,7 +259,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     if (value == 'report') {
                       SafetyActions.report(
                         context,
-                        ref,
+                        ProviderScope.containerOf(context, listen: false),
                         type: ReportTargetType.message,
                         targetId: widget.chatId,
                         targetUserId: chat.peer.uid,
@@ -267,7 +267,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     } else if (value == 'block') {
                       SafetyActions.blockUser(
                         context,
-                        ref,
+                        ProviderScope.containerOf(context, listen: false),
                         uid: chat.peer.uid,
                         name: chat.peer.name,
                       );

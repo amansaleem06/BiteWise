@@ -79,7 +79,7 @@ class UserProfileScreen extends ConsumerWidget {
                 if (value == 'report') {
                   SafetyActions.report(
                     context,
-                    ref,
+                    ProviderScope.containerOf(context, listen: false),
                     type: ReportTargetType.user,
                     targetId: uid,
                     targetUserId: uid,
@@ -87,12 +87,16 @@ class UserProfileScreen extends ConsumerWidget {
                 } else if (value == 'block') {
                   SafetyActions.blockUser(
                     context,
-                    ref,
+                    ProviderScope.containerOf(context, listen: false),
                     uid: uid,
                     name: name,
                   );
                 } else if (value == 'unblock') {
-                  SafetyActions.unblockUser(context, ref, uid: uid);
+                  SafetyActions.unblockUser(
+                    context,
+                    ProviderScope.containerOf(context, listen: false),
+                    uid: uid,
+                  );
                 }
               },
               itemBuilder: (ctx) => [

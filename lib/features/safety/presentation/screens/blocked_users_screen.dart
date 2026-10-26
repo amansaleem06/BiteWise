@@ -38,7 +38,10 @@ class BlockedUsersScreen extends ConsumerWidget {
                             trailing: TextButton(
                               onPressed: () => SafetyActions.unblockUser(
                                 context,
-                                ref,
+                                ProviderScope.containerOf(
+                                  context,
+                                  listen: false,
+                                ),
                                 uid: uid,
                               ),
                               child: const Text('Unblock'),

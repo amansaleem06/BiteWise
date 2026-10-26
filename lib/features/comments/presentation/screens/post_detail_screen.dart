@@ -192,7 +192,10 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                                     ? null
                                     : () => SafetyActions.report(
                                           context,
-                                          ref,
+                                          ProviderScope.containerOf(
+                                            context,
+                                            listen: false,
+                                          ),
                                           type: ReportTargetType.comment,
                                           targetId:
                                               'posts/${widget.postId}/comments/${comment.id}',

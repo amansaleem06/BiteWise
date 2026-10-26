@@ -28,7 +28,7 @@ abstract final class SafetyActions {
 
   static Future<void> report(
     BuildContext context,
-    WidgetRef ref, {
+    ProviderContainer container, {
     required ReportTargetType type,
     required String targetId,
     required String targetUserId,
@@ -78,7 +78,7 @@ abstract final class SafetyActions {
     if (reason == null || !context.mounted) return;
 
     try {
-      await ref.read(safetyRepositoryProvider).report(
+      await container.read(safetyRepositoryProvider).report(
             type: type,
             targetId: targetId,
             targetUserId: targetUserId,
@@ -128,7 +128,7 @@ abstract final class SafetyActions {
 
   static Future<void> blockUser(
     BuildContext context,
-    WidgetRef ref, {
+    ProviderContainer container, {
     required String uid,
     String name = 'this user',
   }) async {
@@ -154,12 +154,12 @@ abstract final class SafetyActions {
     if (confirmed != true || !context.mounted) return;
 
     try {
-      await ref.read(safetyRepositoryProvider).blockUser(uid);
-      ref.invalidate(feedControllerProvider(FeedTab.forYou));
-      ref.invalidate(feedControllerProvider(FeedTab.following));
-      ref.invalidate(feedControllerProvider(FeedTab.palette));
-      ref.invalidate(chatsProvider);
-      ref.invalidate(userPostsProvider(uid));
+      await container.read(safetyRepositoryProvider).blockUser(uid);
+      container.invalidate(feedControllerProvider(FeedTab.forYou));
+      container.invalidate(feedControllerProvider(FeedTab.following));
+      container.invalidate(feedControllerProvider(FeedTab.palette));
+      container.invalidate(chatsProvider);
+      container.invalidate(userPostsProvider(uid));
       if (context.mounted) {
         AppSnackbar.success(context, 'User blocked');
       }
@@ -173,15 +173,14 @@ abstract final class SafetyActions {
 
   static Future<void> unblockUser(
     BuildContext context,
-    WidgetRef ref, {
+    ProviderContainer container, {
     required String uid,
   }) async {
     try {
-      await ref.read(safetyRepositoryProvider).unblockUser(uid);
-      ref.invalidate(feedControllerProvider(FeedTab.forYou));
-      ref.invalidate(feedControllerProvider(FeedTab.following));
-      ref.invalidate(feedControllerProvider(FeedTab.palette));
-      ref.invalidate(chatsProvider);
+      await container.read(safetyRepositoryProvider).unblockUser(uid);
+      container.invalidate(feedControllerProvider(FeedTab.forYou));
+      container.invalidate(feedControllerProvider(FeedTab.following));
+      container.invalidate(feedControllerProvider(FeedTab.palette));
       if (context.mounted) {
         AppSnackbar.success(context, 'User unblocked');
       }
