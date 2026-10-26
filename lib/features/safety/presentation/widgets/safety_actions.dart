@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/theme/app_spacing.dart';
@@ -115,7 +116,8 @@ abstract final class SafetyActions {
           ),
         );
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      _logSafetyFailure('report', e, stackTrace);
       if (context.mounted) {
         AppSnackbar.error(context, userMessageFrom(e));
       }
@@ -159,7 +161,8 @@ abstract final class SafetyActions {
       if (context.mounted) {
         AppSnackbar.success(context, 'User blocked');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      _logSafetyFailure('block user', e, stackTrace);
       if (context.mounted) {
         AppSnackbar.error(context, userMessageFrom(e));
       }
@@ -180,10 +183,20 @@ abstract final class SafetyActions {
       if (context.mounted) {
         AppSnackbar.success(context, 'User unblocked');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      _logSafetyFailure('unblock user', e, stackTrace);
       if (context.mounted) {
         AppSnackbar.error(context, userMessageFrom(e));
       }
     }
+  }
+
+  static void _logSafetyFailure(
+    String action,
+    Object error,
+    StackTrace stackTrace,
+  ) {
+    debugPrint('Safety action failed ($action): $error');
+    debugPrintStack(stackTrace: stackTrace);
   }
 }

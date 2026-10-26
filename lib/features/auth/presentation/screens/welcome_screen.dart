@@ -95,7 +95,7 @@ class WelcomeScreen extends ConsumerWidget {
                               textAlign: TextAlign.center,
                               style: theme.textTheme.headlineLarge?.copyWith(
                                 height: 1.12,
-                                color: AppColors.cream,
+                                color: AppColors.accent,
                               ),
                             ),
                             const SizedBox(height: AppSpacing.sm),
