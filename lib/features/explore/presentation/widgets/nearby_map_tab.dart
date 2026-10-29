@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -11,7 +13,6 @@ import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/services/location_service.dart';
-import '../../../../core/widgets/async_error_view.dart';
 import '../../../restaurants/domain/entities/restaurant.dart';
 import '../../../restaurants/presentation/widgets/claim_status_badge.dart';
 import '../providers/explore_providers.dart';
@@ -57,6 +58,8 @@ class _NearbyMapTabState extends ConsumerState<NearbyMapTab> {
   Restaurant? _selected;
   Set<Marker> _markers = {};
   String? _markerKey;
+  GoogleMapController? _mapController;
+  LatLng? _lastCameraTarget;
 
   Future<void> _syncMarkers(List<Restaurant> restaurants) async {
     final key = restaurants
@@ -95,6 +98,21 @@ class _NearbyMapTabState extends ConsumerState<NearbyMapTab> {
     if (mounted) setState(() => _markers = next);
   }
 
+  void _showNearbyData(NearbyState nearby) {
+    unawaited(_syncMarkers(nearby.restaurants));
+    final position = nearby.position;
+    final controller = _mapController;
+    if (position == null || controller == null) return;
+
+    final target = LatLng(position.latitude, position.longitude);
+    if (_lastCameraTarget?.latitude == target.latitude &&
+        _lastCameraTarget?.longitude == target.longitude) {
+      return;
+    }
+    _lastCameraTarget = target;
+    unawaited(controller.animateCamera(CameraUpdate.newLatLngZoom(target, 14)));
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!widget.isActive) {
@@ -105,100 +123,137 @@ class _NearbyMapTabState extends ConsumerState<NearbyMapTab> {
 
     final theme = Theme.of(context);
     final nearbyAsync = ref.watch(nearbyProvider);
+    final nearby = nearbyAsync.valueOrNull;
+    if (nearby != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _showNearbyData(nearby);
+      });
+    }
 
-    return nearbyAsync.when(
-      loading: () =>
-          const Center(child: CircularProgressIndicator(strokeWidth: 2.5)),
-      error: (error, stack) => AsyncErrorView(
-        error: error,
-        stackTrace: stack,
-        title: 'Couldn\'t load the map',
-        onRetry: () => ref.invalidate(nearbyProvider),
-      ),
-      data: (nearby) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _syncMarkers(nearby.restaurants);
-        });
-        final me = nearby.position == null
-            ? _fallbackMapCenter
-            : LatLng(
-                nearby.position!.latitude,
-                nearby.position!.longitude,
-              );
-
-        return Stack(
-          children: [
-            GoogleMap(
-              initialCameraPosition: CameraPosition(target: me, zoom: 14),
-              myLocationEnabled: nearby.position != null,
-              myLocationButtonEnabled: nearby.position != null,
-              zoomControlsEnabled: false,
-              padding: const EdgeInsets.only(bottom: 108, right: 8),
-              // Win the gesture arena against the parent TabBarView.
-              gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
-                const Factory<EagerGestureRecognizer>(
-                  EagerGestureRecognizer.new,
-                ),
-                const Factory<PanGestureRecognizer>(PanGestureRecognizer.new),
-                const Factory<ScaleGestureRecognizer>(
-                  ScaleGestureRecognizer.new,
-                ),
-              },
-              onTap: (_) => setState(() => _selected = null),
-              markers: _markers,
+    return Stack(
+      children: [
+        GoogleMap(
+          initialCameraPosition: const CameraPosition(
+            target: _fallbackMapCenter,
+            zoom: 12,
+          ),
+          onMapCreated: (controller) {
+            _mapController = controller;
+            if (nearby != null) _showNearbyData(nearby);
+          },
+          myLocationEnabled: nearby?.position != null,
+          myLocationButtonEnabled: nearby?.position != null,
+          zoomControlsEnabled: false,
+          padding: const EdgeInsets.only(bottom: 108, right: 8),
+          // Win the gesture arena against the parent TabBarView.
+          gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
+            const Factory<EagerGestureRecognizer>(
+              EagerGestureRecognizer.new,
             ),
-            if (nearby.position == null)
-              Positioned(
-                top: AppSpacing.md,
-                left: AppSpacing.md,
-                right: AppSpacing.md,
-                child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.sm),
-                    child: Column(
-                      children: [
-                        Text(
-                          'Location is off — showing a default area. '
-                          'Allow location to center the map on you.',
-                          style: theme.textTheme.bodySmall,
-                          textAlign: TextAlign.center,
-                        ),
-                        TextButton(
-                          onPressed: () => ref.invalidate(nearbyProvider),
-                          child: const Text('Retry location'),
-                        ),
-                      ],
+            const Factory<PanGestureRecognizer>(PanGestureRecognizer.new),
+            const Factory<ScaleGestureRecognizer>(ScaleGestureRecognizer.new),
+          },
+          onTap: (_) => setState(() => _selected = null),
+          markers: _markers,
+        ),
+        if (nearbyAsync.isLoading)
+          Positioned(
+            top: AppSpacing.md,
+            left: AppSpacing.md,
+            right: AppSpacing.md,
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
                     ),
-                  ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Text('Finding nearby restaurants…',
+                        style: theme.textTheme.bodySmall),
+                  ],
                 ),
-              )
-            else if (nearby.restaurants.isEmpty)
-              Positioned(
-                top: AppSpacing.md,
-                left: AppSpacing.md,
-                right: AppSpacing.md,
-                child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.sm),
-                    child: Text(
-                      'No restaurants on the map yet — restaurants created '
-                      'while sharing a post appear here.',
+              ),
+            ),
+          )
+        else if (nearbyAsync.hasError)
+          Positioned(
+            top: AppSpacing.md,
+            left: AppSpacing.md,
+            right: AppSpacing.md,
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                child: Column(
+                  children: [
+                    Text(
+                      'Couldn’t load nearby restaurants.',
                       style: theme.textTheme.bodySmall,
                       textAlign: TextAlign.center,
                     ),
-                  ),
+                    TextButton(
+                      onPressed: () => ref.invalidate(nearbyProvider),
+                      child: const Text('Retry'),
+                    ),
+                  ],
                 ),
               ),
-            if (_selected != null)
-              Positioned(
-                left: AppSpacing.md,
-                right: AppSpacing.md,
-                bottom: 96,
-                child: _RestaurantPreviewCard(restaurant: _selected!),
+            ),
+          )
+        else if (nearby != null && nearby.position == null)
+          Positioned(
+            top: AppSpacing.md,
+            left: AppSpacing.md,
+            right: AppSpacing.md,
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                child: Column(
+                  children: [
+                    Text(
+                      'Location is off — showing a default area. '
+                      'Allow location to center the map on you.',
+                      style: theme.textTheme.bodySmall,
+                      textAlign: TextAlign.center,
+                    ),
+                    TextButton(
+                      onPressed: () => ref.invalidate(nearbyProvider),
+                      child: const Text('Retry location'),
+                    ),
+                  ],
+                ),
               ),
-          ],
-        );
-      },
+            ),
+          )
+        else if (nearby != null && nearby.restaurants.isEmpty)
+          Positioned(
+            top: AppSpacing.md,
+            left: AppSpacing.md,
+            right: AppSpacing.md,
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                child: Text(
+                  'No restaurants on the map yet — restaurants created '
+                  'while sharing a post appear here.',
+                  style: theme.textTheme.bodySmall,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ),
+        if (_selected != null)
+          Positioned(
+            left: AppSpacing.md,
+            right: AppSpacing.md,
+            bottom: 96,
+            child: _RestaurantPreviewCard(restaurant: _selected!),
+          ),
+      ],
     );
   }
 }
