@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "1089295338872-05m7p7imnru9cqtp9shdsjb5ttjmponu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bitewise.bitewise",
+            "certificate_hash": "67b5d2ad571c21550c35447b0b6d4f3e7d29dde6"
+          }
+        },
+        {
           "client_id": "1089295338872-p87hbqkrbcjgi5n4cf9971li59peef08.apps.googleusercontent.com",
           "client_type": 3
         }
