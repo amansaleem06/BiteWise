@@ -24,7 +24,13 @@ class FirebaseAuthRepository implements AuthRepository {
     GoogleSignIn? googleSignIn,
   })  : _auth = auth ?? fb.FirebaseAuth.instance,
         _firestore = firestore ?? FirebaseFirestore.instance,
-        _googleSignIn = googleSignIn ?? GoogleSignIn();
+        _googleSignIn = googleSignIn ??
+            GoogleSignIn(
+              serverClientId: !kIsWeb &&
+                      defaultTargetPlatform == TargetPlatform.android
+                  ? '1089295338872-p87hbqkrbcjgi5n4cf9971li59peef08.apps.googleusercontent.com'
+                  : null,
+            );
 
   final fb.FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
