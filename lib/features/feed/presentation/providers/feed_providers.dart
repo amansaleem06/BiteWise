@@ -4,7 +4,7 @@ import '../../../../core/utils/dietary_ranking.dart';
 import '../../../../core/utils/palette_ranking.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../safety/presentation/providers/safety_providers.dart';
-import '../../../taste/presentation/providers/diet_plan_providers.dart';
+import '../../../taste/presentation/providers/nutrition_profile_provider.dart';
 import '../../data/repositories/firestore_feed_repository.dart';
 import '../../domain/entities/post.dart';
 import '../../domain/entities/discovery_location.dart';
@@ -62,7 +62,6 @@ class FeedController extends FamilyAsyncNotifier<FeedState, FeedTab> {
     }
     if (tab == FeedTab.palette) {
       ref.watch(nutritionProfileProvider);
-      ref.watch(currentDietPlanProvider);
     }
     final blocked = await ref.watch(blockedUserIdsProvider.future);
     final page = await _fetch(null);
@@ -99,19 +98,11 @@ class FeedController extends FamilyAsyncNotifier<FeedState, FeedTab> {
         ref.read(currentUserProvider)?.dietaryPreferences ?? const [];
     if (arg == FeedTab.palette) {
       final profile = ref.read(nutritionProfileProvider).valueOrNull;
-      final plan = ref.read(currentDietPlanProvider).valueOrNull;
       return PaletteRanking.apply(
         posts: visible,
         cuisines: profile?.favoriteCuisines ?? const [],
         dishes: profile?.favoriteDishes ?? const [],
         avoids: profile?.avoids ?? const [],
-        mealHints: [
-          if (plan != null)
-            for (final meal in plan.meals) ...[
-              meal.title,
-              if (meal.basedOn != null) meal.basedOn!,
-            ],
-        ],
         preferences: preferences,
       );
     }

@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/layout/app_breakpoints.dart';
 import '../../../../core/widgets/async_error_view.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
-import '../../domain/palette_copy.dart';
 import '../../domain/taste_stats.dart';
 import '../providers/taste_providers.dart';
 
@@ -257,8 +254,6 @@ class _PassportBody extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: AppSpacing.md),
-              const _DietPlanCard(),
               const SizedBox(height: AppSpacing.lg),
 
               Text(
@@ -304,60 +299,6 @@ class _PassportBody extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-/// AI diet plan entry point — available immediately; tastes can be typed in.
-class _DietPlanCard extends StatelessWidget {
-  const _DietPlanCard();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Material(
-      color: theme.colorScheme.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        side: BorderSide(color: AppColors.accent.withValues(alpha: 0.5)),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        onTap: () => context.push(Routes.dietPlan),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.auto_awesome_rounded,
-                    color: theme.colorScheme.primary,
-                    size: 20,
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Expanded(
-                    child: Text(
-                      PaletteCopy.name,
-                      style: theme.textTheme.titleMedium,
-                    ),
-                  ),
-                  const Icon(Icons.chevron_right_rounded),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.xxs),
-              Text(
-                PaletteCopy.passportBlurb,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

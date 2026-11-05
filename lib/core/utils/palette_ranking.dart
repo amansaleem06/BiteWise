@@ -4,8 +4,8 @@ import 'dietary_ranking.dart';
 
 /// Ranks and filters the Palette feed from Your Palette tastes.
 ///
-/// Matching cuisines, dishes, and meal hints float up. Avoids (allergies
-/// and skip-list) are dropped entirely for this tab only.
+/// Matching cuisines and dishes float up. Avoids (allergies and skip-list)
+/// are dropped entirely for this tab only.
 abstract final class PaletteRanking {
   static const _aliases = <String, Set<String>>{
     'nuts': {
@@ -100,7 +100,6 @@ abstract final class PaletteRanking {
     required Post post,
     required Set<String> cuisineKeys,
     required Set<String> dishKeys,
-    required Set<String> mealKeys,
     required Set<String> preferenceKeys,
   }) {
     final hay = _haystack(post);
@@ -110,9 +109,6 @@ abstract final class PaletteRanking {
     }
     for (final key in dishKeys) {
       if (_looksLike(hay, key)) points += 4;
-    }
-    for (final key in mealKeys) {
-      if (_looksLike(hay, key)) points += 5;
     }
     if (preferenceKeys.isNotEmpty) {
       points += DietaryRanking.postScore(post, preferenceKeys);
@@ -125,7 +121,6 @@ abstract final class PaletteRanking {
     required List<String> cuisines,
     required List<String> dishes,
     required List<String> avoids,
-    required List<String> mealHints,
     required List<DietaryPreference> preferences,
   }) {
     final avoidKeys = avoidKeywords(avoids);
@@ -137,7 +132,6 @@ abstract final class PaletteRanking {
 
     final cuisineKeys = _keywords(cuisines);
     final dishKeys = _keywords(dishes);
-    final mealKeys = _keywords(mealHints);
     final preferenceKeys = DietaryRanking.keywordsFor(preferences);
 
     final indexed = visible.asMap().entries.toList()
@@ -146,14 +140,12 @@ abstract final class PaletteRanking {
           post: b.value,
           cuisineKeys: cuisineKeys,
           dishKeys: dishKeys,
-          mealKeys: mealKeys,
           preferenceKeys: preferenceKeys,
         ).compareTo(
           score(
             post: a.value,
             cuisineKeys: cuisineKeys,
             dishKeys: dishKeys,
-            mealKeys: mealKeys,
             preferenceKeys: preferenceKeys,
           ),
         );

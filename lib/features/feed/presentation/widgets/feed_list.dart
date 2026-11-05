@@ -13,7 +13,6 @@ import '../../../../core/errors/error_text.dart';
 import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../taste/domain/palette_copy.dart';
-import '../../../taste/presentation/providers/diet_plan_providers.dart';
 import '../providers/feed_providers.dart';
 import 'feed_shimmer.dart';
 import 'post_card.dart';
@@ -111,9 +110,6 @@ class _FeedListState extends ConsumerState<FeedList> {
                 .toList();
 
         if (posts.isEmpty) {
-          final paletteReady = widget.tab != FeedTab.palette ||
-              (ref.watch(nutritionProfileProvider).valueOrNull?.hasTaste ??
-                  false);
           return RefreshIndicator(
             onRefresh: controller.refresh,
             color: AppColors.primary,
@@ -133,31 +129,23 @@ class _FeedListState extends ConsumerState<FeedList> {
                         : widget.tab == FeedTab.following
                             ? 'Nothing here yet'
                             : widget.tab == FeedTab.palette
-                                ? (paletteReady
-                                    ? 'Nothing on Palette yet'
-                                    : PaletteCopy.emptyFeedTitle)
+                                ? PaletteCopy.emptyFeedTitle
                                 : 'No plates yet',
                     subtitle: widget.cuisineFilter != null
                         ? 'Try another cuisine, or tag a post when you publish.'
                         : widget.tab == FeedTab.following
                             ? 'Follow food lovers to fill your Following course.'
                             : widget.tab == FeedTab.palette
-                                ? (paletteReady
-                                    ? 'More matching plates will land here as people post.'
-                                    : PaletteCopy.emptyFeedSubtitle)
+                                ? PaletteCopy.emptyFeedSubtitle
                                 : 'Be the first to share a delicious bite.',
-                    actionLabel: widget.tab == FeedTab.palette && !paletteReady
-                        ? PaletteCopy.emptyFeedAction
-                        : widget.cuisineFilter == null &&
+                    actionLabel: widget.cuisineFilter == null &&
                                 widget.tab == FeedTab.following
                             ? 'Explore food lovers'
                             : widget.cuisineFilter == null &&
                                     widget.tab == FeedTab.forYou
                                 ? 'Share a plate'
                                 : null,
-                    onAction: widget.tab == FeedTab.palette && !paletteReady
-                        ? () => context.push(Routes.dietPlan)
-                        : widget.cuisineFilter == null &&
+                    onAction: widget.cuisineFilter == null &&
                                 widget.tab == FeedTab.following
                             ? () => context.go(Routes.explore)
                             : widget.cuisineFilter == null &&

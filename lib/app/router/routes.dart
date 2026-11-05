@@ -35,7 +35,6 @@ abstract final class Routes {
   static const stories = '/stories';
   static const storyEdit = '/stories/edit';
   static const tastePassport = '/passport';
-  static const dietPlan = '/passport/diet-plan';
 
   // Shell tabs
   static const home = '/home';
