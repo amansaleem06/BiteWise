@@ -8,6 +8,7 @@ import '../../../../core/errors/error_text.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/async_error_view.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
+import '../../../messages/domain/entities/chat.dart';
 import '../../../messages/presentation/providers/chat_providers.dart';
 import '../../../safety/domain/repositories/safety_repository.dart';
 import '../../../safety/presentation/providers/safety_providers.dart';
@@ -47,12 +48,19 @@ class UserProfileScreen extends ConsumerWidget {
     final profile = ref.read(userProfileProvider(uid)).valueOrNull;
     if (profile == null) return;
     try {
-      final chatId = await ref.read(chatRepositoryProvider).openChatWith(
-            peerUid: profile.user.uid,
-            peerName: profile.user.displayName,
-            peerPhotoUrl: profile.user.photoUrl,
-          );
-      if (context.mounted) context.push(Routes.chatPath(chatId));
+      final user = profile.user;
+      final chatId =
+          await ref.read(chatRepositoryProvider).openChatWith(user.uid);
+      if (context.mounted) {
+        context.push(
+          Routes.chatPath(chatId),
+          extra: ChatPeer(
+            uid: user.uid,
+            name: user.displayName,
+            photoUrl: user.photoUrl,
+          ),
+        );
+      }
     } catch (e) {
       if (context.mounted) AppSnackbar.error(context, userMessageFrom(e));
     }

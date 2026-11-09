@@ -13,22 +13,21 @@ abstract interface class ChatRepository {
   /// Latest [limit] messages, newest first (live).
   Stream<List<Message>> watchMessages(String chatId, {int limit});
 
-  /// Ensures the chat document exists and returns its id.
-  Future<String> openChatWith({
-    required String peerUid,
-    required String peerName,
-    String? peerPhotoUrl,
-  });
+  /// Checks whether a conversation can be opened without writing a chat.
+  Future<String> openChatWith(String peerUid);
 
-  Future<void> sendText(String chatId, String text);
+  Future<void> sendText(String chatId, String text, {ChatPeer? peer});
 
-  Future<void> sendImage(String chatId, XFile image);
+  Future<void> sendImage(String chatId, XFile image, {ChatPeer? peer});
 
   Future<void> sendAudio(
     String chatId, {
     required String filePath,
     required int durationMs,
+    ChatPeer? peer,
   });
+
+  Future<void> deleteMessage(String chatId, String messageId);
 
   /// Updates the viewer's lastReadAt (read receipt + clears unread).
   Future<void> markRead(String chatId);

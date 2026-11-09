@@ -8,7 +8,7 @@
     <uses-permission android:name="android.permission.CAMERA"/>
 
     <application
-        android:label="TasteWise"
+        android:label="TasteBump"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <!-- Restrict this key in Google Cloud to this Android package and

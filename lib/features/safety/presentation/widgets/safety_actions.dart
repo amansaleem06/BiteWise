@@ -105,7 +105,7 @@ abstract final class SafetyActions {
                   Navigator.pop(ctx);
                   ContactSupport.email(
                     context,
-                    subject: 'TasteWise report',
+                    subject: 'TasteBump report',
                   );
                 },
                 child: const Text('Email support'),

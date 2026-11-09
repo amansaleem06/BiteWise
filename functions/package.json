@@ -2,7 +2,7 @@
   "name": "bitewise-functions",
   "description": "BiteWise backend: counters, denormalization, trending",
   "engines": {
-    "node": "20"
+    "node": "22"
   },
   "main": "lib/index.js",
   "scripts": {

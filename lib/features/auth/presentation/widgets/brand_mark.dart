@@ -4,7 +4,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/constants/app_strings.dart';
 
-/// TasteWise logo mark used on auth screens and empty states.
+/// TasteBump logo mark used on auth screens and empty states.
 class BrandMark extends StatelessWidget {
   const BrandMark({super.key, this.size = 64, this.showWordmark = true});
 
@@ -20,7 +20,6 @@ class BrandMark extends StatelessWidget {
           width: size,
           height: size,
           decoration: BoxDecoration(
-            gradient: AppColors.brandGradient,
             borderRadius: BorderRadius.circular(size * 0.28),
             boxShadow: [
               BoxShadow(
@@ -30,24 +29,7 @@ class BrandMark extends StatelessWidget {
               ),
             ],
           ),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Icon(
-                Icons.location_on_rounded,
-                color: Colors.white.withValues(alpha: 0.95),
-                size: size * 0.62,
-              ),
-              Padding(
-                padding: EdgeInsets.only(bottom: size * 0.08),
-                child: Icon(
-                  Icons.restaurant_rounded,
-                  color: AppColors.cream,
-                  size: size * 0.22,
-                ),
-              ),
-            ],
-          ),
+          child: Image.asset(AppStrings.brandLogo),
         ),
         if (showWordmark) ...[
           const SizedBox(height: AppSpacing.md),

@@ -11,7 +11,7 @@ import '../../domain/repositories/chat_repository.dart';
 
 /// Firestore layout:
 ///   chats/{chatId}                       — participants, peer info, receipts
-///   chats/{chatId}/messages/{messageId}  — immutable messages
+///   chats/{chatId}/messages/{messageId}  — messages and deletion placeholders
 class FirestoreChatRepository implements ChatRepository {
   FirestoreChatRepository({
     FirebaseFirestore? firestore,
@@ -46,6 +46,11 @@ class FirestoreChatRepository implements ChatRepository {
           (snap) => snap.docs
               .map((d) => _chatFromDoc(d, me))
               .whereType<Chat>()
+              .where(
+                (chat) =>
+                    chat.lastMessageSenderId != null ||
+                    chat.lastMessageText?.isNotEmpty == true,
+              )
               .toList(),
         );
   }
@@ -71,13 +76,8 @@ class FirestoreChatRepository implements ChatRepository {
   }
 
   @override
-  Future<String> openChatWith({
-    required String peerUid,
-    required String peerName,
-    String? peerPhotoUrl,
-  }) async {
-    final user = _user;
-    final chatId = Chat.idFor(user.uid, peerUid);
+  Future<String> openChatWith(String peerUid) async {
+    final chatId = Chat.idFor(_user.uid, peerUid);
     DocumentSnapshot<Map<String, dynamic>>? existing;
     try {
       existing = await _chats.doc(chatId).get();
@@ -85,36 +85,7 @@ class FirestoreChatRepository implements ChatRepository {
       // Older rules deny get() on a chat that does not exist yet.
       if (e.code != 'permission-denied') rethrow;
     }
-    if (existing != null && existing.exists) {
-      await _chats.doc(chatId).set(
-        {
-          'participantInfo': {
-            user.uid: {
-              'name': user.displayName ?? '',
-              'photoUrl': user.photoURL,
-            },
-            peerUid: {'name': peerName, 'photoUrl': peerPhotoUrl},
-          },
-        },
-        SetOptions(merge: true),
-      );
-      return chatId;
-    }
-
-    await _assertCanMessage(peerUid);
-
-    await _chats.doc(chatId).set({
-      'participants': [user.uid, peerUid]..sort(),
-      'participantInfo': {
-        user.uid: {
-          'name': user.displayName ?? '',
-          'photoUrl': user.photoURL,
-        },
-        peerUid: {'name': peerName, 'photoUrl': peerPhotoUrl},
-      },
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
-
+    if (existing?.exists != true) await _assertCanMessage(peerUid);
     return chatId;
   }
 
@@ -150,20 +121,20 @@ class FirestoreChatRepository implements ChatRepository {
   }
 
   @override
-  Future<void> sendText(String chatId, String text) async {
+  Future<void> sendText(String chatId, String text, {ChatPeer? peer}) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return;
-    await _send(chatId, type: MessageType.text, text: trimmed);
+    await _send(chatId, type: MessageType.text, text: trimmed, peer: peer);
   }
 
   @override
-  Future<void> sendImage(String chatId, XFile image) async {
+  Future<void> sendImage(String chatId, XFile image, {ChatPeer? peer}) async {
     final url = await _uploads.uploadChatImage(
       chatId: chatId,
       uid: _user.uid,
       file: image,
     );
-    await _send(chatId, type: MessageType.image, imageUrl: url);
+    await _send(chatId, type: MessageType.image, imageUrl: url, peer: peer);
   }
 
   @override
@@ -171,6 +142,7 @@ class FirestoreChatRepository implements ChatRepository {
     String chatId, {
     required String filePath,
     required int durationMs,
+    ChatPeer? peer,
   }) async {
     final url = await _uploads.uploadChatAudio(
       chatId: chatId,
@@ -182,6 +154,7 @@ class FirestoreChatRepository implements ChatRepository {
       type: MessageType.audio,
       audioUrl: url,
       durationMs: durationMs,
+      peer: peer,
     );
   }
 
@@ -192,15 +165,22 @@ class FirestoreChatRepository implements ChatRepository {
     String? imageUrl,
     String? audioUrl,
     int? durationMs,
+    ChatPeer? peer,
   }) async {
-    final me = _user.uid;
+    final user = _user;
+    final me = user.uid;
+    if (peer != null && chatId != Chat.idFor(me, peer.uid)) {
+      throw const AppException('Could not identify this conversation.');
+    }
+    final chat = _chats.doc(chatId);
+    final message = chat.collection('messages').doc();
     final preview = switch (type) {
       MessageType.image => 'Photo',
       MessageType.audio => 'Voice note',
       MessageType.text => text,
     };
     final batch = _firestore.batch()
-      ..set(_chats.doc(chatId).collection('messages').doc(), {
+      ..set(message, {
         'senderId': me,
         'type': type.name,
         'text': text,
@@ -210,8 +190,15 @@ class FirestoreChatRepository implements ChatRepository {
         'createdAt': FieldValue.serverTimestamp(),
       })
       ..set(
-        _chats.doc(chatId),
+        chat,
         {
+          if (peer != null) ...{
+            'participants': [me, peer.uid]..sort(),
+            'participantInfo': {
+              me: {'name': user.displayName ?? '', 'photoUrl': user.photoURL},
+              peer.uid: {'name': peer.name, 'photoUrl': peer.photoUrl},
+            },
+          },
           'lastMessage': {
             'text': preview,
             'senderId': me,
@@ -223,6 +210,36 @@ class FirestoreChatRepository implements ChatRepository {
         SetOptions(merge: true),
       );
     await batch.commit();
+  }
+
+  @override
+  Future<void> deleteMessage(String chatId, String messageId) async {
+    final me = _user.uid;
+    final chat = _chats.doc(chatId);
+    final message = chat.collection('messages').doc(messageId);
+    await _firestore.runTransaction((transaction) async {
+      final data = (await transaction.get(message)).data();
+      if (data == null || data['deleted'] == true) return;
+      if (data['senderId'] != me) {
+        throw const AppException('You can only delete messages you sent.');
+      }
+      final chatData = (await transaction.get(chat)).data();
+      final preview = chatData?['lastMessage'];
+      transaction.update(message, {
+        'type': 'text',
+        'text': 'Message deleted',
+        'imageUrl': null,
+        'audioUrl': null,
+        'durationMs': null,
+        'deleted': true,
+      });
+      if (preview is Map &&
+          preview['senderId'] == me &&
+          data['createdAt'] != null &&
+          data['createdAt'] == chatData?['updatedAt']) {
+        transaction.update(chat, {'lastMessage.text': 'Message deleted'});
+      }
+    });
   }
 
   @override
@@ -287,6 +304,7 @@ class FirestoreChatRepository implements ChatRepository {
       audioUrl: data['audioUrl'] as String?,
       durationMs: (data['durationMs'] as num?)?.toInt(),
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
+      isDeleted: data['deleted'] == true,
     );
   }
 }

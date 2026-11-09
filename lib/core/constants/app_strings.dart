@@ -3,8 +3,9 @@
 /// Structured for a painless migration to `flutter_localizations` / ARB files
 /// when internationalization lands.
 abstract final class AppStrings {
-  static const appName = 'TasteWise';
-  static const tagline = 'Discover. Taste. Share.';
+  static const appName = 'TasteBump';
+  static const brandLogo = 'assets/branding/tastebump.png';
+  static const tagline = 'Good Taste. Worth Sharing.';
 
   // Auth
   static const welcomeTitle = 'Taste is a place you can return to.';
@@ -43,7 +44,7 @@ abstract final class AppStrings {
   static const deleteAccount = 'Delete account';
   static const deleteAccountTitle = 'Delete your account?';
   static const deleteAccountBody =
-      'This permanently deletes your TasteWise account, profile, and personal data. Posts you shared will be anonymized. This cannot be undone.';
+      'This permanently deletes your TasteBump account, profile, and personal data. Posts you shared will be anonymized. This cannot be undone.';
   static const deleteAccountConfirm = 'Delete my account';
   static const deleteAccountPasswordHint =
       'Enter your password to confirm.';

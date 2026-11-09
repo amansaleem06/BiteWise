@@ -22,6 +22,7 @@ class Message extends Equatable {
     this.audioUrl,
     this.durationMs,
     this.createdAt,
+    this.isDeleted = false,
   });
 
   final String id;
@@ -32,7 +33,8 @@ class Message extends Equatable {
   final String? audioUrl;
   final int? durationMs;
   final DateTime? createdAt;
+  final bool isDeleted;
 
   @override
-  List<Object?> get props => [id];
+  List<Object?> get props => [id, isDeleted];
 }

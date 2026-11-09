@@ -57,7 +57,7 @@ class RestaurantRatingsTab extends ConsumerWidget {
           child: Text(
             (restaurant?.isClaimed ?? false)
                 ? 'Diner ratings on this listing stay here, including reviews posted before the page was claimed. The restaurant cannot remove them.'
-                : 'Unclaimed listing. These ratings come from TasteWise diners and cannot be removed by a later owner.',
+                : 'Unclaimed listing. These ratings come from TasteBump diners and cannot be removed by a later owner.',
             style: theme.textTheme.bodySmall,
           ),
         ),

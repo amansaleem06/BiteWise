@@ -502,7 +502,7 @@ class _IdentitySection extends ConsumerWidget {
                     if (!context.mounted) return;
                     AppSnackbar.success(
                       context,
-                      'Claim submitted. Email your code to TasteWise support '
+                      'Claim submitted. Email your code to TasteBump support '
                       'to finish verification.',
                     );
                   } catch (e) {
@@ -567,7 +567,7 @@ class _AboutTab extends StatelessWidget {
                     ? 'This restaurant hasn\'t added details yet.'
                     : restaurant.isPendingClaim
                         ? 'A claim is under review. This page is not Verified Owner yet.'
-                        : 'Unclaimed Maps listing — ratings here are from TasteWise diners, with no verified owner. Are you the owner? Claim it from your business profile.',
+                        : 'Unclaimed Maps listing — ratings here are from TasteBump diners, with no verified owner. Are you the owner? Claim it from your business profile.',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium
                     ?.copyWith(color: theme.colorScheme.onSurfaceVariant),

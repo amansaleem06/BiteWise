@@ -236,7 +236,7 @@ class _TrendingTab extends ConsumerWidget {
                 ? 'Nothing trending yet'
                 : 'No $cuisineFilter posts yet',
             subtitle: cuisineFilter == null
-                ? 'Share a plate to get TasteWise started.'
+                ? 'Share a plate to get TasteBump started.'
                 : 'Tag a post with this cuisine to see it here.',
           );
         }

@@ -7,19 +7,19 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>TasteWise</string>
+	<string>TasteBump</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>TasteWise needs access to your photos so you can share your food experiences.</string>
+	<string>TasteBump needs access to your photos so you can share your food experiences.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>TasteWise uses the camera to capture photos for posts, stories, and messages.</string>
+	<string>TasteBump uses the camera to capture photos for posts, stories, and messages.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>TasteWise uses the microphone for voice notes in messages.</string>
+	<string>TasteBump uses the microphone for voice notes in messages.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>TasteWise uses your location to show restaurants near you.</string>
+	<string>TasteBump uses your location to show restaurants near you.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>TasteWise uses your location to show restaurants near you.</string>
+	<string>TasteBump uses your location to show restaurants near you.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
-	<string>TasteWise uses your location to show restaurants near you.</string>
+	<string>TasteBump uses your location to show restaurants near you.</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -27,7 +27,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>TasteWise</string>
+	<string>TasteBump</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

@@ -171,7 +171,7 @@ class _BusinessSetupScreenState extends ConsumerState<BusinessSetupScreen> {
               2 =>
                 'A random user can find this restaurant on Maps. Upload a photo only the owner would have: the storefront sign, or a business license.',
               3 =>
-                'The listing stays unclaimed until TasteWise support confirms your proof. You cannot post as the restaurant yet.',
+                'The listing stays unclaimed until TasteBump support confirms your proof. You cannot post as the restaurant yet.',
               _ =>
                 'Pick the Google Maps listing that matches the name, address, and phone you entered.',
             },

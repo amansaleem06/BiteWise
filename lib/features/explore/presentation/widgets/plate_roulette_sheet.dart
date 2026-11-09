@@ -268,7 +268,7 @@ class _WinnerCard extends StatelessWidget {
           if (rating != null) ...[
             const SizedBox(height: 2),
             Text(
-              '★ ${rating.toStringAsFixed(1)} on TasteWise',
+              '★ ${rating.toStringAsFixed(1)} on TasteBump',
               style: theme.textTheme.bodySmall,
             ),
           ],

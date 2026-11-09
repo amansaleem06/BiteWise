@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app/app.dart';
 import 'app/theme/app_theme.dart';
+import 'core/constants/app_strings.dart';
 import 'core/widgets/firebase_setup_screen.dart';
 import 'firebase_options.dart';
 
@@ -57,8 +58,10 @@ class _StartupApp extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              Image(image: AssetImage(AppStrings.brandLogo), width: 76),
+              SizedBox(height: 16),
               Text(
-                'TasteWise',
+                AppStrings.appName,
                 style: TextStyle(
                   fontFamily: 'serif',
                   fontSize: 40,
@@ -68,7 +71,7 @@ class _StartupApp extends StatelessWidget {
               ),
               SizedBox(height: 8),
               Text(
-                'DISCOVER. TASTE. SHARE.',
+                AppStrings.tagline,
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,

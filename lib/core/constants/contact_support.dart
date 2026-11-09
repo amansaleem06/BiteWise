@@ -9,7 +9,7 @@ import 'app_legal.dart';
 abstract final class ContactSupport {
   static Future<void> email(
     BuildContext context, {
-    String subject = 'TasteWise support',
+    String subject = 'TasteBump support',
     String? body,
   }) async {
     final uri = Uri(

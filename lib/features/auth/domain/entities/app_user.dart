@@ -20,7 +20,7 @@ enum MessagePrivacy {
       };
 
   String get subtitle => switch (this) {
-        MessagePrivacy.everyone => 'Anyone on TasteWise can send you a message',
+        MessagePrivacy.everyone => 'Anyone on TasteBump can send you a message',
         MessagePrivacy.followers =>
           'Only people who follow you can start a chat',
         MessagePrivacy.none =>
@@ -77,7 +77,7 @@ enum UserRole {
       );
 }
 
-/// Core user entity — the domain representation of a TasteWise account.
+/// Core user entity — the domain representation of a TasteBump account.
 class AppUser extends Equatable {
   const AppUser({
     required this.uid,

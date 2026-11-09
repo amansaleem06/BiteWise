@@ -10,14 +10,14 @@ abstract final class AppLegal {
   static const supportUrl = '$_pagesBase/support.html';
   static const supportEmail = 'tastewise2026@gmail.com';
   static const supportMailto =
-      'mailto:tastewise2026@gmail.com?subject=TasteWise%20support';
+      'mailto:tastewise2026@gmail.com?subject=TasteBump%20support';
 
   static const privacyPolicyMarkdown = '''
 # Privacy Policy
 
 **Last updated:** September 21, 2026
 
-TasteWise ("we", "our") helps you discover restaurants and share food experiences. This policy explains what we collect and why.
+TasteBump ("we", "our") helps you discover restaurants and share food experiences. This policy explains what we collect and why.
 
 ## Information we collect
 - **Account data:** name, email, profile photo, bio.
@@ -47,7 +47,7 @@ Questions about privacy or support: tastewise2026@gmail.com
 
 **Last updated:** August 10, 2026
 
-By creating an account, signing in, or continuing to use TasteWise, you agree to these Terms of Use / End User License Agreement (EULA).
+By creating an account, signing in, or continuing to use TasteBump, you agree to these Terms of Use / End User License Agreement (EULA).
 
 ## Eligibility
 You must be able to form a binding contract in your country. If you are under 13 (or the digital-consent age where you live), you may not use the app.
@@ -56,19 +56,19 @@ You must be able to form a binding contract in your country. If you are under 13
 You are responsible for your login and for content you post. Do not share your password. You may delete your account at any time in Settings.
 
 ## Acceptable use
-TasteWise has zero tolerance for objectionable content or abusive users. Do not post illegal, hateful, harassing, sexually explicit, threatening, or infringing content. Do not spam, scrape, or attempt to disrupt TasteWise. You can report content or block another user from a post, profile, or chat. We review reports and may remove content or suspend accounts that violate these terms.
+TasteBump has zero tolerance for objectionable content or abusive users. Do not post illegal, hateful, harassing, sexually explicit, threatening, or infringing content. Do not spam, scrape, or attempt to disrupt TasteBump. You can report content or block another user from a post, profile, or chat. We review reports and may remove content or suspend accounts that violate these terms.
 
 ## Content license
-You keep ownership of your content. You grant TasteWise a non-exclusive license to host and display it so the service can function. You can remove content or delete your account to stop ongoing display of personal profile data.
+You keep ownership of your content. You grant TasteBump a non-exclusive license to host and display it so the service can function. You can remove content or delete your account to stop ongoing display of personal profile data.
 
 ## Reservations & third parties
 Restaurant availability and reservation outcomes depend on restaurant partners. Maps and location features depend on Google Maps / device location services.
 
 ## Disclaimers
-TasteWise is provided “as is.” We do not guarantee uninterrupted service or the accuracy of user-generated restaurant content.
+TasteBump is provided “as is.” We do not guarantee uninterrupted service or the accuracy of user-generated restaurant content.
 
 ## Termination
-We may suspend accounts that violate these terms. You may stop using TasteWise and delete your account at any time.
+We may suspend accounts that violate these terms. You may stop using TasteBump and delete your account at any time.
 
 ## Contact
 Support and legal: tastewise2026@gmail.com

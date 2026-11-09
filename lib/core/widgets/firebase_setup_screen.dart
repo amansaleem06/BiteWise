@@ -33,7 +33,7 @@ class FirebaseSetupScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    'TasteWise compiled successfully, but Firebase is not configured '
+                    'TasteBump compiled successfully, but Firebase is not configured '
                     'for this platform yet. From the project root, run:',
                     style: theme.textTheme.bodyMedium,
                   ),

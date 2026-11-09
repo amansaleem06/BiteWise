@@ -24,7 +24,7 @@ class ClaimPendingCard extends StatelessWidget {
     final maps = mapsUrl == null || mapsUrl!.isEmpty
         ? restaurantName
         : mapsUrl!;
-    return 'I am claiming $restaurantName on TasteWise.\n\n'
+    return 'I am claiming $restaurantName on TasteBump.\n\n'
         'Claim code: $claimCode\n'
         'Google listing: $maps\n\n'
         'I attached (or will reply with) a photo of my storefront sign '

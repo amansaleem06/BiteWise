@@ -266,7 +266,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    'TasteWise boosts matching plates and restaurants in your feed.',
+                    'TasteBump boosts matching plates and restaurants in your feed.',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),

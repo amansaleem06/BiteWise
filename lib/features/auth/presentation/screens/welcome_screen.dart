@@ -82,7 +82,7 @@ class WelcomeScreen extends ConsumerWidget {
                             const BrandMark(size: 76),
                             const SizedBox(height: AppSpacing.xs),
                             Text(
-                              AppStrings.tagline.toUpperCase(),
+                              AppStrings.tagline,
                               textAlign: TextAlign.center,
                               style: theme.textTheme.labelSmall?.copyWith(
                                 color: AppColors.accentLight,
@@ -91,7 +91,7 @@ class WelcomeScreen extends ConsumerWidget {
                             ),
                             const SizedBox(height: AppSpacing.xxl),
                             Text(
-                              'Sign up or log in to TasteWise',
+                              'Sign up or log in to TasteBump',
                               textAlign: TextAlign.center,
                               style: theme.textTheme.headlineLarge?.copyWith(
                                 height: 1.12,

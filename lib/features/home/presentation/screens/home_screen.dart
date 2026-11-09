@@ -171,7 +171,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 title: Row(
                   children: [
                     Text(
-                      'TasteWise',
+                      'TasteBump',
                       style: GoogleFonts.fraunces(
                         fontWeight: FontWeight.w800,
                         fontSize: 26,

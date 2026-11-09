@@ -18,11 +18,11 @@
                         <subviews>
                             <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" alignment="center" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="TW-brand-stack">
                                 <subviews>
-                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="TasteWise" textAlignment="center" translatesAutoresizingMaskIntoConstraints="NO" id="TW-brand-title">
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="TasteBump" textAlignment="center" translatesAutoresizingMaskIntoConstraints="NO" id="TW-brand-title">
                                         <fontDescription key="fontDescription" type="system" weight="bold" pointSize="38"/>
                                         <color key="textColor" red="0.102" green="0.047" blue="0.047" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                     </label>
-                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="DISCOVER. TASTE. SHARE." textAlignment="center" translatesAutoresizingMaskIntoConstraints="NO" id="TW-brand-tagline">
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Good Taste. Worth Sharing." textAlignment="center" translatesAutoresizingMaskIntoConstraints="NO" id="TW-brand-tagline">
                                         <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="11"/>
                                         <color key="textColor" red="0.42" green="0.341" blue="0.322" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                     </label>

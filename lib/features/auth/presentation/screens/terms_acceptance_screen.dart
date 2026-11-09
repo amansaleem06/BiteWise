@@ -20,7 +20,7 @@ class TermsAcceptanceScreen extends ConsumerWidget {
           style: Theme.of(context).textTheme.headlineMedium,
         ),
         const Text(
-          'Please review and accept our community terms to use TasteWise.',
+          'Please review and accept our community terms to use TasteBump.',
         ),
         const TermsAcceptance(),
         if (consent.isLoading || action.isLoading)

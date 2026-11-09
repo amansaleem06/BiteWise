@@ -15,6 +15,7 @@ import '../../features/explore/presentation/screens/search_screen.dart';
 import '../../features/feed/presentation/screens/saved_plates_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/messages/presentation/screens/chat_screen.dart';
+import '../../features/messages/domain/entities/chat.dart';
 import '../../features/messages/presentation/screens/messages_screen.dart';
 import '../../features/notifications/presentation/screens/notifications_screen.dart';
 import '../../features/profile/presentation/screens/edit_profile_screen.dart';
@@ -192,7 +193,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: Routes.chat,
-        builder: (_, state) => ChatScreen(chatId: state.pathParameters['id']!),
+        builder: (_, state) => ChatScreen(
+          chatId: state.pathParameters['id']!,
+          draftPeer: state.extra is ChatPeer ? state.extra as ChatPeer : null,
+        ),
       ),
       GoRoute(
         path: Routes.reservations,

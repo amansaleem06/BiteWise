@@ -552,14 +552,33 @@ service cloud.firestore {
           return get(/databases/$(database)/documents/chats/$(chatId)).data;
         }
 
+        function parentChatAfterSend() {
+          return getAfter(/databases/$(database)/documents/chats/$(chatId)).data;
+        }
+
+        function isMessageDeletion() {
+          let next = request.resource.data;
+          return resource.data.get('deleted', false) == false
+            && next.diff(resource.data).affectedKeys().hasOnly([
+              'type', 'text', 'imageUrl', 'audioUrl', 'durationMs', 'deleted'
+            ])
+            && next.deleted == true
+            && next.type == 'text'
+            && next.text == 'Message deleted'
+            && next.imageUrl == null
+            && next.audioUrl == null
+            && next.durationMs == null;
+        }
+
         allow read: if isSignedIn()
           && request.auth.uid in parentChat().participants;
 
         allow create: if canParticipate()
-          && canInteract(parentChat().participants[0] == request.auth.uid
-            ? parentChat().participants[1] : parentChat().participants[0])
+          && request.auth.uid in parentChatAfterSend().participants
+          && canInteract(parentChatAfterSend().participants[0] == request.auth.uid
+            ? parentChatAfterSend().participants[1] : parentChatAfterSend().participants[0])
           && request.resource.data.senderId == request.auth.uid
-          && request.auth.uid in parentChat().participants
+          && !('deleted' in request.resource.data)
           && (
             (request.resource.data.type == 'text'
               && request.resource.data.text is string
@@ -576,8 +595,12 @@ service cloud.firestore {
               && request.resource.data.durationMs <= 180000)
           );
 
-        // Messages are immutable.
-        allow update, delete: if false;
+        // Only the sender can replace their message with a deletion placeholder.
+        allow update: if isSignedIn()
+          && request.auth.uid in parentChat().participants
+          && request.auth.uid == resource.data.senderId
+          && isMessageDeletion();
+        allow delete: if false;
       }
     }
 

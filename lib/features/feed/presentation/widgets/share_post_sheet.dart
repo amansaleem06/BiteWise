@@ -11,12 +11,13 @@ import '../../../../core/errors/error_text.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../explore/presentation/providers/explore_providers.dart';
+import '../../../messages/domain/entities/chat.dart';
 import '../../../messages/presentation/providers/chat_providers.dart';
 import '../providers/feed_providers.dart';
 
 String postShareLink(String postId) => 'https://tastewise.app/post/$postId';
 
-/// In-app share: copy link or send the post to another TasteWise user.
+/// In-app share: copy link or send the post to another TasteBump user.
 class SharePostSheet extends ConsumerStatefulWidget {
   const SharePostSheet({
     super.key,
@@ -64,9 +65,9 @@ class _SharePostSheetState extends ConsumerState<SharePostSheet> {
         : widget.restaurantName.trim();
     final caption = widget.caption.trim();
     if (caption.isEmpty) {
-      return 'Shared a TasteWise post from $place\n$_link';
+      return 'Shared a TasteBump post from $place\n$_link';
     }
-    return 'Shared a TasteWise post from $place\n$caption\n$_link';
+    return 'Shared a TasteBump post from $place\n$caption\n$_link';
   }
 
   Future<void> _copyLink() async {
@@ -86,12 +87,12 @@ class _SharePostSheetState extends ConsumerState<SharePostSheet> {
     setState(() => _sendingUid = uid);
     try {
       final repo = ref.read(chatRepositoryProvider);
-      final chatId = await repo.openChatWith(
-        peerUid: uid,
-        peerName: name,
-        peerPhotoUrl: photoUrl,
+      final chatId = await repo.openChatWith(uid);
+      await repo.sendText(
+        chatId,
+        _message,
+        peer: ChatPeer(uid: uid, name: name, photoUrl: photoUrl),
       );
-      await repo.sendText(chatId, _message);
       await ref.read(feedRepositoryProvider).recordShare(widget.postId);
       if (!mounted) return;
       Navigator.pop(context);
@@ -153,7 +154,7 @@ class _SharePostSheetState extends ConsumerState<SharePostSheet> {
                 child: TextField(
                   autofocus: true,
                   decoration: const InputDecoration(
-                    hintText: 'Send to a TasteWise user…',
+                    hintText: 'Send to a TasteBump user…',
                     prefixIcon: Icon(Icons.search_rounded),
                     isDense: true,
                   ),

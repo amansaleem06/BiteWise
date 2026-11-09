@@ -51,18 +51,27 @@ class ChatActions {
   final ChatRepository _repo;
   DateTime _lastTypingSignal = DateTime.fromMillisecondsSinceEpoch(0);
 
-  Future<void> sendText(String chatId, String text) =>
-      _repo.sendText(chatId, text);
+  Future<void> sendText(String chatId, String text, {ChatPeer? peer}) =>
+      _repo.sendText(chatId, text, peer: peer);
 
-  Future<void> sendImage(String chatId, XFile image) =>
-      _repo.sendImage(chatId, image);
+  Future<void> sendImage(String chatId, XFile image, {ChatPeer? peer}) =>
+      _repo.sendImage(chatId, image, peer: peer);
 
   Future<void> sendAudio(
     String chatId, {
     required String filePath,
     required int durationMs,
+    ChatPeer? peer,
   }) =>
-      _repo.sendAudio(chatId, filePath: filePath, durationMs: durationMs);
+      _repo.sendAudio(
+        chatId,
+        filePath: filePath,
+        durationMs: durationMs,
+        peer: peer,
+      );
+
+  Future<void> deleteMessage(String chatId, String messageId) =>
+      _repo.deleteMessage(chatId, messageId);
 
   Future<void> markRead(String chatId) => _repo.markRead(chatId);
 

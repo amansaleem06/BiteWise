@@ -178,7 +178,7 @@ class _PassportBody extends StatelessWidget {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'TASTEWISE · CULINARY PASSPORT',
+                            'TASTEBUMP · CULINARY PASSPORT',
                             maxLines: 2,
                             style: GoogleFonts.sourceSans3(
                               color: AppColors.accentLight,

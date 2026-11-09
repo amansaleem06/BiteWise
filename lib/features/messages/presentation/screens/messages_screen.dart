@@ -263,14 +263,17 @@ class _NewChatSheetState extends ConsumerState<_NewChatSheet> {
                           try {
                             final chatId = await ref
                                 .read(chatRepositoryProvider)
-                                .openChatWith(
-                                  peerUid: user.uid,
-                                  peerName: user.displayName,
-                                  peerPhotoUrl: user.photoUrl,
-                                );
+                                .openChatWith(user.uid);
                             if (context.mounted) {
                               Navigator.of(context).pop();
-                              context.push(Routes.chatPath(chatId));
+                              context.push(
+                                Routes.chatPath(chatId),
+                                extra: ChatPeer(
+                                  uid: user.uid,
+                                  name: user.displayName,
+                                  photoUrl: user.photoUrl,
+                                ),
+                              );
                             }
                           } catch (e) {
                             if (context.mounted) {

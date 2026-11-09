@@ -5,7 +5,7 @@ import '../../../../core/constants/app_legal.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/constants/contact_support.dart';
 
-/// How to reach TasteWise support, including after a report.
+/// How to reach TasteBump support, including after a report.
 class SupportScreen extends StatelessWidget {
   const SupportScreen({super.key});
 
@@ -23,7 +23,7 @@ class SupportScreen extends StatelessWidget {
         ),
         children: [
           Text(
-            'Reach TasteWise',
+            'Reach TasteBump',
             style: theme.textTheme.headlineSmall,
           ),
           const SizedBox(height: AppSpacing.sm),

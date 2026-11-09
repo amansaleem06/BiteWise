@@ -18,14 +18,17 @@ import '../../../../core/widgets/async_error_view.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../safety/domain/repositories/safety_repository.dart';
 import '../../../safety/presentation/widgets/safety_actions.dart';
+import '../../domain/entities/chat.dart';
+import '../../domain/entities/message.dart';
 import '../providers/chat_providers.dart';
 import '../widgets/message_bubble.dart';
 
 /// One-to-one conversation.
 class ChatScreen extends ConsumerStatefulWidget {
-  const ChatScreen({super.key, required this.chatId});
+  const ChatScreen({super.key, required this.chatId, this.draftPeer});
 
   final String chatId;
+  final ChatPeer? draftPeer;
 
   @override
   ConsumerState<ChatScreen> createState() => _ChatScreenState();
@@ -43,14 +46,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Duration _elapsed = Duration.zero;
 
   @override
-  void initState() {
-    super.initState();
-    Future<void>.microtask(
-      () => ref.read(chatActionsProvider).markRead(widget.chatId),
-    );
-  }
-
-  @override
   void dispose() {
     _tick?.cancel();
     _input.dispose();
@@ -62,7 +57,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final text = _input.text;
     if (text.trim().isEmpty) return;
     try {
-      await ref.read(chatActionsProvider).sendText(widget.chatId, text);
+      await ref.read(chatActionsProvider).sendText(
+            widget.chatId,
+            text,
+            peer: widget.draftPeer,
+          );
       if (mounted && _input.text == text) _input.clear();
     } catch (e) {
       if (mounted) AppSnackbar.error(context, userMessageFrom(e));
@@ -93,15 +92,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         ),
       ),
     );
-    if (source == null) return;
+    if (source == null || !mounted) return;
     final image = await _picker.pickImage(
       source: source,
       imageQuality: 95,
     );
-    if (image == null) return;
+    if (image == null || !mounted) return;
     setState(() => _sendingImage = true);
     try {
-      await ref.read(chatActionsProvider).sendImage(widget.chatId, image);
+      await ref.read(chatActionsProvider).sendImage(
+            widget.chatId,
+            image,
+            peer: widget.draftPeer,
+          );
     } catch (e) {
       if (mounted) AppSnackbar.error(context, userMessageFrom(e));
     } finally {
@@ -169,6 +172,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               widget.chatId,
               filePath: path,
               durationMs: durationMs,
+              peer: widget.draftPeer,
             );
       }
     } catch (e) {
@@ -189,39 +193,73 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     return '$m:$s';
   }
 
+  Future<void> _deleteMessage(String messageId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete message?'),
+        content: const Text('This will remove the message for both people.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Delete for everyone'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await ref.read(chatActionsProvider).deleteMessage(widget.chatId, messageId);
+    } catch (error) {
+      if (mounted) AppSnackbar.error(context, userMessageFrom(error));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final me = ref.watch(currentUserProvider)?.uid ?? '';
     final chat = ref.watch(chatProvider(widget.chatId)).valueOrNull;
-    final messagesAsync = ref.watch(chatMessagesProvider(widget.chatId));
+    final peer = chat?.peer ?? widget.draftPeer;
+    final isDraft = chat == null && widget.draftPeer != null;
+    final messagesAsync = isDraft
+        ? const AsyncData<List<Message>>([])
+        : ref.watch(chatMessagesProvider(widget.chatId));
 
-    ref.listen(chatMessagesProvider(widget.chatId), (_, next) {
-      final latest = next.valueOrNull?.firstOrNull;
-      if (latest != null && latest.senderId != me) {
-        ref.read(chatActionsProvider).markRead(widget.chatId);
-      }
-    });
+    if (!isDraft) {
+      ref.listen(chatMessagesProvider(widget.chatId), (previous, next) {
+        final latest = next.valueOrNull?.firstOrNull;
+        if (latest != null &&
+            latest.id != previous?.valueOrNull?.firstOrNull?.id &&
+            latest.senderId != me) {
+          ref.read(chatActionsProvider).markRead(widget.chatId);
+        }
+      });
+    }
 
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
-        title: chat == null
+        title: peer == null
             ? const SizedBox.shrink()
             : InkWell(
-                onTap: () => context.push(Routes.userPath(chat.peer.uid)),
+                onTap: () => context.push(Routes.userPath(peer.uid)),
                 child: Row(
                   children: [
                     CircleAvatar(
                       radius: 18,
                       backgroundColor: AppColors.primaryLight,
-                      backgroundImage: chat.peer.photoUrl != null
-                          ? CachedNetworkImageProvider(chat.peer.photoUrl!)
+                      backgroundImage: peer.photoUrl != null
+                          ? CachedNetworkImageProvider(peer.photoUrl!)
                           : null,
-                      child: chat.peer.photoUrl == null
+                      child: peer.photoUrl == null
                           ? Text(
-                              chat.peer.name.isNotEmpty
-                                  ? chat.peer.name[0].toUpperCase()
+                              peer.name.isNotEmpty
+                                  ? peer.name[0].toUpperCase()
                                   : '?',
                               style: theme.textTheme.titleSmall?.copyWith(
                                 color: AppColors.primaryDark,
@@ -235,11 +273,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            chat.peer.name,
+                            peer.name,
                             style: theme.textTheme.titleMedium,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          if (chat.isPeerTyping)
+                          if (chat?.isPeerTyping == true)
                             Text(
                               'typing…',
                               style: theme.textTheme.bodySmall
@@ -320,11 +358,21 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     final isRead = chat?.peerLastReadAt != null &&
                         message.createdAt != null &&
                         !message.createdAt!.isAfter(chat!.peerLastReadAt!);
-                    return MessageBubble(
+                    final bubble = MessageBubble(
                       message: message,
                       isMine: isMine,
-                      showReadReceipt: isMine && i == myLatestIndex,
+                      showReadReceipt:
+                          isMine && !message.isDeleted && i == myLatestIndex,
                       isRead: isRead,
+                    );
+                    if (!isMine ||
+                        message.isDeleted ||
+                        message.createdAt == null) {
+                      return bubble;
+                    }
+                    return GestureDetector(
+                      onLongPress: () => _deleteMessage(message.id),
+                      child: bubble,
                     );
                   },
                 );
@@ -400,9 +448,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                               hintText: 'Message…',
                               isDense: true,
                             ),
-                            onChanged: (_) => ref
-                                .read(chatActionsProvider)
-                                .typing(widget.chatId),
+                            onChanged: chat == null
+                                ? null
+                                : (_) => ref
+                                    .read(chatActionsProvider)
+                                    .typing(widget.chatId),
                             onSubmitted: (_) => _sendText(),
                           ),
                         ),
