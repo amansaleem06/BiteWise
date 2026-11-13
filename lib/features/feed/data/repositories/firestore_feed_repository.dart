@@ -337,34 +337,36 @@ class FirestoreFeedRepository implements FeedRepository {
     if (docs.isEmpty) return const FeedPage(posts: [], hasMore: false);
     final uid = _uid;
     final postIds = docs.map((doc) => doc.id).toList();
-    final results = await Future.wait([
-      Future.wait(
-        postIds.map(
-          (id) => _posts.doc(id).collection('likes').doc(uid).get(),
+    final (results, visibility) = await (
+      Future.wait([
+        Future.wait(
+          postIds.map(
+            (id) => _posts.doc(id).collection('likes').doc(uid).get(),
+          ),
         ),
-      ),
-      Future.wait(
-        postIds.map(
-          (id) => _firestore
-              .collection('users')
-              .doc(uid)
-              .collection('bookmarks')
-              .doc(id)
-              .get(),
+        Future.wait(
+          postIds.map(
+            (id) => _firestore
+                .collection('users')
+                .doc(uid)
+                .collection('bookmarks')
+                .doc(id)
+                .get(),
+          ),
         ),
-      ),
-      Future.wait(
-        postIds.map(
-          (id) => _firestore
-              .collection('users')
-              .doc(uid)
-              .collection('reposts')
-              .doc(id)
-              .get(),
+        Future.wait(
+          postIds.map(
+            (id) => _firestore
+                .collection('users')
+                .doc(uid)
+                .collection('reposts')
+                .doc(id)
+                .get(),
+          ),
         ),
-      ),
-    ]);
-    final visibility = await ContentVisibility.load(_firestore);
+      ]),
+      ContentVisibility.load(_firestore),
+    ).wait;
     final posts = <Post>[];
     for (var i = 0; i < docs.length; i++) {
       if (!visibility.allows(docs[i])) continue;
@@ -446,59 +448,7 @@ class FirestoreFeedRepository implements FeedRepository {
     int limit,
   ) async {
     final snap = await query.get();
-    if (snap.docs.isEmpty) return const FeedPage(posts: [], hasMore: false);
-
-    final uid = _uid;
-    final postIds = snap.docs.map((d) => d.id).toList();
-
-    final results = await Future.wait([
-      Future.wait(
-        postIds.map((id) => _posts.doc(id).collection('likes').doc(uid).get()),
-      ),
-      Future.wait(
-        postIds.map(
-          (id) => _firestore
-              .collection('users')
-              .doc(uid)
-              .collection('bookmarks')
-              .doc(id)
-              .get(),
-        ),
-      ),
-      Future.wait(
-        postIds.map(
-          (id) => _firestore
-              .collection('users')
-              .doc(uid)
-              .collection('reposts')
-              .doc(id)
-              .get(),
-        ),
-      ),
-    ]);
-    final likeDocs = results[0];
-    final bookmarkDocs = results[1];
-    final repostDocs = results[2];
-
-    final visibility = await ContentVisibility.load(_firestore);
-    final posts = <Post>[];
-    for (var i = 0; i < snap.docs.length; i++) {
-      if (!visibility.allows(snap.docs[i])) continue;
-      posts.add(
-        PostModel.fromDoc(
-          snap.docs[i],
-          isLikedByMe: likeDocs[i].exists,
-          isBookmarkedByMe: bookmarkDocs[i].exists,
-          isRepostedByMe: repostDocs[i].exists,
-        ),
-      );
-    }
-
-    return FeedPage(
-      posts: posts,
-      cursor: snap.docs.last,
-      hasMore: snap.docs.length == limit,
-    );
+    return _pageFromDocs(snap.docs, limit);
   }
 
   @override

@@ -63,8 +63,8 @@ class FeedController extends FamilyAsyncNotifier<FeedState, FeedTab> {
     if (tab == FeedTab.palette) {
       ref.watch(nutritionProfileProvider);
     }
-    final blocked = await ref.watch(blockedUserIdsProvider.future);
-    final page = await _fetch(null);
+    final blockedFuture = ref.watch(blockedUserIdsProvider.future);
+    final (blocked, page) = await (blockedFuture, _fetch(null)).wait;
     return FeedState(
       posts: _prepare(
         page.posts,

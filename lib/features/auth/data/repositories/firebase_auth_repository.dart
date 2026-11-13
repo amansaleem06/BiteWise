@@ -48,21 +48,21 @@ class FirebaseAuthRepository implements AuthRepository {
         yield null;
         return;
       }
-      // A Firebase Auth session is not a usable app session until its profile
-      // exists under the same UID. This also repairs an interrupted signup.
-      yield await _loadOrCreateProfile(fbUser);
-      yield* _users.doc(fbUser.uid).snapshots().map((doc) {
+      // Existing profiles can arrive directly from Firestore's local cache.
+      // Only a missing profile needs the guarded signup repair transaction.
+      await for (final doc in _users
+          .doc(fbUser.uid)
+          .snapshots(includeMetadataChanges: true)) {
         if (!doc.exists) {
-          throw const AppException(
-            'Your account profile could not be found. Please contact support.',
-            code: 'missing-user-profile',
-          );
+          if (doc.metadata.isFromCache) continue;
+          yield await _loadOrCreateProfile(fbUser);
+          continue;
         }
-        return UserModel.fromDoc(doc).copyWith(
+        yield UserModel.fromDoc(doc).copyWith(
           emailVerified: fbUser.emailVerified,
           needsEmailVerification: _needsVerification(fbUser),
         );
-      });
+      }
     });
   }
 

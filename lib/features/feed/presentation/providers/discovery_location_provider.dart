@@ -22,8 +22,9 @@ class DiscoveryLocationController extends AsyncNotifier<DiscoveryLocation> {
       orElse: () => DiscoveryScope.global,
     );
     if (scope == DiscoveryScope.nearby) {
-      final position =
-          await LocationService().currentPosition(requestPermission: false);
+      final position = await LocationService()
+          .currentPosition(requestPermission: false)
+          .timeout(const Duration(seconds: 2), onTimeout: () => null);
       return DiscoveryLocation.nearby(position);
     }
     return DiscoveryLocation(
