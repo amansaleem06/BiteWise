@@ -104,50 +104,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
-  void _openCuisinePicker() {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Wrap(
-              spacing: AppSpacing.xs,
-              runSpacing: AppSpacing.xs,
-              children: [
-                ChoiceChip(
-                  label: const Text('All'),
-                  selected: _cuisineFilter == null,
-                  onSelected: (_) {
-                    setState(() => _cuisineFilter = null);
-                    Navigator.pop(context);
-                  },
-                ),
-                for (final cuisine in Cuisines.all)
-                  ChoiceChip(
-                    label: Text(cuisine),
-                    selected: _cuisineFilter == cuisine,
-                    onSelected: (_) {
-                      setState(() => _cuisineFilter = cuisine);
-                      Navigator.pop(context);
-                    },
-                  ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final hasUnread =
         ref.watch(hasUnreadNotificationsProvider).valueOrNull ?? false;
     final discoveryLocation = ref.watch(discoveryLocationProvider).valueOrNull;
-    final preview = Cuisines.all.take(3).toList();
+    const preview = Cuisines.all;
     final modeLabel = switch (_tab) {
       FeedTab.forYou => 'For You',
       FeedTab.following => 'Following',
@@ -285,13 +248,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     ),
                                   ),
                                 ],
-                                const SizedBox(width: 8),
-                                _Chip(
-                                  label: 'See more',
-                                  selected: false,
-                                  emphasized: true,
-                                  onTap: _openCuisinePicker,
-                                ),
                               ],
                             ),
                           ),

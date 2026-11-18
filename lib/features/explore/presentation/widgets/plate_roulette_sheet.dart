@@ -14,7 +14,8 @@ import 'nearby_map_tab.dart';
 
 /// "Can't decide?" — spin a wheel of nearby (or top-rated) restaurants.
 class PlateRouletteSheet extends ConsumerStatefulWidget {
-  const PlateRouletteSheet({super.key});
+  const PlateRouletteSheet({super.key, this.embedded = false});
+  final bool embedded;
 
   static Future<void> show(BuildContext context) {
     return showModalBottomSheet<void>(
@@ -113,7 +114,7 @@ class _PlateRouletteSheetState extends ConsumerState<PlateRouletteSheet>
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            'Plate Roulette',
+            'Wagon Wheel',
             style: GoogleFonts.fraunces(
               fontSize: 26,
               fontWeight: FontWeight.w800,
@@ -197,6 +198,7 @@ class _PlateRouletteSheetState extends ConsumerState<PlateRouletteSheet>
                   ? _WinnerCard(
                       key: ValueKey(_winner!.id),
                       restaurant: _winner!,
+                      embedded: widget.embedded,
                     )
                   : const SizedBox(height: 8),
             ),
@@ -231,9 +233,14 @@ class _PlateRouletteSheetState extends ConsumerState<PlateRouletteSheet>
 }
 
 class _WinnerCard extends StatelessWidget {
-  const _WinnerCard({super.key, required this.restaurant});
+  const _WinnerCard({
+    super.key,
+    required this.restaurant,
+    this.embedded = false,
+  });
 
   final Restaurant restaurant;
+  final bool embedded;
 
   @override
   Widget build(BuildContext context) {
@@ -275,7 +282,7 @@ class _WinnerCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           OutlinedButton(
             onPressed: () {
-              Navigator.pop(context);
+              if (!embedded) Navigator.pop(context);
               context.push(Routes.restaurantPath(restaurant.id));
             },
             style: OutlinedButton.styleFrom(

@@ -234,6 +234,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           return const SizedBox.shrink();
         },
       ),
+      GoRoute(
+        path: Routes.create,
+        builder: (_, __) => const CreateScreen(),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
             MainShell(navigationShell: navigationShell),
@@ -251,14 +255,6 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: Routes.explore,
                 builder: (_, __) => const ExploreScreen(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: Routes.create,
-                builder: (_, __) => const CreateScreen(),
               ),
             ],
           ),

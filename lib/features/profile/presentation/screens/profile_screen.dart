@@ -35,9 +35,9 @@ class ProfileScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         leading: IconButton(
-          tooltip: 'Back to Feed',
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => context.go(Routes.home),
+          tooltip: 'Create post',
+          icon: const Icon(Icons.add_rounded),
+          onPressed: () => context.push(Routes.create),
         ),
         title: Text(
           'Profile',
@@ -53,11 +53,6 @@ class ProfileScreen extends ConsumerWidget {
             icon: const Icon(Icons.auto_stories_outlined),
             tooltip: 'Taste Passport',
             onPressed: () => context.push(Routes.tastePassport),
-          ),
-          IconButton(
-            icon: const Icon(Icons.bookmark_outline_rounded),
-            tooltip: 'Saved',
-            onPressed: () => context.push(Routes.saved),
           ),
           IconButton(
             icon: const Icon(Icons.calendar_month_outlined),
@@ -84,85 +79,101 @@ class ProfileScreen extends ConsumerWidget {
                   title: 'Couldn\'t load profile',
                   onRetry: () => ref.invalidate(userProfileProvider(uid)),
                 ),
-                data: (profile) => Column(
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
-                      child: PageIdentityBar(),
-                    ),
-                    if (me?.isBusiness == true &&
-                        pendingClaim &&
-                        (me!.pendingClaimCode ?? '').isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                        child: ClaimPendingCard(
-                          restaurantName: me.businessName ?? 'your restaurant',
-                          claimCode: me.pendingClaimCode!,
-                        ),
-                      )
-                    else if (me?.isBusiness == true &&
-                        (restaurantId == null || restaurantId.isEmpty))
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                        child: Material(
-                          color: AppColors.accent,
-                          borderRadius: BorderRadius.circular(AppRadius.lg),
-                          child: ListTile(
-                            title: const Text('Claim your restaurant'),
-                            subtitle: const Text(
-                              'Match your Maps listing, then send proof only an owner would have.',
-                            ),
-                            trailing: const Icon(Icons.chevron_right_rounded),
-                            onTap: () => context.push(Routes.businessSetup),
+                data: (profile) => NestedScrollView(
+                  headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                    SliverToBoxAdapter(
+                      child: Column(
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+                            child: PageIdentityBar(),
                           ),
-                        ),
-                      ),
-                    if (restaurantId != null && restaurantId.isNotEmpty)
-                      ref
-                          .watch(restaurantControllerProvider(restaurantId))
-                          .when(
-                            loading: () => const Padding(
-                              padding: EdgeInsets.all(24),
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2.5,
+                          if (me?.isBusiness == true &&
+                              pendingClaim &&
+                              (me!.pendingClaimCode ?? '').isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                              child: ClaimPendingCard(
+                                restaurantName:
+                                    me.businessName ?? 'your restaurant',
+                                claimCode: me.pendingClaimCode!,
+                              ),
+                            )
+                          else if (me?.isBusiness == true &&
+                              (restaurantId == null || restaurantId.isEmpty))
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                              child: Material(
+                                color: AppColors.accent,
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.lg),
+                                child: ListTile(
+                                  title: const Text('Claim your restaurant'),
+                                  subtitle: const Text(
+                                    'Match your Maps listing, then send proof only an owner would have.',
+                                  ),
+                                  trailing:
+                                      const Icon(Icons.chevron_right_rounded),
+                                  onTap: () =>
+                                      context.push(Routes.businessSetup),
                                 ),
                               ),
                             ),
-                            error: (_, __) => const SizedBox.shrink(),
-                            data: (restaurant) =>
-                                OwnedRestaurantBanner(restaurant: restaurant),
+                          if (restaurantId != null && restaurantId.isNotEmpty)
+                            ref
+                                .watch(
+                                  restaurantControllerProvider(restaurantId),
+                                )
+                                .when(
+                                  loading: () => const Padding(
+                                    padding: EdgeInsets.all(24),
+                                    child: Center(
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.5,
+                                      ),
+                                    ),
+                                  ),
+                                  error: (_, __) => const SizedBox.shrink(),
+                                  data: (restaurant) => OwnedRestaurantBanner(
+                                    restaurant: restaurant,
+                                  ),
+                                ),
+                          ProfileHeader(
+                            user: profile.user,
+                            plateInspired: true,
+                            trailing: SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton(
+                                onPressed: () =>
+                                    context.push(Routes.editProfile),
+                                style: OutlinedButton.styleFrom(
+                                  minimumSize: const Size.fromHeight(40),
+                                ),
+                                child: const Text('Edit profile'),
+                              ),
+                            ),
                           ),
-                    ProfileHeader(
-                      user: profile.user,
-                      trailing: SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton(
-                          onPressed: () => context.push(Routes.editProfile),
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size.fromHeight(40),
+                          const Divider(height: 1),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                'Latest',
+                                style: GoogleFonts.fraunces(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 18,
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface,
+                                ),
+                              ),
+                            ),
                           ),
-                          child: const Text('Edit profile'),
-                        ),
+                        ],
                       ),
                     ),
-                    const Divider(height: 1),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          'Latest',
-                          style: GoogleFonts.fraunces(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 18,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Expanded(child: UserPostsGrid(uid: uid)),
                   ],
+                  body: UserPostsGrid(uid: uid),
                 ),
               ),
     );

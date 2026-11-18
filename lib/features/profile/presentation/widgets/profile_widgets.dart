@@ -18,9 +18,15 @@ import '../providers/profile_providers.dart';
 
 /// Avatar + name + bio + stats row, shared by own and public profiles.
 class ProfileHeader extends StatelessWidget {
-  const ProfileHeader({super.key, required this.user, this.trailing});
+  const ProfileHeader({
+    super.key,
+    required this.user,
+    this.trailing,
+    this.plateInspired = false,
+  });
 
   final AppUser user;
+  final bool plateInspired;
 
   /// Follow button (public) or Edit button (own).
   final Widget? trailing;
@@ -33,34 +39,81 @@ class ProfileHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              _Avatar(user: user, radius: 40),
-              const SizedBox(width: AppSpacing.lg),
-              Expanded(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+          if (plateInspired)
+            Column(
+              children: [
+                _Stat(label: 'Posts', value: user.postCount),
+                const SizedBox(height: AppSpacing.xs),
+                Row(
                   children: [
-                    _Stat(label: 'Posts', value: user.postCount),
-                    _Stat(
-                      label: 'Followers',
-                      value: user.followerCount,
-                      onTap: () => context.push(
-                        Routes.followersPath(user.uid),
+                    Expanded(
+                      child: _Stat(
+                        label: 'Followers',
+                        value: user.followerCount,
+                        onTap: () =>
+                            context.push(Routes.followersPath(user.uid)),
                       ),
                     ),
-                    _Stat(
-                      label: 'Following',
-                      value: user.followingCount,
-                      onTap: () => context.push(
-                        Routes.followingPath(user.uid),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border:
+                            Border.all(color: theme.colorScheme.outlineVariant),
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: theme.colorScheme.primary
+                                .withValues(alpha: 0.2),
+                          ),
+                        ),
+                        child: _Avatar(user: user, radius: 34),
+                      ),
+                    ),
+                    Expanded(
+                      child: _Stat(
+                        label: 'Following',
+                        value: user.followingCount,
+                        onTap: () =>
+                            context.push(Routes.followingPath(user.uid)),
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
+              ],
+            )
+          else
+            Row(
+              children: [
+                _Avatar(user: user, radius: 40),
+                const SizedBox(width: AppSpacing.lg),
+                Expanded(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _Stat(label: 'Posts', value: user.postCount),
+                      _Stat(
+                        label: 'Followers',
+                        value: user.followerCount,
+                        onTap: () => context.push(
+                          Routes.followersPath(user.uid),
+                        ),
+                      ),
+                      _Stat(
+                        label: 'Following',
+                        value: user.followingCount,
+                        onTap: () => context.push(
+                          Routes.followingPath(user.uid),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           const SizedBox(height: AppSpacing.sm),
           Text(
             user.displayName,
@@ -214,15 +267,17 @@ class UserPostsGrid extends ConsumerWidget {
     final controller = ref.read(userPostsProvider(uid).notifier);
 
     return postsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 2.5)),
+      loading: () =>
+          const Center(child: CircularProgressIndicator(strokeWidth: 2.5)),
       error: (_, __) => Center(
         child: TextButton(
           onPressed: () => ref.invalidate(userPostsProvider(uid)),
           child: const Text('Retry'),
         ),
       ),
-        data: (feed) {
-        final personal = feed.posts.where((p) => !p.postedAsRestaurant).toList();
+      data: (feed) {
+        final personal =
+            feed.posts.where((p) => !p.postedAsRestaurant).toList();
         if (personal.isEmpty) {
           return const AppEmptyState(
             icon: Icons.grid_view_rounded,
@@ -239,7 +294,7 @@ class UserPostsGrid extends ConsumerWidget {
             return false;
           },
           child: GridView.builder(
-            padding: const EdgeInsets.fromLTRB(2, 2, 2, 160),
+            padding: const EdgeInsets.fromLTRB(2, 2, 2, 16),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: AppBreakpoints.gridColumns(
                 context,
